@@ -16,6 +16,7 @@ import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import AccountDashboard from "@/pages/AccountDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
+import ProductDetailPage from "@/pages/ProductDetailPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
