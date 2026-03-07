@@ -1,0 +1,310 @@
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Heart, Gift, Search, ShoppingBag, Calendar, Check, Minus } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { useListAccess } from '@/contexts/ListAccessContext';
+import { useCart } from '@/contexts/CartContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface ListItemWithProduct {
+  id: string;
+  product_id: string;
+  variant_id: string | null;
+  quantity_desired: number;
+  quantity_purchased: number;
+  priority: string;
+  sort_order: number;
+  product: {
+    id: string;
+    slug: string;
+    base_price: number;
+    has_variants: boolean;
+    product_translations: Array<{ language: string; name: string; short_description: string | null }>;
+    product_images: Array<{ image_url: string; is_primary: boolean; alt_text: string | null }>;
+  };
+  variant?: {
+    id: string;
+    value: string;
+    price_override: number | null;
+    variant_type_id: string;
+  } | null;
+}
+
+const BirthListViewPage: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const { listCode } = useParams<{ listCode: string }>();
+  const { hasAccess, listId, babyName, owners, expectedDate, token, clearAccess } = useListAccess();
+  const { addListItem } = useCart();
+  const [items, setItems] = useState<ListItemWithProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const lang = i18n.language === 'es' ? 'es' : 'ca';
+
+  useEffect(() => {
+    if (!hasAccess || !listId) {
+      navigate('/llista-naixement');
+      return;
+    }
+    fetchListItems();
+  }, [hasAccess, listId]);
+
+  const fetchListItems = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('list_items')
+        .select(`
+          id, product_id, variant_id, quantity_desired, quantity_purchased, priority, sort_order,
+          product:products(
+            id, slug, base_price, has_variants,
+            product_translations(language, name, short_description),
+            product_images(image_url, is_primary, alt_text)
+          )
+        `)
+        .eq('list_id', listId!)
+        .order('sort_order', { ascending: true });
+
+      if (error) throw error;
+
+      // Fetch variant info for items with variants
+      const withVariants = await Promise.all(
+        (data || []).map(async (item: any) => {
+          let variant = null;
+          if (item.variant_id) {
+            const { data: v } = await supabase
+              .from('product_variants')
+              .select('id, value, price_override, variant_type_id')
+              .eq('id', item.variant_id)
+              .single();
+            variant = v;
+          }
+          return { ...item, variant } as ListItemWithProduct;
+        })
+      );
+
+      setItems(withVariants);
+    } catch {
+      toast.error(t('errors.generic'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getProductName = (item: ListItemWithProduct) => {
+    const tr = item.product.product_translations.find(t => t.language === lang)
+      || item.product.product_translations[0];
+    return tr?.name || '';
+  };
+
+  const getProductImage = (item: ListItemWithProduct) => {
+    const primary = item.product.product_images.find(i => i.is_primary);
+    return (primary || item.product.product_images[0])?.image_url || '/placeholder.svg';
+  };
+
+  const getPrice = (item: ListItemWithProduct) => {
+    if (item.variant?.price_override != null) return item.variant.price_override;
+    return item.product.base_price;
+  };
+
+  const getStatus = (item: ListItemWithProduct) => {
+    if (item.quantity_purchased >= item.quantity_desired) return 'purchased';
+    if (item.quantity_purchased > 0) return 'partial';
+    return 'available';
+  };
+
+  const remaining = (item: ListItemWithProduct) =>
+    Math.max(0, item.quantity_desired - item.quantity_purchased);
+
+  const handleBuyGift = (item: ListItemWithProduct) => {
+    const qty = remaining(item);
+    if (qty <= 0) return;
+
+    addListItem({
+      productId: item.product_id,
+      variantId: item.variant_id || undefined,
+      name: getProductName(item) + (item.variant ? ` (${item.variant.value})` : ''),
+      image: getProductImage(item),
+      price: getPrice(item),
+      quantity: 1,
+      maxQuantity: qty,
+      variantLabel: item.variant?.value,
+    }, listId!);
+
+    toast.success(t('list.giftAdded'));
+  };
+
+  const totalItems = items.reduce((s, i) => s + i.quantity_desired, 0);
+  const totalPurchased = items.reduce((s, i) => s + Math.min(i.quantity_purchased, i.quantity_desired), 0);
+  const progressPct = totalItems > 0 ? Math.round((totalPurchased / totalItems) * 100) : 0;
+
+  const filteredItems = items.filter(item => {
+    if (!search.trim()) return true;
+    return getProductName(item).toLowerCase().includes(search.toLowerCase());
+  });
+
+  const ownerNames = owners.map(o => `${o.firstName} ${o.lastName}`).join(' & ');
+
+  if (!hasAccess) return null;
+
+  return (
+    <div className="container py-8 max-w-4xl mx-auto">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center mb-8"
+      >
+        <Heart className="h-10 w-10 text-primary mx-auto mb-3" />
+        {babyName && (
+          <h1 className="font-display text-3xl font-bold mb-1">
+            {t('list.listFor')} {babyName}
+          </h1>
+        )}
+        {ownerNames && (
+          <p className="text-lg text-muted-foreground mb-1">{ownerNames}</p>
+        )}
+        {expectedDate && (
+          <p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+            <Calendar className="h-4 w-4" />
+            {new Date(expectedDate).toLocaleDateString(lang === 'ca' ? 'ca-ES' : 'es-ES', {
+              year: 'numeric', month: 'long', day: 'numeric'
+            })}
+          </p>
+        )}
+      </motion.div>
+
+      {/* Progress */}
+      <div className="bg-card rounded-lg p-4 shadow-soft mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm font-medium">{t('list.progress')}</span>
+          <span className="text-sm text-muted-foreground">{progressPct}%</span>
+        </div>
+        <Progress value={progressPct} className="h-2" />
+        <p className="text-xs text-muted-foreground mt-1">
+          {totalPurchased} / {totalItems} {t('list.itemsPurchased')}
+        </p>
+      </div>
+
+      {/* Search */}
+      <div className="relative mb-6">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder={t('list.searchProducts')}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Items */}
+      {loading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
+          ))}
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="text-center py-12">
+          <Gift className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">{search ? t('common.noResults') : t('list.emptyList')}</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredItems.map((item, index) => {
+            const status = getStatus(item);
+            const isPurchased = status === 'purchased';
+
+            return (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className={`flex gap-4 p-4 rounded-lg bg-card shadow-soft ${isPurchased ? 'opacity-60' : ''}`}
+              >
+                {/* Image */}
+                <div className="w-20 h-20 rounded-md overflow-hidden flex-shrink-0 bg-muted">
+                  <img
+                    src={getProductImage(item)}
+                    alt={getProductName(item)}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h3 className="font-medium text-sm leading-tight line-clamp-2">
+                        {getProductName(item)}
+                        {item.variant && (
+                          <span className="text-muted-foreground ml-1">({item.variant.value})</span>
+                        )}
+                      </h3>
+                      <p className="text-primary font-semibold text-sm mt-1">
+                        {getPrice(item).toFixed(2)} €
+                      </p>
+                    </div>
+
+                    {/* Status badge */}
+                    {status === 'purchased' && (
+                      <Badge variant="secondary" className="flex-shrink-0 gap-1">
+                        <Check className="h-3 w-3" />
+                        {t('list.purchased')}
+                      </Badge>
+                    )}
+                    {status === 'partial' && (
+                      <Badge variant="outline" className="flex-shrink-0 gap-1 border-accent text-accent">
+                        <Minus className="h-3 w-3" />
+                        {item.quantity_purchased}/{item.quantity_desired}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Quantity & Buy */}
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-xs text-muted-foreground">
+                      {item.quantity_desired > 1 && `${t('products.quantity')}: ${item.quantity_desired}`}
+                    </span>
+
+                    {!isPurchased && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleBuyGift(item)}
+                        className="gap-1 text-xs"
+                      >
+                        <ShoppingBag className="h-3 w-3" />
+                        {t('list.buyGift')}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Cart CTA */}
+      <div className="mt-8 text-center">
+        <Button variant="outline" onClick={() => clearAccess()} className="mr-3">
+          {t('list.exitList')}
+        </Button>
+        <Button onClick={() => navigate('/cistella')} className="gap-2">
+          <ShoppingBag className="h-4 w-4" />
+          {t('list.viewCart')}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default BirthListViewPage;
