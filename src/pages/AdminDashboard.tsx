@@ -34,6 +34,7 @@ const AdminDashboard: React.FC = () => {
         <Route path="productes" element={<AdminProductList />} />
         <Route path="productes/nou" element={<AdminProductForm />} />
         <Route path="productes/:id" element={<AdminProductForm />} />
+        <Route path="atributs" element={<AdminVariantTypes />} />
         <Route path="categories" element={<AdminPlaceholder titleKey="categories" />} />
         <Route path="marques" element={<AdminPlaceholder titleKey="brands" />} />
         <Route path="comandes" element={<AdminPlaceholder titleKey="orders" />} />

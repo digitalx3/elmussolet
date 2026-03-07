@@ -52,7 +52,7 @@ const AdminProductForm: React.FC = () => {
         stock_quantity: product.stock_quantity,
         stock_status: product.stock_status,
         is_active: product.is_active,
-        has_variants: product.has_variants,
+        has_variants: product.has_variants ?? false,
         weight_grams: product.weight_grams,
         category_id: product.category_id,
         brand_id: product.brand_id,
