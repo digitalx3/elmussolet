@@ -280,14 +280,11 @@ const AdminProductForm: React.FC = () => {
           </div>
           <div>
             <Label>Estat d'estoc</Label>
-            <Select value={form.stock_status} onValueChange={v => updateField('stock_status', v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="in_stock">{t('products.inStock')}</SelectItem>
-                <SelectItem value="on_order">{t('products.onOrder')}</SelectItem>
-                <SelectItem value="out_of_stock">{t('products.outOfStock')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.stock_status} onChange={e => updateField('stock_status', e.target.value)}>
+              <option value="in_stock">{t('products.inStock')}</option>
+              <option value="on_order">{t('products.onOrder')}</option>
+              <option value="out_of_stock">{t('products.outOfStock')}</option>
+            </select>
           </div>
           <div className="flex items-center gap-3 sm:col-span-2">
             <Switch checked={form.is_active} onCheckedChange={v => updateField('is_active', v)} />
