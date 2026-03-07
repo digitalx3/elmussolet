@@ -36,6 +36,7 @@ const App = () => (
                   <Route path="/cataleg" element={<PublicLayout><CatalogPage /></PublicLayout>} />
                   <Route path="/cataleg/:categorySlug" element={<PublicLayout><CatalogPage /></PublicLayout>} />
                   <Route path="/llista-naixement" element={<PublicLayout><BirthListAccessPage /></PublicLayout>} />
+                  <Route path="/producte/:slug" element={<PublicLayout><ProductDetailPage /></PublicLayout>} />
                   <Route path="/cistella" element={<PublicLayout><CartPage /></PublicLayout>} />
                   <Route path="/login" element={<PublicLayout><LoginPage /></PublicLayout>} />
                   <Route path="/registre" element={<PublicLayout><RegisterPage /></PublicLayout>} />
