@@ -350,14 +350,11 @@ const AdminProductForm: React.FC = () => {
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
                     <Label className="text-xs">Tipus</Label>
-                    <Select value={v.variant_type_id || undefined} onValueChange={val => updateVariant(i, 'variant_type_id', val)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {variantTypes.map((vt: any) => (
-                          <SelectItem key={vt.id} value={vt.id}>{vt.slug}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={v.variant_type_id} onChange={e => updateVariant(i, 'variant_type_id', e.target.value)}>
+                      {variantTypes.map((vt: any) => (
+                        <option key={vt.id} value={vt.id}>{vt.slug}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <Label className="text-xs">Valor</Label>
