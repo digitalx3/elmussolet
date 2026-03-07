@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { compareSync } from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,11 +47,8 @@ serve(async (req) => {
       );
     }
 
-    // Compare password - using simple hash comparison
-    // The password_hash stores a bcrypt-compatible hash, but for simplicity
-    // we'll use the Deno crypto API
-    const { default: bcrypt } = await import("https://deno.land/x/bcrypt@v0.4.1/mod.ts");
-    const valid = await bcrypt.compare(password, list.password_hash);
+    // Compare password using bcrypt sync (Workers not available in edge functions)
+    const valid = compareSync(password, list.password_hash);
 
     if (!valid) {
       return new Response(

@@ -38,7 +38,10 @@ const BirthListAccessPage: React.FC = () => {
         listCode: data.listCode,
         token: data.token,
         babyName: data.babyName,
-        owners: data.owners,
+        owners: (data.owners || []).map((o: any) => ({
+          firstName: o.first_name,
+          lastName: o.last_name,
+        })),
         expectedDate: data.expectedDate,
       });
 
