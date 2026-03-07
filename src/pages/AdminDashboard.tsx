@@ -1,13 +1,48 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Routes, Route } from 'react-router-dom';
+import AdminLayout from '@/components/admin/AdminLayout';
+import AdminProductList from '@/pages/admin/AdminProductList';
+import AdminProductForm from '@/pages/admin/AdminProductForm';
 
-const AdminDashboard: React.FC = () => {
+const AdminOverview: React.FC = () => {
   const { t } = useTranslation();
   return (
-    <div className="container py-8">
-      <h1 className="font-display text-3xl font-bold mb-6">{t('admin.dashboard')}</h1>
+    <div>
+      <h1 className="font-display text-2xl font-bold mb-4">{t('admin.dashboard')}</h1>
+      <p className="text-muted-foreground">Pròximament: estadístiques i resum.</p>
+    </div>
+  );
+};
+
+const AdminPlaceholder: React.FC<{ titleKey: string }> = ({ titleKey }) => {
+  const { t } = useTranslation();
+  return (
+    <div>
+      <h1 className="font-display text-2xl font-bold mb-4">{t(`admin.${titleKey}`)}</h1>
       <p className="text-muted-foreground">Pròximament...</p>
     </div>
+  );
+};
+
+const AdminDashboard: React.FC = () => {
+  return (
+    <AdminLayout>
+      <Routes>
+        <Route index element={<AdminOverview />} />
+        <Route path="productes" element={<AdminProductList />} />
+        <Route path="productes/nou" element={<AdminProductForm />} />
+        <Route path="productes/:id" element={<AdminProductForm />} />
+        <Route path="categories" element={<AdminPlaceholder titleKey="categories" />} />
+        <Route path="marques" element={<AdminPlaceholder titleKey="brands" />} />
+        <Route path="comandes" element={<AdminPlaceholder titleKey="orders" />} />
+        <Route path="llistes" element={<AdminPlaceholder titleKey="lists" />} />
+        <Route path="plantilles" element={<AdminPlaceholder titleKey="templates" />} />
+        <Route path="usuaris" element={<AdminPlaceholder titleKey="users" />} />
+        <Route path="enviaments" element={<AdminPlaceholder titleKey="shipping" />} />
+        <Route path="configuracio" element={<AdminPlaceholder titleKey="settings" />} />
+      </Routes>
+    </AdminLayout>
   );
 };
 
