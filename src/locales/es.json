@@ -140,7 +140,14 @@
     "priorityLow": "Baja",
     "addProducts": "Añadir productos",
     "emptyList": "Tu lista está vacía",
-    "emptyListDesc": "¡Explora el catálogo y añade productos!"
+    "emptyListDesc": "¡Explora el catálogo y añade productos!",
+    "listFor": "Lista para",
+    "itemsPurchased": "regalos comprados",
+    "searchProducts": "Buscar productos en la lista...",
+    "giftAdded": "¡Regalo añadido a la cesta!",
+    "exitList": "Salir de la lista",
+    "viewCart": "Ver cesta",
+    "listNotActive": "Esta lista no está activa"
   },
   "account": {
     "title": "Mi cuenta",
