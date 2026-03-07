@@ -52,7 +52,7 @@ const AdminProductForm: React.FC = () => {
         stock_quantity: product.stock_quantity,
         stock_status: product.stock_status,
         is_active: product.is_active,
-        has_variants: product.has_variants,
+        has_variants: product.has_variants ?? false,
         weight_grams: product.weight_grams,
         category_id: product.category_id,
         brand_id: product.brand_id,
@@ -351,9 +351,11 @@ const AdminProductForm: React.FC = () => {
                   <div>
                     <Label className="text-xs">Tipus</Label>
                     <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={v.variant_type_id} onChange={e => updateVariant(i, 'variant_type_id', e.target.value)}>
-                      {variantTypes.map((vt: any) => (
-                        <option key={vt.id} value={vt.id}>{vt.slug}</option>
-                      ))}
+                      <option value="">— Selecciona —</option>
+                      {variantTypes.map((vt: any) => {
+                        const name = vt.variant_type_translations?.find((t: any) => t.language === 'ca')?.name || vt.slug;
+                        return <option key={vt.id} value={vt.id}>{name}</option>;
+                      })}
                     </select>
                   </div>
                   <div>
