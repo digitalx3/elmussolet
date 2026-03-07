@@ -268,13 +268,10 @@ const AdminProductForm: React.FC = () => {
           </div>
           <div>
             <Label>Marca</Label>
-            <Select value={form.brand_id || 'none'} onValueChange={v => updateField('brand_id', v === 'none' ? null : v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">— Cap —</SelectItem>
-                {brands.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.brand_id || ''} onChange={e => updateField('brand_id', e.target.value || null)}>
+              <option value="">— Cap —</option>
+              {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
           </div>
           <div>
             <Label>Estoc</Label>
