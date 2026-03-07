@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,11 +11,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const { password } = await req.json();
-  const { default: bcrypt } = await import("https://deno.land/x/bcrypt@v0.4.1/mod.ts");
-  const hash = await bcrypt.hash(password);
-
-  return new Response(JSON.stringify({ hash }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  try {
+    const { password } = await req.json();
+    const hash = await bcrypt.hash(password);
+    return new Response(JSON.stringify({ hash }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: String(e) }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 });
