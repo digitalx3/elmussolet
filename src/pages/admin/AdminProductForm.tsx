@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -261,23 +261,17 @@ const AdminProductForm: React.FC = () => {
           </div>
           <div>
             <Label>Categoria</Label>
-            <Select value={form.category_id || 'none'} onValueChange={v => updateField('category_id', v === 'none' ? null : v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">— Cap —</SelectItem>
-                {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.category_id || ''} onChange={e => updateField('category_id', e.target.value || null)}>
+              <option value="">— Cap —</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
           </div>
           <div>
             <Label>Marca</Label>
-            <Select value={form.brand_id || 'none'} onValueChange={v => updateField('brand_id', v === 'none' ? null : v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">— Cap —</SelectItem>
-                {brands.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.brand_id || ''} onChange={e => updateField('brand_id', e.target.value || null)}>
+              <option value="">— Cap —</option>
+              {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
           </div>
           <div>
             <Label>Estoc</Label>
@@ -286,14 +280,11 @@ const AdminProductForm: React.FC = () => {
           </div>
           <div>
             <Label>Estat d'estoc</Label>
-            <Select value={form.stock_status} onValueChange={v => updateField('stock_status', v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="in_stock">{t('products.inStock')}</SelectItem>
-                <SelectItem value="on_order">{t('products.onOrder')}</SelectItem>
-                <SelectItem value="out_of_stock">{t('products.outOfStock')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.stock_status} onChange={e => updateField('stock_status', e.target.value)}>
+              <option value="in_stock">{t('products.inStock')}</option>
+              <option value="on_order">{t('products.onOrder')}</option>
+              <option value="out_of_stock">{t('products.outOfStock')}</option>
+            </select>
           </div>
           <div className="flex items-center gap-3 sm:col-span-2">
             <Switch checked={form.is_active} onCheckedChange={v => updateField('is_active', v)} />
@@ -359,14 +350,11 @@ const AdminProductForm: React.FC = () => {
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
                     <Label className="text-xs">Tipus</Label>
-                    <Select value={v.variant_type_id} onValueChange={val => updateVariant(i, 'variant_type_id', val)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {variantTypes.map((vt: any) => (
-                          <SelectItem key={vt.id} value={vt.id}>{vt.slug}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={v.variant_type_id} onChange={e => updateVariant(i, 'variant_type_id', e.target.value)}>
+                      {variantTypes.map((vt: any) => (
+                        <option key={vt.id} value={vt.id}>{vt.slug}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <Label className="text-xs">Valor</Label>
