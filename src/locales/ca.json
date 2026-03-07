@@ -187,7 +187,22 @@
     "monthRevenue": "Ingressos del mes",
     "salesChart": "Vendes (últims 30 dies)",
     "recentOrders": "Últimes comandes",
-    "criticalStock": "Estoc crític"
+    "criticalStock": "Estoc crític",
+    "newList": "Nova llista",
+    "editList": "Editar llista",
+    "listInfo": "Informació de la llista",
+    "owners": "Propietaris",
+    "listProducts": "Productes de la llista",
+    "searchLists": "Cercar llistes...",
+    "searchProductToAdd": "Cercar producte per afegir...",
+    "leaveBlank": "deixar buit per no canviar",
+    "notes": "Notes",
+    "statusDraft": "Esborrany",
+    "statusActive": "Activa",
+    "statusClosed": "Tancada",
+    "statusArchived": "Arxivada",
+    "deleteList": "Eliminar llista",
+    "deleteListConfirm": "Segur que vols eliminar aquesta llista? Aquesta acció no es pot desfer."
   },
   "common": {
     "save": "Guardar",
