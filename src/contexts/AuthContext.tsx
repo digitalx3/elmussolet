@@ -36,12 +36,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles' as any)
-      .select('*')
-      .eq('id', userId)
-      .single();
-    setProfile(data as unknown as Profile | null);
+    try {
+      const { data } = await supabase
+        .from('profiles' as any)
+        .select('*')
+        .eq('id', userId)
+        .single();
+      setProfile(data as unknown as Profile | null);
+    } catch (e) {
+      console.error('Failed to fetch profile:', e);
+      setProfile(null);
+    }
   };
 
   useEffect(() => {
