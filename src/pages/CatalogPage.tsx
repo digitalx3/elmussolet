@@ -104,7 +104,7 @@ const CatalogPage: React.FC = () => {
           </h1>
           {data && (
             <p className="text-sm text-muted-foreground mt-1">
-              {data.total} {data.total === 1 ? 'producte' : 'productes'}
+              {t('products.productCount', { count: data.total })}
             </p>
           )}
         </div>

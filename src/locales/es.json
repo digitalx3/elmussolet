@@ -72,7 +72,9 @@
     "related": "Productos relacionados",
     "share": "Compartir",
     "noResults": "No se han encontrado productos",
-    "noResultsDesc": "Prueba a cambiar los filtros o la búsqueda."
+    "noResultsDesc": "Prueba a cambiar los filtros o la búsqueda.",
+    "productCount_one": "{{count}} producto",
+    "productCount_other": "{{count}} productos"
   },
   "cart": {
     "title": "Cesta",
