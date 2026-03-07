@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, Link } from 'react-router-dom';
 import {
   Package, LayoutDashboard, Tags, Bookmark, ListChecks,
-  FileText, ShoppingCart, Users, Truck, Settings, ArrowLeft
+  FileText, ShoppingCart, Users, Truck, Settings, ArrowLeft, SlidersHorizontal
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel,
