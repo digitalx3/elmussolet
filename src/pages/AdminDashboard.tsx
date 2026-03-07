@@ -5,6 +5,8 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import AdminProductList from '@/pages/admin/AdminProductList';
 import AdminProductForm from '@/pages/admin/AdminProductForm';
 import AdminVariantTypes from '@/pages/admin/AdminVariantTypes';
+import AdminBirthListList from '@/pages/admin/AdminBirthListList';
+import AdminBirthListForm from '@/pages/admin/AdminBirthListForm';
 
 const AdminOverview: React.FC = () => {
   const { t } = useTranslation();
@@ -35,10 +37,12 @@ const AdminDashboard: React.FC = () => {
         <Route path="productes/nou" element={<AdminProductForm />} />
         <Route path="productes/:id" element={<AdminProductForm />} />
         <Route path="atributs" element={<AdminVariantTypes />} />
+        <Route path="llistes" element={<AdminBirthListList />} />
+        <Route path="llistes/nova" element={<AdminBirthListForm />} />
+        <Route path="llistes/:id" element={<AdminBirthListForm />} />
         <Route path="categories" element={<AdminPlaceholder titleKey="categories" />} />
         <Route path="marques" element={<AdminPlaceholder titleKey="brands" />} />
         <Route path="comandes" element={<AdminPlaceholder titleKey="orders" />} />
-        <Route path="llistes" element={<AdminPlaceholder titleKey="lists" />} />
         <Route path="plantilles" element={<AdminPlaceholder titleKey="templates" />} />
         <Route path="usuaris" element={<AdminPlaceholder titleKey="users" />} />
         <Route path="enviaments" element={<AdminPlaceholder titleKey="shipping" />} />
