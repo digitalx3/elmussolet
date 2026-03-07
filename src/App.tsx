@@ -11,6 +11,7 @@ import PublicLayout from "@/components/layout/PublicLayout";
 import HomePage from "@/pages/HomePage";
 import CatalogPage from "@/pages/CatalogPage";
 import BirthListAccessPage from "@/pages/BirthListAccessPage";
+import BirthListViewPage from "@/pages/BirthListViewPage";
 import CartPage from "@/pages/CartPage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
