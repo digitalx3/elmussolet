@@ -140,7 +140,14 @@
     "priorityLow": "Baixa",
     "addProducts": "Afegir productes",
     "emptyList": "La teva llista està buida",
-    "emptyListDesc": "Explora el catàleg i afegeix productes!"
+    "emptyListDesc": "Explora el catàleg i afegeix productes!",
+    "listFor": "Llista per a",
+    "itemsPurchased": "regals comprats",
+    "searchProducts": "Cercar productes a la llista...",
+    "giftAdded": "Regal afegit a la cistella!",
+    "exitList": "Sortir de la llista",
+    "viewCart": "Veure cistella",
+    "listNotActive": "Aquesta llista no està activa"
   },
   "account": {
     "title": "El meu compte",
