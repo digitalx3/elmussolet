@@ -4,6 +4,7 @@ import { Routes, Route } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AdminProductList from '@/pages/admin/AdminProductList';
 import AdminProductForm from '@/pages/admin/AdminProductForm';
+import AdminVariantTypes from '@/pages/admin/AdminVariantTypes';
 
 const AdminOverview: React.FC = () => {
   const { t } = useTranslation();
