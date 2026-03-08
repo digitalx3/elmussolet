@@ -55,12 +55,6 @@ const CheckoutPage: React.FC = () => {
   const subtotal = standardTotal + listTotal;
   const isEmpty = standardItems.length === 0 && listItems.length === 0;
 
-  const allItems = [...standardItems, ...listItems];
-  const postalCode = form.watch('postalCode') ?? '';
-  const shipping = useShippingCost(postalCode, allItems, deliveryMethod);
-  const shippingCost = shipping.cost ?? 0;
-  const grandTotal = subtotal + shippingCost;
-
   const form = useForm<ShippingForm>({
     resolver: zodResolver(shippingSchema),
     defaultValues: {
@@ -75,6 +69,11 @@ const CheckoutPage: React.FC = () => {
   });
 
   const shippingData = form.watch();
+  const allItems = [...standardItems, ...listItems];
+  const postalCode = shippingData.postalCode ?? '';
+  const shipping = useShippingCost(postalCode, allItems, deliveryMethod);
+  const shippingCost = shipping.cost ?? 0;
+  const grandTotal = subtotal + shippingCost;
 
   // Require login
   if (!user) {
