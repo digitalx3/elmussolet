@@ -7,6 +7,7 @@ import AdminProductForm from '@/pages/admin/AdminProductForm';
 import AdminVariantTypes from '@/pages/admin/AdminVariantTypes';
 import AdminBirthListList from '@/pages/admin/AdminBirthListList';
 import AdminBirthListForm from '@/pages/admin/AdminBirthListForm';
+import AdminShipping from '@/pages/admin/AdminShipping';
 
 const AdminOverview: React.FC = () => {
   const { t } = useTranslation();
