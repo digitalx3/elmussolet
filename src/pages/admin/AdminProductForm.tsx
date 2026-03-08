@@ -37,7 +37,7 @@ const AdminProductForm: React.FC = () => {
   const [form, setForm] = useState<ProductFormData>({
     slug: '', sku: '', base_price: 0, stock_quantity: 0, stock_status: 'in_stock',
     is_active: true, has_variants: false, weight_grams: 0,
-    category_id: null, brand_id: null,
+    category_id: null, brand_id: null, tax_rate_id: null,
     translations: { ca: { ...emptyTranslation }, es: { ...emptyTranslation } },
     images: [],
     variants: [],
