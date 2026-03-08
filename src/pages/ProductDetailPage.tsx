@@ -213,7 +213,7 @@ const ProductDetailPage: React.FC = () => {
                   >
                     {v.value}
                     {v.priceOverride && v.priceOverride !== product.basePrice && (
-                      <span className="ml-1 text-xs">({formatPrice(v.priceOverride)})</span>
+                      <span className="ml-1 text-xs">({formatPrice(v.priceOverride * (1 + taxPct / 100))})</span>
                     )}
                   </button>
                 ))}
