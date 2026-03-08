@@ -11,6 +11,7 @@ import AdminShipping from '@/pages/admin/AdminShipping';
 import AdminTaxRates from '@/pages/admin/AdminTaxRates';
 import AdminCategories from '@/pages/admin/AdminCategories';
 import AdminBrands from '@/pages/admin/AdminBrands';
+import AdminOrders from '@/pages/admin/AdminOrders';
 
 const AdminOverview: React.FC = () => {
   const { t } = useTranslation();
