@@ -115,7 +115,9 @@
     "orderConfirmed": "¡Pedido confirmado!",
     "orderNumber": "Número de pedido",
     "backToStore": "Volver a la tienda",
-    "noShippingZone": "No se puede enviar a este código postal"
+    "noShippingZone": "No se puede enviar a este código postal",
+    "freeShipping": "¡Envío gratuito!",
+    "freeShippingHint": "Envío gratuito para pedidos superiores a {{amount}} €"
   },
   "list": {
     "title": "Listas de Nacimiento",

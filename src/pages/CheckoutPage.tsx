@@ -71,7 +71,7 @@ const CheckoutPage: React.FC = () => {
   const shippingData = form.watch();
   const allItems = [...standardItems, ...listItems];
   const postalCode = shippingData.postalCode ?? '';
-  const shipping = useShippingCost(postalCode, allItems, deliveryMethod);
+  const shipping = useShippingCost(postalCode, allItems, deliveryMethod, subtotal);
   const shippingCost = shipping.cost ?? 0;
 
   // Calculate tax breakdown by rate across all items
@@ -321,16 +321,26 @@ const CheckoutPage: React.FC = () => {
             )}
 
             {/* Shipping cost preview */}
-            {deliveryMethod === 'shipping' && postalCode.length >= 5 && (
-              <div className="mt-4 p-3 rounded-lg bg-muted/50 text-sm">
-                {shipping.cost !== null ? (
+            {deliveryMethod === 'shipping' && (
+              <div className="mt-4 p-3 rounded-lg bg-muted/50 text-sm space-y-1">
+                {shipping.isFreeShipping ? (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">{t('cart.shipping')}</span>
+                    <span className="font-semibold text-green-700">{t('checkout.freeShipping')} 🎉</span>
+                  </div>
+                ) : shipping.cost !== null ? (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t('cart.shipping')} {shipping.zoneName && <span className="text-xs">({shipping.zoneName})</span>}</span>
                     <span className="font-semibold text-foreground">{shipping.cost.toFixed(2)} €</span>
                   </div>
-                ) : shipping.error === 'no_zone' ? (
+                ) : shipping.error === 'no_zone' && postalCode.length >= 5 ? (
                   <p className="text-destructive">{t('checkout.noShippingZone')}</p>
                 ) : null}
+                {shipping.freeShippingThreshold > 0 && !shipping.isFreeShipping && (
+                  <p className="text-xs text-muted-foreground">
+                    {t('checkout.freeShippingHint', { amount: shipping.freeShippingThreshold.toFixed(2) })}
+                  </p>
+                )}
               </div>
             )}
 

@@ -15,6 +15,8 @@ interface ShippingResult {
   zoneName: string | null;
   loading: boolean;
   error: string | null;
+  freeShippingThreshold: number;
+  isFreeShipping: boolean;
 }
 
 /**
@@ -36,38 +38,40 @@ function matchesPostalCode(postalCode: string, pattern: string): boolean {
 export function useShippingCost(
   postalCode: string,
   items: CartItem[],
-  deliveryMethod: 'pickup' | 'shipping'
+  deliveryMethod: 'pickup' | 'shipping',
+  subtotal: number = 0
 ): ShippingResult {
   const [zones, setZones] = useState<ShippingZoneWithRates[]>([]);
   const [productWeights, setProductWeights] = useState<Record<string, number>>({});
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch zones + rates once
+  // Fetch zones + rates + free shipping threshold once
   useEffect(() => {
-    const fetch = async () => {
-      const { data: zoneData } = await supabase
-        .from('shipping_zones')
-        .select('id, name, postal_code_pattern, sort_order')
-        .eq('is_active', true)
-        .order('sort_order');
+    const fetchData = async () => {
+      const [zonesRes, ratesRes, settingRes] = await Promise.all([
+        supabase.from('shipping_zones').select('id, name, postal_code_pattern, sort_order').eq('is_active', true).order('sort_order'),
+        supabase.from('shipping_rates').select('zone_id, min_weight_grams, max_weight_grams, price'),
+        supabase.from('site_settings').select('value').eq('key', 'free_shipping_threshold').single(),
+      ]);
 
-      if (!zoneData) return;
+      if (zonesRes.data) {
+        const mapped: ShippingZoneWithRates[] = zonesRes.data.map(z => ({
+          ...z,
+          sort_order: z.sort_order ?? 0,
+          rates: (ratesRes.data ?? [])
+            .filter(r => r.zone_id === z.id)
+            .sort((a, b) => a.min_weight_grams - b.min_weight_grams),
+        }));
+        setZones(mapped);
+      }
 
-      const { data: rateData } = await supabase
-        .from('shipping_rates')
-        .select('zone_id, min_weight_grams, max_weight_grams, price');
-
-      const mapped: ShippingZoneWithRates[] = zoneData.map(z => ({
-        ...z,
-        sort_order: z.sort_order ?? 0,
-        rates: (rateData ?? [])
-          .filter(r => r.zone_id === z.id)
-          .sort((a, b) => a.min_weight_grams - b.min_weight_grams),
-      }));
-      setZones(mapped);
+      if (settingRes.data?.value) {
+        setFreeShippingThreshold(parseFloat(settingRes.data.value) || 0);
+      }
     };
-    fetch();
+    fetchData();
   }, []);
 
   // Fetch product weights when items change
@@ -85,12 +89,19 @@ export function useShippingCost(
       });
   }, [items.map(i => i.productId).join(',')]);
 
+  const base = { freeShippingThreshold };
+  const qualifiesFree = freeShippingThreshold > 0 && subtotal >= freeShippingThreshold;
+
   if (deliveryMethod === 'pickup') {
-    return { cost: 0, zoneName: null, loading: false, error: null };
+    return { ...base, cost: 0, zoneName: null, loading: false, error: null, isFreeShipping: false };
+  }
+
+  if (qualifiesFree) {
+    return { ...base, cost: 0, zoneName: null, loading: false, error: null, isFreeShipping: true };
   }
 
   if (!postalCode || postalCode.length < 4 || zones.length === 0) {
-    return { cost: null, zoneName: null, loading: false, error: null };
+    return { ...base, cost: null, zoneName: null, loading: false, error: null, isFreeShipping: false };
   }
 
   // Calculate total weight
@@ -101,21 +112,22 @@ export function useShippingCost(
   // Find matching zone (sorted by sort_order, first match wins)
   const zone = zones.find(z => matchesPostalCode(postalCode, z.postal_code_pattern));
   if (!zone) {
-    return { cost: null, zoneName: null, loading: false, error: 'no_zone' };
+    return { ...base, cost: null, zoneName: null, loading: false, error: 'no_zone', isFreeShipping: false };
   }
 
   // Find rate bracket
   const rate = zone.rates.find(r => totalWeight >= r.min_weight_grams && totalWeight <= r.max_weight_grams);
   if (!rate) {
-    // Use highest bracket if weight exceeds all
     const highest = zone.rates[zone.rates.length - 1];
     return {
+      ...base,
       cost: highest ? highest.price : null,
       zoneName: zone.name,
       loading: false,
       error: highest ? null : 'no_rate',
+      isFreeShipping: false,
     };
   }
 
-  return { cost: rate.price, zoneName: zone.name, loading: false, error: null };
+  return { ...base, cost: rate.price, zoneName: zone.name, loading: false, error: null, isFreeShipping: false };
 }
