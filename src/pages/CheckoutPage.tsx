@@ -119,9 +119,7 @@ const CheckoutPage: React.FC = () => {
     setSubmitting(true);
 
     try {
-      const allItems = [...standardItems, ...listItems];
-      const subtotal = grandTotal;
-      const shippingCost = deliveryMethod === 'pickup' ? 0 : 0; // TODO: calculate from shipping_rates
+      const orderItems = [...standardItems, ...listItems];
       const total = subtotal + shippingCost;
       const num = generateOrderNumber();
 
