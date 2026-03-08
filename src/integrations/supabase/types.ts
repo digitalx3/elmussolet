@@ -794,9 +794,11 @@ export type Database = {
           address_line1: string | null
           address_line2: string | null
           city: string | null
+          company_name: string | null
           created_at: string
           full_name: string | null
           id: string
+          nif: string | null
           phone: string | null
           postal_code: string | null
           preferred_language: string
@@ -808,9 +810,11 @@ export type Database = {
           address_line1?: string | null
           address_line2?: string | null
           city?: string | null
+          company_name?: string | null
           created_at?: string
           full_name?: string | null
           id: string
+          nif?: string | null
           phone?: string | null
           postal_code?: string | null
           preferred_language?: string
@@ -822,9 +826,11 @@ export type Database = {
           address_line1?: string | null
           address_line2?: string | null
           city?: string | null
+          company_name?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          nif?: string | null
           phone?: string | null
           postal_code?: string | null
           preferred_language?: string

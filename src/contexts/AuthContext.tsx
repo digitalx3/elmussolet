@@ -13,6 +13,8 @@ interface Profile {
   province: string | null;
   preferred_language: string;
   role: string;
+  nif: string | null;
+  company_name: string | null;
 }
 
 interface AuthContextType {

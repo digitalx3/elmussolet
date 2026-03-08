@@ -86,6 +86,8 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
     postal_code: '',
     province: '',
     preferred_language: 'ca',
+    nif: '',
+    company_name: '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -100,6 +102,8 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
         postal_code: profile.postal_code || '',
         province: profile.province || '',
         preferred_language: profile.preferred_language || 'ca',
+        nif: profile.nif || '',
+        company_name: profile.company_name || '',
       });
     }
   }, [profile]);
@@ -122,28 +126,53 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
   return (
     <Card>
       <CardHeader><CardTitle>{t('account.profile')}</CardTitle></CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div><Label>{t('auth.fullName')}</Label><Input value={form.full_name} onChange={e => update('full_name', e.target.value)} /></div>
-          <div><Label>{t('account.phone')}</Label><Input value={form.phone} onChange={e => update('phone', e.target.value)} /></div>
-        </div>
-        <div><Label>{t('account.addressLine1')}</Label><Input value={form.address_line1} onChange={e => update('address_line1', e.target.value)} /></div>
-        <div><Label>{t('account.addressLine2')}</Label><Input value={form.address_line2} onChange={e => update('address_line2', e.target.value)} /></div>
-        <div className="grid sm:grid-cols-3 gap-4">
-          <div><Label>{t('account.city')}</Label><Input value={form.city} onChange={e => update('city', e.target.value)} /></div>
-          <div><Label>{t('account.postalCode')}</Label><Input value={form.postal_code} onChange={e => update('postal_code', e.target.value)} /></div>
-          <div><Label>{t('account.province')}</Label><Input value={form.province} onChange={e => update('province', e.target.value)} /></div>
-        </div>
+      <CardContent className="space-y-6">
+        {/* Personal Data */}
         <div>
-          <Label>{t('account.language')}</Label>
-          <Select value={form.preferred_language} onValueChange={v => update('preferred_language', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ca">Català</SelectItem>
-              <SelectItem value="es">Castellano</SelectItem>
-            </SelectContent>
-          </Select>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">{t('account.personalData')}</h3>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div><Label>{t('auth.fullName')}</Label><Input value={form.full_name} onChange={e => update('full_name', e.target.value)} /></div>
+            <div><Label>{t('account.phone')}</Label><Input value={form.phone} onChange={e => update('phone', e.target.value)} /></div>
+          </div>
+          <div className="mt-4">
+            <Label>{t('account.language')}</Label>
+            <Select value={form.preferred_language} onValueChange={v => update('preferred_language', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ca">Català</SelectItem>
+                <SelectItem value="es">Castellano</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+
+        {/* Fiscal Data */}
+        <div>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">{t('account.fiscalData')}</h3>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <Label>{t('account.nif')}</Label>
+              <Input value={form.nif} onChange={e => update('nif', e.target.value)} placeholder="12345678A" />
+              <p className="text-xs text-muted-foreground mt-1">{t('account.nifHelp')}</p>
+            </div>
+            <div><Label>{t('account.companyName')}</Label><Input value={form.company_name} onChange={e => update('company_name', e.target.value)} placeholder={t('account.companyName')} /></div>
+          </div>
+        </div>
+
+        {/* Billing / Shipping Address */}
+        <div>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">{t('account.billingAddress')}</h3>
+          <div className="space-y-4">
+            <div><Label>{t('account.addressLine1')}</Label><Input value={form.address_line1} onChange={e => update('address_line1', e.target.value)} /></div>
+            <div><Label>{t('account.addressLine2')}</Label><Input value={form.address_line2} onChange={e => update('address_line2', e.target.value)} /></div>
+            <div className="grid sm:grid-cols-3 gap-4">
+              <div><Label>{t('account.city')}</Label><Input value={form.city} onChange={e => update('city', e.target.value)} /></div>
+              <div><Label>{t('account.postalCode')}</Label><Input value={form.postal_code} onChange={e => update('postal_code', e.target.value)} /></div>
+              <div><Label>{t('account.province')}</Label><Input value={form.province} onChange={e => update('province', e.target.value)} /></div>
+            </div>
+          </div>
+        </div>
+
         <Button onClick={handleSave} disabled={saving}>{saving ? t('common.loading') : t('account.save')}</Button>
       </CardContent>
     </Card>
