@@ -110,6 +110,7 @@ export function useSaveProduct() {
         weight_grams: data.weight_grams,
         category_id: data.category_id || null,
         brand_id: data.brand_id || null,
+        tax_rate_id: data.tax_rate_id || null,
       };
 
       let productId = id;
