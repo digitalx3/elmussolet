@@ -169,7 +169,19 @@
     "noOrders": "No tens cap comanda",
     "orderDate": "Data",
     "orderStatus": "Estat",
-    "orderTotal": "Total"
+    "orderTotal": "Total",
+    "orderProduct": "Producte",
+    "orderQty": "Qty",
+    "orderBasePrice": "Base imposable",
+    "orderTaxPct": "IVA %",
+    "orderTaxAmt": "Import IVA",
+    "taxBase": "Base",
+    "status_pending": "Pendent",
+    "status_confirmed": "Confirmada",
+    "status_processing": "En procés",
+    "status_shipped": "Enviada",
+    "status_delivered": "Lliurada",
+    "status_cancelled": "Cancel·lada"
   },
   "admin": {
     "dashboard": "Dashboard",

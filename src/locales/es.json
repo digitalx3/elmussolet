@@ -169,7 +169,19 @@
     "noOrders": "No tienes ningún pedido",
     "orderDate": "Fecha",
     "orderStatus": "Estado",
-    "orderTotal": "Total"
+    "orderTotal": "Total",
+    "orderProduct": "Producto",
+    "orderQty": "Qty",
+    "orderBasePrice": "Base imponible",
+    "orderTaxPct": "IVA %",
+    "orderTaxAmt": "Importe IVA",
+    "taxBase": "Base",
+    "status_pending": "Pendiente",
+    "status_confirmed": "Confirmado",
+    "status_processing": "En proceso",
+    "status_shipped": "Enviado",
+    "status_delivered": "Entregado",
+    "status_cancelled": "Cancelado"
   },
   "admin": {
     "dashboard": "Dashboard",
