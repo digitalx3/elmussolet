@@ -290,7 +290,22 @@
     "emailVars": "Variables disponibles",
     "emailSubject": "Assumpte",
     "emailBody": "Cos",
-    "color": "Color"
+    "color": "Color",
+    "addTemplate": "Nova plantilla",
+    "editTemplate": "Editar plantilla",
+    "addTemplateDesc": "Crea una nova plantilla de llista amb traduccions.",
+    "editTemplateDesc": "Modifica les dades de la plantilla.",
+    "templateName": "Nom de la plantilla",
+    "templateProducts": "Productes de la plantilla",
+    "templateProductsDesc": "Gestiona els productes inclosos en aquesta plantilla.",
+    "templateProductsCount": "productes",
+    "templateProduct": "Producte",
+    "noTemplates": "No hi ha plantilles.",
+    "noTemplateItems": "Cap producte a la plantilla. Cerca i afegeix-ne!",
+    "templateCreated": "Plantilla creada correctament.",
+    "templateUpdated": "Plantilla actualitzada correctament.",
+    "templateDeleted": "Plantilla eliminada correctament.",
+    "confirmDeleteTemplateDesc": "Segur que vols eliminar aquesta plantilla? S'eliminaran els productes i traduccions associades."
   },
   "common": {
     "save": "Guardar",
