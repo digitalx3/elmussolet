@@ -175,6 +175,7 @@ export function useProductBySlug(slug: string | undefined) {
           product_translations(name, short_description, description, language),
           product_images(id, image_url, alt_text, is_primary, sort_order),
           brands(name, logo_url),
+          tax_rates(id, name, percentage),
           product_variants(
             id, value, price_override, stock_quantity, sku_suffix, is_active,
             variant_types(slug, variant_type_translations(name, language))
