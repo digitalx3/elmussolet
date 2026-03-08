@@ -86,6 +86,8 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
     postal_code: '',
     province: '',
     preferred_language: 'ca',
+    nif: '',
+    company_name: '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -100,6 +102,8 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
         postal_code: profile.postal_code || '',
         province: profile.province || '',
         preferred_language: profile.preferred_language || 'ca',
+        nif: profile.nif || '',
+        company_name: profile.company_name || '',
       });
     }
   }, [profile]);
