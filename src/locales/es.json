@@ -107,7 +107,8 @@
     "termsAccept": "Acepto los términos y condiciones",
     "orderConfirmed": "¡Pedido confirmado!",
     "orderNumber": "Número de pedido",
-    "backToStore": "Volver a la tienda"
+    "backToStore": "Volver a la tienda",
+    "noShippingZone": "No se puede enviar a este código postal"
   },
   "list": {
     "title": "Listas de Nacimiento",
