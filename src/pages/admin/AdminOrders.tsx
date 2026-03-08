@@ -1,0 +1,404 @@
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
+import { Search, Eye, X } from 'lucide-react';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { ca, es } from 'date-fns/locale';
+
+const ORDER_STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'] as const;
+type OrderStatus = typeof ORDER_STATUSES[number];
+
+const PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'refunded'] as const;
+type PaymentStatus = typeof PAYMENT_STATUSES[number];
+
+const statusColors: Record<OrderStatus, string> = {
+  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  confirmed: 'bg-blue-100 text-blue-800 border-blue-200',
+  processing: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  shipped: 'bg-purple-100 text-purple-800 border-purple-200',
+  delivered: 'bg-green-100 text-green-800 border-green-200',
+  cancelled: 'bg-red-100 text-red-800 border-red-200',
+};
+
+const paymentColors: Record<PaymentStatus, string> = {
+  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  paid: 'bg-green-100 text-green-800 border-green-200',
+  failed: 'bg-red-100 text-red-800 border-red-200',
+  refunded: 'bg-gray-100 text-gray-800 border-gray-200',
+};
+
+interface OrderRow {
+  id: string;
+  order_number: string;
+  status: string | null;
+  payment_status: string | null;
+  payment_method: string | null;
+  delivery_method: string | null;
+  subtotal: number;
+  tax_amount: number | null;
+  shipping_cost: number | null;
+  total: number;
+  notes: string | null;
+  shipping_address: any;
+  created_at: string;
+  user_id: string;
+  profiles: { full_name: string | null; email?: string } | null;
+}
+
+interface OrderItemRow {
+  id: string;
+  quantity: number;
+  unit_price: number;
+  base_unit_price: number | null;
+  tax_percentage: number | null;
+  tax_amount: number | null;
+  total_price: number;
+  product_id: string;
+  variant_id: string | null;
+  product_translations: { name: string; language: string }[];
+  product_variants: { value: string; variant_type_id: string } | null;
+}
+
+const AdminOrders: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const qc = useQueryClient();
+  const lang = i18n.language;
+  const dateFnsLocale = lang === 'ca' ? ca : es;
+
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
+
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ['admin-orders', statusFilter],
+    queryFn: async () => {
+      let query = supabase
+        .from('orders')
+        .select('*, profiles(full_name)')
+        .order('created_at', { ascending: false });
+
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as OrderRow[];
+    },
+  });
+
+  const { data: orderItems = [] } = useQuery({
+    queryKey: ['admin-order-items', selectedOrder?.id],
+    enabled: !!selectedOrder,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('order_items')
+        .select('*, product_translations(name, language), product_variants(value, variant_type_id)')
+        .eq('order_id', selectedOrder!.id);
+      if (error) throw error;
+      return data as OrderItemRow[];
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase.from('orders').update({ status }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast.success(t('admin.orderStatusUpdated'));
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const updatePaymentStatusMutation = useMutation({
+    mutationFn: async ({ id, payment_status }: { id: string; payment_status: string }) => {
+      const { error } = await supabase.from('orders').update({ payment_status }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast.success(t('admin.paymentStatusUpdated'));
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const filteredOrders = orders.filter(o => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return (
+      o.order_number.toLowerCase().includes(s) ||
+      o.profiles?.full_name?.toLowerCase().includes(s)
+    );
+  });
+
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('ca-ES', { style: 'currency', currency: 'EUR' }).format(price);
+
+  const getProductName = (item: OrderItemRow) => {
+    const tr = item.product_translations?.find(t => t.language === lang)
+      || item.product_translations?.[0];
+    let name = tr?.name || '—';
+    if (item.product_variants?.value) {
+      name += ` (${item.product_variants.value})`;
+    }
+    return name;
+  };
+
+  const getStatusLabel = (status: string) => t(`account.status_${status}`);
+
+  const getPaymentLabel = (status: string) => t(`admin.payment_${status}`);
+
+  const getDeliveryLabel = (method: string | null) => {
+    if (!method) return '—';
+    return t(`admin.delivery_${method}`, method);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="font-display text-2xl font-bold">{t('admin.orders')}</h1>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t('admin.searchOrders')}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('common.all')}</SelectItem>
+            {ORDER_STATUSES.map(s => (
+              <SelectItem key={s} value={s}>{getStatusLabel(s)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {isLoading ? (
+        <p className="text-muted-foreground">{t('common.loading')}</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t('admin.orderNumber')}</TableHead>
+              <TableHead>{t('admin.customer')}</TableHead>
+              <TableHead>{t('admin.orderDate')}</TableHead>
+              <TableHead>{t('admin.status')}</TableHead>
+              <TableHead>{t('admin.paymentStatus')}</TableHead>
+              <TableHead className="text-right">{t('admin.orderTotal')}</TableHead>
+              <TableHead className="text-right">{t('admin.actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredOrders.map(order => (
+              <TableRow key={order.id}>
+                <TableCell className="font-mono text-sm font-medium">{order.order_number}</TableCell>
+                <TableCell>{order.profiles?.full_name || '—'}</TableCell>
+                <TableCell className="text-sm">
+                  {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: dateFnsLocale })}
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={order.status || 'pending'}
+                    onValueChange={status => updateStatusMutation.mutate({ id: order.id, status })}
+                  >
+                    <SelectTrigger className="w-[140px] h-8 text-xs">
+                      <Badge className={`text-xs border ${statusColors[(order.status || 'pending') as OrderStatus]}`}>
+                        {getStatusLabel(order.status || 'pending')}
+                      </Badge>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ORDER_STATUSES.map(s => (
+                        <SelectItem key={s} value={s}>{getStatusLabel(s)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={order.payment_status || 'pending'}
+                    onValueChange={payment_status => updatePaymentStatusMutation.mutate({ id: order.id, payment_status })}
+                  >
+                    <SelectTrigger className="w-[130px] h-8 text-xs">
+                      <Badge className={`text-xs border ${paymentColors[(order.payment_status || 'pending') as PaymentStatus]}`}>
+                        {getPaymentLabel(order.payment_status || 'pending')}
+                      </Badge>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAYMENT_STATUSES.map(s => (
+                        <SelectItem key={s} value={s}>{getPaymentLabel(s)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell className="text-right font-medium">{formatPrice(order.total)}</TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="icon" onClick={() => setSelectedOrder(order)}>
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            {filteredOrders.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  {t('admin.noOrders')}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      )}
+
+      {/* Order Detail Dialog */}
+      <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          {selectedOrder && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{t('admin.orderDetail')} — {selectedOrder.order_number}</DialogTitle>
+                <DialogDescription>
+                  {format(new Date(selectedOrder.created_at), "d MMMM yyyy, HH:mm", { locale: dateFnsLocale })}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t('admin.customer')}</p>
+                  <p className="text-sm font-medium">{selectedOrder.profiles?.full_name || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t('admin.deliveryMethod')}</p>
+                  <p className="text-sm font-medium">{getDeliveryLabel(selectedOrder.delivery_method)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t('admin.paymentMethod')}</p>
+                  <p className="text-sm font-medium">{selectedOrder.payment_method || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t('admin.status')}</p>
+                  <Badge className={`text-xs border ${statusColors[(selectedOrder.status || 'pending') as OrderStatus]}`}>
+                    {getStatusLabel(selectedOrder.status || 'pending')}
+                  </Badge>
+                </div>
+              </div>
+
+              {selectedOrder.shipping_address && (
+                <>
+                  <Separator />
+                  <div className="py-3">
+                    <p className="text-xs text-muted-foreground mb-1">{t('admin.shippingAddress')}</p>
+                    <p className="text-sm">
+                      {selectedOrder.shipping_address.address_line1}
+                      {selectedOrder.shipping_address.address_line2 && `, ${selectedOrder.shipping_address.address_line2}`}
+                      <br />
+                      {selectedOrder.shipping_address.postal_code} {selectedOrder.shipping_address.city}, {selectedOrder.shipping_address.province}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {selectedOrder.notes && (
+                <>
+                  <Separator />
+                  <div className="py-3">
+                    <p className="text-xs text-muted-foreground mb-1">{t('admin.notes')}</p>
+                    <p className="text-sm">{selectedOrder.notes}</p>
+                  </div>
+                </>
+              )}
+
+              <Separator />
+
+              {/* Order Items */}
+              <div className="py-3">
+                <p className="text-sm font-semibold mb-3">{t('admin.orderItems')}</p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('account.orderProduct')}</TableHead>
+                      <TableHead className="text-center">{t('account.orderQty')}</TableHead>
+                      <TableHead className="text-right">{t('account.orderBasePrice')}</TableHead>
+                      <TableHead className="text-right">{t('account.orderTaxPct')}</TableHead>
+                      <TableHead className="text-right">{t('account.orderTaxAmt')}</TableHead>
+                      <TableHead className="text-right">{t('admin.orderTotal')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {orderItems.map(item => (
+                      <TableRow key={item.id}>
+                        <TableCell className="text-sm">{getProductName(item)}</TableCell>
+                        <TableCell className="text-center">{item.quantity}</TableCell>
+                        <TableCell className="text-right text-sm">{formatPrice(item.base_unit_price ?? item.unit_price)}</TableCell>
+                        <TableCell className="text-right text-sm">{item.tax_percentage ?? 0}%</TableCell>
+                        <TableCell className="text-right text-sm">{formatPrice(item.tax_amount ?? 0)}</TableCell>
+                        <TableCell className="text-right text-sm font-medium">{formatPrice(item.total_price)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <Separator />
+
+              {/* Totals */}
+              <div className="space-y-1 py-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t('cart.subtotal')}</span>
+                  <span>{formatPrice(selectedOrder.subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">IVA</span>
+                  <span>{formatPrice(selectedOrder.tax_amount ?? 0)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t('cart.shipping')}</span>
+                  <span>{formatPrice(selectedOrder.shipping_cost ?? 0)}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between text-base font-bold pt-1">
+                  <span>{t('cart.total')}</span>
+                  <span>{formatPrice(selectedOrder.total)}</span>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default AdminOrders;
