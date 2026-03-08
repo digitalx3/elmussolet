@@ -73,6 +73,12 @@ const CheckoutPage: React.FC = () => {
   const postalCode = shippingData.postalCode ?? '';
   const shipping = useShippingCost(postalCode, allItems, deliveryMethod);
   const shippingCost = shipping.cost ?? 0;
+
+  // Tax is already included in item prices (priceWithTax stored in cart)
+  // We estimate the tax portion for display purposes assuming a default rate
+  // The actual tax was baked in when products were added to cart
+  const shippingTaxRate = 21; // Shipping IVA in Spain
+  const shippingTaxAmount = shippingCost * (shippingTaxRate / (100 + shippingTaxRate));
   const grandTotal = subtotal + shippingCost;
 
   // Require login
