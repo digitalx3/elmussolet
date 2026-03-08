@@ -19,6 +19,9 @@ export interface TranslatedProduct {
   slug: string;
   sku: string;
   basePrice: number;
+  priceWithTax: number;
+  taxPercentage: number;
+  taxName: string | null;
   stockQuantity: number;
   stockStatus: string;
   isActive: boolean;
