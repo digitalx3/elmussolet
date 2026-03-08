@@ -43,7 +43,7 @@ const AdminDashboard: React.FC = () => {
         <Route path="llistes" element={<AdminBirthListList />} />
         <Route path="llistes/nova" element={<AdminBirthListForm />} />
         <Route path="llistes/:id" element={<AdminBirthListForm />} />
-        <Route path="categories" element={<AdminPlaceholder titleKey="categories" />} />
+        <Route path="categories" element={<AdminCategories />} />
         <Route path="marques" element={<AdminPlaceholder titleKey="brands" />} />
         <Route path="comandes" element={<AdminPlaceholder titleKey="orders" />} />
         <Route path="plantilles" element={<AdminPlaceholder titleKey="templates" />} />
