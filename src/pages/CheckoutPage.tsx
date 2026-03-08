@@ -139,7 +139,7 @@ const CheckoutPage: React.FC = () => {
           order_number: num,
           user_id: user.id,
           list_id: activeListId,
-          delivery_method: deliveryMethod,
+          delivery_method: deliveryMethod === 'shipping' ? 'shipping_buyer' : 'pickup',
           payment_method: paymentMethod === 'bizum' ? 'bizum' : 'bank_transfer',
           shipping_address: shippingAddress,
           shipping_cost: shippingCost,
