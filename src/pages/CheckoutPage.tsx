@@ -175,15 +175,23 @@ const CheckoutPage: React.FC = () => {
       if (orderError) throw orderError;
 
       // Create order items
-      const dbItems = orderItems.map(item => ({
-        order_id: order.id,
-        product_id: item.productId,
-        variant_id: item.variantId || null,
-        quantity: item.quantity,
-        unit_price: item.price,
-        total_price: item.price * item.quantity,
-        list_item_id: null, // could be mapped if needed
-      }));
+      const dbItems = orderItems.map(item => {
+        const baseUnit = item.basePriceNoTax ?? item.price;
+        const taxPct = item.taxPercentage ?? 0;
+        const lineTax = baseUnit * (taxPct / 100) * item.quantity;
+        return {
+          order_id: order.id,
+          product_id: item.productId,
+          variant_id: item.variantId || null,
+          quantity: item.quantity,
+          unit_price: item.price,
+          total_price: item.price * item.quantity,
+          base_unit_price: baseUnit,
+          tax_percentage: taxPct,
+          tax_amount: lineTax,
+          list_item_id: null,
+        };
+      });
 
       const { error: itemsError } = await supabase
         .from('order_items')
