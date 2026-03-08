@@ -27,7 +27,14 @@
     "recoverSent": "T'hem enviat un correu per recuperar la contrasenya.",
     "passwordMinLength": "La contrasenya ha de tenir mínim 8 caràcters",
     "passwordMismatch": "Les contrasenyes no coincideixen",
-    "emailInvalid": "Introdueix un email vàlid"
+    "emailInvalid": "Introdueix un email vàlid",
+    "recoverDesc": "Introdueix el teu correu i t'enviarem un enllaç per restablir la contrasenya.",
+    "sendResetLink": "Enviar enllaç",
+    "newPassword": "Nova contrasenya",
+    "updatePassword": "Actualitzar contrasenya",
+    "passwordUpdated": "Contrasenya actualitzada!",
+    "redirecting": "Redirigint...",
+    "invalidResetLink": "Enllaç no vàlid o caducat. Torna a sol·licitar la recuperació."
   },
   "home": {
     "heroTitle": "La teva botiga de puericultura de confiança",

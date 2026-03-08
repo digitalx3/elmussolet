@@ -19,6 +19,8 @@ import RegisterPage from "@/pages/RegisterPage";
 import AccountDashboard from "@/pages/AccountDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 import ProductDetailPage from "@/pages/ProductDetailPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +46,8 @@ const App = () => (
                   <Route path="/checkout" element={<PublicLayout><CheckoutPage /></PublicLayout>} />
                   <Route path="/login" element={<PublicLayout><LoginPage /></PublicLayout>} />
                   <Route path="/registre" element={<PublicLayout><RegisterPage /></PublicLayout>} />
+                  <Route path="/recuperar-contrasenya" element={<PublicLayout><ForgotPasswordPage /></PublicLayout>} />
+                  <Route path="/reset-password" element={<PublicLayout><ResetPasswordPage /></PublicLayout>} />
 
                   {/* Protected routes */}
                   <Route path="/el-meu-compte" element={<PublicLayout><ProtectedRoute><AccountDashboard /></ProtectedRoute></PublicLayout>} />

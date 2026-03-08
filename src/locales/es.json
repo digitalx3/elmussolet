@@ -27,7 +27,14 @@
     "recoverSent": "Te hemos enviado un correo para recuperar la contraseña.",
     "passwordMinLength": "La contraseña debe tener mínimo 8 caracteres",
     "passwordMismatch": "Las contraseñas no coinciden",
-    "emailInvalid": "Introduce un email válido"
+    "emailInvalid": "Introduce un email válido",
+    "recoverDesc": "Introduce tu correo y te enviaremos un enlace para restablecer la contraseña.",
+    "sendResetLink": "Enviar enlace",
+    "newPassword": "Nueva contraseña",
+    "updatePassword": "Actualizar contraseña",
+    "passwordUpdated": "¡Contraseña actualizada!",
+    "redirecting": "Redirigiendo...",
+    "invalidResetLink": "Enlace no válido o caducado. Vuelve a solicitar la recuperación."
   },
   "home": {
     "heroTitle": "Tu tienda de puericultura de confianza",
