@@ -1,0 +1,4 @@
+
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS nif text DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS company_name text DEFAULT NULL;
