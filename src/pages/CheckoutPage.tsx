@@ -74,9 +74,23 @@ const CheckoutPage: React.FC = () => {
   const shipping = useShippingCost(postalCode, allItems, deliveryMethod);
   const shippingCost = shipping.cost ?? 0;
 
-  // Tax is already included in item prices (priceWithTax stored in cart)
-  // We estimate the tax portion for display purposes assuming a default rate
-  // The actual tax was baked in when products were added to cart
+  // Calculate tax breakdown by rate across all items
+  const allItems = [...standardItems, ...listItems];
+  const taxBreakdown = useMemo(() => {
+    const map = new Map<number, { base: number; tax: number }>();
+    allItems.forEach(item => {
+      const pct = item.taxPercentage ?? 0;
+      const baseTotal = (item.basePriceNoTax ?? item.price) * item.quantity;
+      const taxTotal = baseTotal * (pct / 100);
+      const existing = map.get(pct) ?? { base: 0, tax: 0 };
+      map.set(pct, { base: existing.base + baseTotal, tax: existing.tax + taxTotal });
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([pct, vals]) => ({ percentage: pct, base: vals.base, tax: vals.tax }));
+  }, [standardItems, listItems]);
+
+  const totalProductTax = taxBreakdown.reduce((s, t) => s + t.tax, 0);
   const shippingTaxRate = 21; // Shipping IVA in Spain
   const shippingTaxAmount = shippingCost * (shippingTaxRate / (100 + shippingTaxRate));
   const grandTotal = subtotal + shippingCost;
