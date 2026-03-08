@@ -68,7 +68,7 @@ interface OrderItemRow {
   total_price: number;
   product_id: string;
   variant_id: string | null;
-  product_translations: { name: string; language: string }[];
+  products: { product_translations: { name: string; language: string }[] } | null;
   product_variants: { value: string; variant_type_id: string } | null;
 }
 
