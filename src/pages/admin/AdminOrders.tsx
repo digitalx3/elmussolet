@@ -150,8 +150,8 @@ const AdminOrders: React.FC = () => {
     new Intl.NumberFormat('ca-ES', { style: 'currency', currency: 'EUR' }).format(price);
 
   const getProductName = (item: OrderItemRow) => {
-    const tr = item.product_translations?.find(t => t.language === lang)
-      || item.product_translations?.[0];
+    const translations = item.products?.product_translations || [];
+    const tr = translations.find(t => t.language === lang) || translations[0];
     let name = tr?.name || '—';
     if (item.product_variants?.value) {
       name += ` (${item.product_variants.value})`;
