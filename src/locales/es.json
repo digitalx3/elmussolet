@@ -305,7 +305,18 @@
     "templateCreated": "Plantilla creada correctamente.",
     "templateUpdated": "Plantilla actualizada correctamente.",
     "templateDeleted": "Plantilla eliminada correctamente.",
-    "confirmDeleteTemplateDesc": "¿Seguro que quieres eliminar esta plantilla? Se eliminarán los productos y traducciones asociadas."
+    "confirmDeleteTemplateDesc": "¿Seguro que quieres eliminar esta plantilla? Se eliminarán los productos y traducciones asociadas.",
+    "searchUsers": "Buscar por nombre, teléfono o ciudad...",
+    "userName": "Nombre",
+    "userCity": "Ciudad",
+    "userPhone": "Teléfono",
+    "userRole": "Rol",
+    "userRegistered": "Registro",
+    "usersTotal": "usuarios",
+    "noUsers": "No se han encontrado usuarios.",
+    "userRoleUpdated": "Rol de usuario actualizado.",
+    "userDetailDesc": "Detalle del usuario con pedidos y listas asociadas.",
+    "noUserLists": "Este usuario no tiene listas."
   },
   "common": {
     "save": "Guardar",

@@ -305,7 +305,18 @@
     "templateCreated": "Plantilla creada correctament.",
     "templateUpdated": "Plantilla actualitzada correctament.",
     "templateDeleted": "Plantilla eliminada correctament.",
-    "confirmDeleteTemplateDesc": "Segur que vols eliminar aquesta plantilla? S'eliminaran els productes i traduccions associades."
+    "confirmDeleteTemplateDesc": "Segur que vols eliminar aquesta plantilla? S'eliminaran els productes i traduccions associades.",
+    "searchUsers": "Cercar per nom, telèfon o ciutat...",
+    "userName": "Nom",
+    "userCity": "Ciutat",
+    "userPhone": "Telèfon",
+    "userRole": "Rol",
+    "userRegistered": "Registre",
+    "usersTotal": "usuaris",
+    "noUsers": "No s'han trobat usuaris.",
+    "userRoleUpdated": "Rol d'usuari actualitzat.",
+    "userDetailDesc": "Detall de l'usuari amb comandes i llistes associades.",
+    "noUserLists": "Aquest usuari no té llistes."
   },
   "common": {
     "save": "Guardar",
