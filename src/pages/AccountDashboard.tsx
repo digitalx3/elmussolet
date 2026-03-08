@@ -162,7 +162,7 @@ function OrdersTab() {
     (async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_items(*, product_translations:product_translations(name, language))')
+        .select('*, order_items(*, products(product_translations(name, language)))')
         .order('created_at', { ascending: false });
       if (!error && data) {
         setOrders(data as unknown as Order[]);
@@ -238,9 +238,9 @@ function OrdersTab() {
                     </TableHeader>
                     <TableBody>
                       {order.order_items.map(item => {
-                        const tr = (item as any).product_translations;
-                        const name = Array.isArray(tr)
-                          ? (tr.find((t: any) => t.language === lang)?.name || tr[0]?.name || item.product_id)
+                        const translations = (item as any).products?.product_translations;
+                        const name = Array.isArray(translations)
+                          ? (translations.find((t: any) => t.language === lang)?.name || translations[0]?.name || item.product_id)
                           : item.product_id;
                         return (
                           <TableRow key={item.id}>
