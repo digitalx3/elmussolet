@@ -69,7 +69,7 @@ const CheckoutPage: React.FC = () => {
   });
 
   const shippingData = form.watch();
-  const allItems = [...standardItems, ...listItems];
+  const allCartItems = [...standardItems, ...listItems];
   const postalCode = shippingData.postalCode ?? '';
   const shipping = useShippingCost(postalCode, allItems, deliveryMethod);
   const shippingCost = shipping.cost ?? 0;
