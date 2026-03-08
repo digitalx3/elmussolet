@@ -209,11 +209,18 @@ export function useProductBySlug(slug: string | undefined) {
           };
         });
 
+      const basePrice = Number(data.base_price);
+      const taxPct = (data as any).tax_rates?.percentage ?? 0;
+      const taxName = (data as any).tax_rates?.name ?? null;
+
       return {
         id: data.id,
         slug: data.slug,
         sku: data.sku,
-        basePrice: Number(data.base_price),
+        basePrice,
+        priceWithTax: basePrice * (1 + taxPct / 100),
+        taxPercentage: taxPct,
+        taxName,
         stockQuantity: data.stock_quantity ?? 0,
         stockStatus: data.stock_status ?? 'in_stock',
         hasVariants: data.has_variants ?? false,
