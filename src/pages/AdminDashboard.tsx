@@ -52,6 +52,7 @@ const AdminDashboard: React.FC = () => {
         <Route path="usuaris" element={<AdminPlaceholder titleKey="users" />} />
         <Route path="enviaments" element={<AdminShipping />} />
         <Route path="configuracio" element={<AdminTaxRates />} />
+        <Route path="configuracio/estats" element={<AdminOrderStatuses />} />
       </Routes>
     </AdminLayout>
   );
