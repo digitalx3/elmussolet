@@ -369,8 +369,19 @@ const CheckoutPage: React.FC = () => {
                 <span>{deliveryMethod === 'pickup' ? '0.00 €' : shipping.cost !== null ? `${shipping.cost.toFixed(2)} €` : '—'}</span>
               </div>
               <Separator className="my-3" />
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>IVA inclòs en productes</span>
+                <span>inclòs</span>
+              </div>
+              {deliveryMethod === 'shipping' && shippingCost > 0 && (
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>IVA enviament ({shippingTaxRate}%)</span>
+                  <span>{shippingTaxAmount.toFixed(2)} €</span>
+                </div>
+              )}
+              <Separator className="my-3" />
               <div className="flex justify-between text-lg font-bold">
-                <span>{t('cart.total')}</span>
+                <span>{t('cart.total')} <span className="text-xs font-normal text-muted-foreground">(IVA inclòs)</span></span>
                 <span className="text-primary">{grandTotal.toFixed(2)} €</span>
               </div>
             </div>
