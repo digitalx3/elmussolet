@@ -106,10 +106,10 @@ const AdminOrders: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('order_items')
-        .select('*, product_translations(name, language), product_variants(value, variant_type_id)')
+        .select('*, products(product_translations(name, language)), product_variants(value, variant_type_id)')
         .eq('order_id', selectedOrder!.id);
       if (error) throw error;
-      return data as OrderItemRow[];
+      return data as unknown as OrderItemRow[];
     },
   });
 
