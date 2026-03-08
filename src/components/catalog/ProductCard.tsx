@@ -28,6 +28,8 @@ const stockBadge = (status: string, t: (k: string) => string) => {
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('ca-ES', { style: 'currency', currency: 'EUR' }).format(price);
 
+const formatPriceWithTax = (product: TranslatedProduct) => formatPrice(product.priceWithTax);
+
 const ProductCard: React.FC<Props> = ({ product, view }) => {
   const { t } = useTranslation();
   const { addStandardItem } = useCart();
