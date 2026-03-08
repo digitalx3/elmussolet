@@ -31,6 +31,7 @@ const AdminProductForm: React.FC = () => {
   const { data: categories = [] } = useCategories();
   const { data: brands = [] } = useBrands();
   const { data: variantTypes = [] } = useVariantTypes();
+  const { data: taxRates = [] } = useActiveTaxRates();
   const saveProduct = useSaveProduct();
 
   const [form, setForm] = useState<ProductFormData>({
