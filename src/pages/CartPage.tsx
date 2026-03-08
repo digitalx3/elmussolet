@@ -126,7 +126,7 @@ const CartPage: React.FC = () => {
           <Separator className="my-3" />
 
           <div className="flex justify-between text-lg font-bold">
-            <span>{t('cart.total')}</span>
+            <span>{t('cart.total')} <span className="text-xs font-normal text-muted-foreground">(IVA inclòs)</span></span>
             <span className="text-primary">{grandTotal.toFixed(2)} €</span>
           </div>
 
