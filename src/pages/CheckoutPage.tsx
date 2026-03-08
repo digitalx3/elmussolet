@@ -359,8 +359,8 @@ const CheckoutPage: React.FC = () => {
                 </div>
               )}
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-muted-foreground">{t('cart.shipping')}</span>
-                <span>{deliveryMethod === 'pickup' ? '0.00 €' : t('cart.shippingCalc')}</span>
+                <span className="text-muted-foreground">{t('cart.shipping')} {shipping.zoneName && <span className="text-xs">({shipping.zoneName})</span>}</span>
+                <span>{deliveryMethod === 'pickup' ? '0.00 €' : shipping.cost !== null ? `${shipping.cost.toFixed(2)} €` : '—'}</span>
               </div>
               <Separator className="my-3" />
               <div className="flex justify-between text-lg font-bold">
