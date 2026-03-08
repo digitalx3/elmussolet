@@ -71,7 +71,7 @@ const CheckoutPage: React.FC = () => {
   const shippingData = form.watch();
   const allItems = [...standardItems, ...listItems];
   const postalCode = shippingData.postalCode ?? '';
-  const shipping = useShippingCost(postalCode, allItems, deliveryMethod);
+  const shipping = useShippingCost(postalCode, allItems, deliveryMethod, subtotal);
   const shippingCost = shipping.cost ?? 0;
 
   // Calculate tax breakdown by rate across all items
