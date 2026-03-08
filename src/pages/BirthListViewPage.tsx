@@ -65,7 +65,8 @@ const BirthListViewPage: React.FC = () => {
           product:products(
             id, slug, base_price, has_variants,
             product_translations(language, name, short_description),
-            product_images(image_url, is_primary, alt_text)
+            product_images(image_url, is_primary, alt_text),
+            tax_rates(percentage)
           )
         `)
         .eq('list_id', listId!)
