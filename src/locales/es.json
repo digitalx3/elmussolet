@@ -102,6 +102,7 @@
     "stripe": "Tarjeta (Stripe)",
     "redsys": "Tarjeta (Redsys)",
     "bankTransfer": "Transferencia bancaria",
+    "bizum": "Bizum",
     "confirmOrder": "Confirmar y pagar",
     "termsAccept": "Acepto los términos y condiciones",
     "orderConfirmed": "¡Pedido confirmado!",

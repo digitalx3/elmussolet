@@ -13,6 +13,7 @@ import CatalogPage from "@/pages/CatalogPage";
 import BirthListAccessPage from "@/pages/BirthListAccessPage";
 import BirthListViewPage from "@/pages/BirthListViewPage";
 import CartPage from "@/pages/CartPage";
+import CheckoutPage from "@/pages/CheckoutPage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import AccountDashboard from "@/pages/AccountDashboard";
@@ -40,6 +41,7 @@ const App = () => (
                   <Route path="/llista-naixement/:listCode" element={<PublicLayout><BirthListViewPage /></PublicLayout>} />
                   <Route path="/producte/:slug" element={<PublicLayout><ProductDetailPage /></PublicLayout>} />
                   <Route path="/cistella" element={<PublicLayout><CartPage /></PublicLayout>} />
+                  <Route path="/checkout" element={<PublicLayout><CheckoutPage /></PublicLayout>} />
                   <Route path="/login" element={<PublicLayout><LoginPage /></PublicLayout>} />
                   <Route path="/registre" element={<PublicLayout><RegisterPage /></PublicLayout>} />
 

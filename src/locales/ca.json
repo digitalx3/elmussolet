@@ -102,6 +102,7 @@
     "stripe": "Targeta (Stripe)",
     "redsys": "Targeta (Redsys)",
     "bankTransfer": "Transferència bancària",
+    "bizum": "Bizum",
     "confirmOrder": "Confirmar i pagar",
     "termsAccept": "Accepto els termes i condicions",
     "orderConfirmed": "Comanda confirmada!",

@@ -137,8 +137,8 @@ const CartPage: React.FC = () => {
                 {t('cart.continueShopping')}
               </Link>
             </Button>
-            <Button className="flex-1" disabled>
-              {t('cart.checkout')}
+            <Button className="flex-1" asChild>
+              <Link to="/checkout">{t('cart.checkout')}</Link>
             </Button>
           </div>
         </div>
