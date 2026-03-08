@@ -8,6 +8,7 @@ import AdminVariantTypes from '@/pages/admin/AdminVariantTypes';
 import AdminBirthListList from '@/pages/admin/AdminBirthListList';
 import AdminBirthListForm from '@/pages/admin/AdminBirthListForm';
 import AdminShipping from '@/pages/admin/AdminShipping';
+import AdminTaxRates from '@/pages/admin/AdminTaxRates';
 
 const AdminOverview: React.FC = () => {
   const { t } = useTranslation();
@@ -47,7 +48,7 @@ const AdminDashboard: React.FC = () => {
         <Route path="plantilles" element={<AdminPlaceholder titleKey="templates" />} />
         <Route path="usuaris" element={<AdminPlaceholder titleKey="users" />} />
         <Route path="enviaments" element={<AdminShipping />} />
-        <Route path="configuracio" element={<AdminPlaceholder titleKey="settings" />} />
+        <Route path="configuracio" element={<AdminTaxRates />} />
       </Routes>
     </AdminLayout>
   );

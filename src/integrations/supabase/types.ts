@@ -444,6 +444,7 @@ export type Database = {
           shipping_cost: number | null
           status: string | null
           subtotal: number
+          tax_amount: number | null
           total: number
           updated_at: string
           user_id: string
@@ -462,6 +463,7 @@ export type Database = {
           shipping_cost?: number | null
           status?: string | null
           subtotal: number
+          tax_amount?: number | null
           total: number
           updated_at?: string
           user_id: string
@@ -480,6 +482,7 @@ export type Database = {
           shipping_cost?: number | null
           status?: string | null
           subtotal?: number
+          tax_amount?: number | null
           total?: number
           updated_at?: string
           user_id?: string
@@ -632,6 +635,7 @@ export type Database = {
           slug: string
           stock_quantity: number | null
           stock_status: string | null
+          tax_rate_id: string | null
           updated_at: string
           weight_grams: number | null
         }
@@ -647,6 +651,7 @@ export type Database = {
           slug: string
           stock_quantity?: number | null
           stock_status?: string | null
+          tax_rate_id?: string | null
           updated_at?: string
           weight_grams?: number | null
         }
@@ -662,6 +667,7 @@ export type Database = {
           slug?: string
           stock_quantity?: number | null
           stock_status?: string | null
+          tax_rate_id?: string | null
           updated_at?: string
           weight_grams?: number | null
         }
@@ -678,6 +684,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_tax_rate_id_fkey"
+            columns: ["tax_rate_id"]
+            isOneToOne: false
+            referencedRelation: "tax_rates"
             referencedColumns: ["id"]
           },
         ]
@@ -798,6 +811,39 @@ export type Database = {
           key?: string
           updated_at?: string
           value?: string
+        }
+        Relationships: []
+      }
+      tax_rates: {
+        Row: {
+          country_code: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          name: string
+          percentage: number
+          region: string | null
+        }
+        Insert: {
+          country_code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name: string
+          percentage?: number
+          region?: string | null
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name?: string
+          percentage?: number
+          region?: string | null
         }
         Relationships: []
       }

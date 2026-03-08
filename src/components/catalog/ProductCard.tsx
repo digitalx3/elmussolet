@@ -28,6 +28,8 @@ const stockBadge = (status: string, t: (k: string) => string) => {
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('ca-ES', { style: 'currency', currency: 'EUR' }).format(price);
 
+const formatPriceWithTax = (product: TranslatedProduct) => formatPrice(product.priceWithTax);
+
 const ProductCard: React.FC<Props> = ({ product, view }) => {
   const { t } = useTranslation();
   const { addStandardItem } = useCart();
@@ -40,7 +42,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
       productId: product.id,
       name: product.name,
       image: product.primaryImage ?? undefined,
-      price: product.basePrice,
+      price: product.priceWithTax,
       quantity: 1,
     });
   };
@@ -74,7 +76,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
           </div>
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-2">
-              <span className="font-display text-lg font-bold text-foreground">{formatPrice(product.basePrice)}</span>
+              <span className="font-display text-lg font-bold text-foreground">{formatPriceWithTax(product)}</span>
               {stockBadge(product.stockStatus, t)}
             </div>
             <Button
@@ -124,7 +126,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
           {product.name}
         </h3>
         <div className="mt-auto pt-2 flex items-center justify-between">
-          <span className="font-display text-base font-bold text-foreground">{formatPrice(product.basePrice)}</span>
+          <span className="font-display text-base font-bold text-foreground">{formatPriceWithTax(product)}</span>
           <Button
             size="icon"
             variant="ghost"

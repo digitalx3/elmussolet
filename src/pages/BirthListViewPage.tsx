@@ -65,7 +65,8 @@ const BirthListViewPage: React.FC = () => {
           product:products(
             id, slug, base_price, has_variants,
             product_translations(language, name, short_description),
-            product_images(image_url, is_primary, alt_text)
+            product_images(image_url, is_primary, alt_text),
+            tax_rates(percentage)
           )
         `)
         .eq('list_id', listId!)
@@ -109,8 +110,9 @@ const BirthListViewPage: React.FC = () => {
   };
 
   const getPrice = (item: ListItemWithProduct) => {
-    if (item.variant?.price_override != null) return item.variant.price_override;
-    return item.product.base_price;
+    const base = item.variant?.price_override != null ? item.variant.price_override : item.product.base_price;
+    const taxPct = (item.product as any).tax_rates?.percentage ?? 0;
+    return base * (1 + taxPct / 100);
   };
 
   const getStatus = (item: ListItemWithProduct) => {

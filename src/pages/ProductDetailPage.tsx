@@ -39,7 +39,9 @@ const ProductDetailPage: React.FC = () => {
   }, [product]);
 
   const selectedVariant = product?.variants.find(v => v.id === selectedVariantId);
-  const currentPrice = selectedVariant?.priceOverride ?? product?.basePrice ?? 0;
+  const basePrice = selectedVariant?.priceOverride ?? product?.basePrice ?? 0;
+  const taxPct = product?.taxPercentage ?? 0;
+  const currentPrice = basePrice * (1 + taxPct / 100);
   const currentStock = selectedVariant ? selectedVariant.stockQuantity : (product?.stockQuantity ?? 0);
 
   const handleAddToCart = () => {
@@ -171,6 +173,11 @@ const ProductDetailPage: React.FC = () => {
             <span className="font-display text-2xl font-bold text-primary">
               {formatPrice(currentPrice)}
             </span>
+            {product.taxName && (
+              <span className="text-xs text-muted-foreground">({product.taxName} {product.taxPercentage}% inclòs)</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
             {product.stockStatus === 'in_stock' && (
               <Badge variant="secondary" className="bg-sage text-sage-foreground">{t('products.inStock')}</Badge>
             )}
@@ -206,7 +213,7 @@ const ProductDetailPage: React.FC = () => {
                   >
                     {v.value}
                     {v.priceOverride && v.priceOverride !== product.basePrice && (
-                      <span className="ml-1 text-xs">({formatPrice(v.priceOverride)})</span>
+                      <span className="ml-1 text-xs">({formatPrice(v.priceOverride * (1 + taxPct / 100))})</span>
                     )}
                   </button>
                 ))}

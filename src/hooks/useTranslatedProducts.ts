@@ -19,6 +19,9 @@ export interface TranslatedProduct {
   slug: string;
   sku: string;
   basePrice: number;
+  priceWithTax: number;
+  taxPercentage: number;
+  taxName: string | null;
   stockQuantity: number;
   stockStatus: string;
   isActive: boolean;
@@ -51,7 +54,8 @@ export function useTranslatedProducts(filters: ProductFilters = {}) {
           *,
           product_translations!inner(name, short_description, description, language),
           product_images(image_url, is_primary, sort_order),
-          brands(name, logo_url)
+          brands(name, logo_url),
+          tax_rates(id, name, percentage)
         `)
         .eq('is_active', true)
         .eq('product_translations.language', lang);
@@ -102,11 +106,18 @@ export function useTranslatedProducts(filters: ProductFilters = {}) {
         const images = p.product_images || [];
         const primaryImg = images.find((i: any) => i.is_primary) || images.sort((a: any, b: any) => a.sort_order - b.sort_order)[0];
 
+        const basePrice = Number(p.base_price);
+        const taxPct = (p as any).tax_rates?.percentage ?? 0;
+        const taxName = (p as any).tax_rates?.name ?? null;
+
         return {
           id: p.id,
           slug: p.slug,
           sku: p.sku,
-          basePrice: Number(p.base_price),
+          basePrice,
+          priceWithTax: basePrice * (1 + taxPct / 100),
+          taxPercentage: taxPct,
+          taxName,
           stockQuantity: p.stock_quantity ?? 0,
           stockStatus: p.stock_status ?? 'in_stock',
           isActive: p.is_active,
@@ -164,6 +175,7 @@ export function useProductBySlug(slug: string | undefined) {
           product_translations(name, short_description, description, language),
           product_images(id, image_url, alt_text, is_primary, sort_order),
           brands(name, logo_url),
+          tax_rates(id, name, percentage),
           product_variants(
             id, value, price_override, stock_quantity, sku_suffix, is_active,
             variant_types(slug, variant_type_translations(name, language))
@@ -197,11 +209,18 @@ export function useProductBySlug(slug: string | undefined) {
           };
         });
 
+      const basePrice = Number(data.base_price);
+      const taxPct = (data as any).tax_rates?.percentage ?? 0;
+      const taxName = (data as any).tax_rates?.name ?? null;
+
       return {
         id: data.id,
         slug: data.slug,
         sku: data.sku,
-        basePrice: Number(data.base_price),
+        basePrice,
+        priceWithTax: basePrice * (1 + taxPct / 100),
+        taxPercentage: taxPct,
+        taxName,
         stockQuantity: data.stock_quantity ?? 0,
         stockStatus: data.stock_status ?? 'in_stock',
         hasVariants: data.has_variants ?? false,

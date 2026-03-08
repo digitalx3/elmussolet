@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAdminProduct, useSaveProduct, useVariantTypes, type ProductFormData } from '@/hooks/useAdminProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useBrands } from '@/hooks/useBrands';
+import { useActiveTaxRates, priceWithTax } from '@/hooks/useTaxRates';
 
 const emptyTranslation = { name: '', short_description: '', description: '' };
 
@@ -30,12 +31,13 @@ const AdminProductForm: React.FC = () => {
   const { data: categories = [] } = useCategories();
   const { data: brands = [] } = useBrands();
   const { data: variantTypes = [] } = useVariantTypes();
+  const { data: taxRates = [] } = useActiveTaxRates();
   const saveProduct = useSaveProduct();
 
   const [form, setForm] = useState<ProductFormData>({
     slug: '', sku: '', base_price: 0, stock_quantity: 0, stock_status: 'in_stock',
     is_active: true, has_variants: false, weight_grams: 0,
-    category_id: null, brand_id: null,
+    category_id: null, brand_id: null, tax_rate_id: null,
     translations: { ca: { ...emptyTranslation }, es: { ...emptyTranslation } },
     images: [],
     variants: [],
@@ -56,6 +58,7 @@ const AdminProductForm: React.FC = () => {
         weight_grams: product.weight_grams,
         category_id: product.category_id,
         brand_id: product.brand_id,
+        tax_rate_id: (product as any).tax_rate_id ?? null,
         translations: {
           ca: { name: ca?.name || '', short_description: ca?.short_description || '', description: ca?.description || '' },
           es: { name: es?.name || '', short_description: es?.short_description || '', description: es?.description || '' },
@@ -250,10 +253,29 @@ const AdminProductForm: React.FC = () => {
             <Input value={form.sku} onChange={e => updateField('sku', e.target.value)} />
           </div>
           <div>
-            <Label>Preu base (€) *</Label>
+            <Label>Preu base sense IVA (€) *</Label>
             <Input type="number" step="0.01" min="0" value={form.base_price}
               onChange={e => updateField('base_price', parseFloat(e.target.value) || 0)} />
           </div>
+          <div>
+            <Label>Tipus impositiu</Label>
+            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.tax_rate_id || ''} onChange={e => updateField('tax_rate_id', e.target.value || null)}>
+              <option value="">— Cap —</option>
+              {taxRates.map(tr => <option key={tr.id} value={tr.id}>{tr.name} ({tr.percentage}%)</option>)}
+            </select>
+          </div>
+          {(() => {
+            const selectedTax = taxRates.find(tr => tr.id === form.tax_rate_id);
+            const taxPct = selectedTax?.percentage ?? 0;
+            const pvp = priceWithTax(form.base_price, taxPct);
+            return (
+              <div className="sm:col-span-2 p-3 rounded-lg bg-muted/50 text-sm">
+                <span className="text-muted-foreground">PVP (IVA inclòs): </span>
+                <span className="font-bold text-foreground">{pvp.toFixed(2)} €</span>
+                {selectedTax && <span className="text-muted-foreground ml-2">({selectedTax.name} {selectedTax.percentage}%)</span>}
+              </div>
+            );
+          })()}
           <div>
             <Label>Pes (grams)</Label>
             <Input type="number" min="0" value={form.weight_grams}

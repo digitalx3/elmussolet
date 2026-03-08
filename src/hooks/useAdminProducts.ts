@@ -80,6 +80,7 @@ export interface ProductFormData {
   weight_grams: number;
   category_id: string | null;
   brand_id: string | null;
+  tax_rate_id: string | null;
   translations: {
     ca: { name: string; short_description: string; description: string };
     es: { name: string; short_description: string; description: string };
@@ -109,6 +110,7 @@ export function useSaveProduct() {
         weight_grams: data.weight_grams,
         category_id: data.category_id || null,
         brand_id: data.brand_id || null,
+        tax_rate_id: data.tax_rate_id || null,
       };
 
       let productId = id;

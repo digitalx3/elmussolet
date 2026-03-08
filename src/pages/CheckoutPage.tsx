@@ -73,6 +73,12 @@ const CheckoutPage: React.FC = () => {
   const postalCode = shippingData.postalCode ?? '';
   const shipping = useShippingCost(postalCode, allItems, deliveryMethod);
   const shippingCost = shipping.cost ?? 0;
+
+  // Tax is already included in item prices (priceWithTax stored in cart)
+  // We estimate the tax portion for display purposes assuming a default rate
+  // The actual tax was baked in when products were added to cart
+  const shippingTaxRate = 21; // Shipping IVA in Spain
+  const shippingTaxAmount = shippingCost * (shippingTaxRate / (100 + shippingTaxRate));
   const grandTotal = subtotal + shippingCost;
 
   // Require login
@@ -143,12 +149,13 @@ const CheckoutPage: React.FC = () => {
           payment_method: paymentMethod === 'bizum' ? 'bizum' : 'bank_transfer',
           shipping_address: shippingAddress,
           shipping_cost: shippingCost,
+          tax_amount: shippingTaxAmount,
           subtotal,
           total,
           notes: notes.trim() || null,
           status: 'pending',
           payment_status: 'pending',
-        })
+        } as any)
         .select('id')
         .single();
 
@@ -362,8 +369,19 @@ const CheckoutPage: React.FC = () => {
                 <span>{deliveryMethod === 'pickup' ? '0.00 €' : shipping.cost !== null ? `${shipping.cost.toFixed(2)} €` : '—'}</span>
               </div>
               <Separator className="my-3" />
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>IVA inclòs en productes</span>
+                <span>inclòs</span>
+              </div>
+              {deliveryMethod === 'shipping' && shippingCost > 0 && (
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>IVA enviament ({shippingTaxRate}%)</span>
+                  <span>{shippingTaxAmount.toFixed(2)} €</span>
+                </div>
+              )}
+              <Separator className="my-3" />
               <div className="flex justify-between text-lg font-bold">
-                <span>{t('cart.total')}</span>
+                <span>{t('cart.total')} <span className="text-xs font-normal text-muted-foreground">(IVA inclòs)</span></span>
                 <span className="text-primary">{grandTotal.toFixed(2)} €</span>
               </div>
             </div>
