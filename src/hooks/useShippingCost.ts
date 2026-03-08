@@ -38,10 +38,12 @@ function matchesPostalCode(postalCode: string, pattern: string): boolean {
 export function useShippingCost(
   postalCode: string,
   items: CartItem[],
-  deliveryMethod: 'pickup' | 'shipping'
+  deliveryMethod: 'pickup' | 'shipping',
+  subtotal: number = 0
 ): ShippingResult {
   const [zones, setZones] = useState<ShippingZoneWithRates[]>([]);
   const [productWeights, setProductWeights] = useState<Record<string, number>>({});
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
