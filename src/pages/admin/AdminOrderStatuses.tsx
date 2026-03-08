@@ -174,8 +174,18 @@ const AdminOrderStatuses: React.FC = () => {
     s.order_status_translations.find(t => t.language === lang)?.name || '—';
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6 max-w-4xl">
+      {/* Config sub-navigation */}
+      <div className="flex gap-2">
+        <Link to="/admin/configuracio">
+          <Button variant="outline" size="sm">Impostos</Button>
+        </Link>
+        <Link to="/admin/configuracio/estats">
+          <Button variant="secondary" size="sm">{t('admin.orderStatuses')}</Button>
+        </Link>
+      </div>
+
+      <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-bold">{t('admin.orderStatuses')}</h1>
         <Button onClick={openNew} size="sm">
           <Plus className="h-4 w-4 mr-1" /> {t('admin.addStatus')}
