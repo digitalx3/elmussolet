@@ -290,7 +290,22 @@
     "emailVars": "Variables disponibles",
     "emailSubject": "Asunto",
     "emailBody": "Cuerpo",
-    "color": "Color"
+    "color": "Color",
+    "addTemplate": "Nueva plantilla",
+    "editTemplate": "Editar plantilla",
+    "addTemplateDesc": "Crea una nueva plantilla de lista con traducciones.",
+    "editTemplateDesc": "Modifica los datos de la plantilla.",
+    "templateName": "Nombre de la plantilla",
+    "templateProducts": "Productos de la plantilla",
+    "templateProductsDesc": "Gestiona los productos incluidos en esta plantilla.",
+    "templateProductsCount": "productos",
+    "templateProduct": "Producto",
+    "noTemplates": "No hay plantillas.",
+    "noTemplateItems": "No hay productos en la plantilla. ¡Busca y añade!",
+    "templateCreated": "Plantilla creada correctamente.",
+    "templateUpdated": "Plantilla actualizada correctamente.",
+    "templateDeleted": "Plantilla eliminada correctamente.",
+    "confirmDeleteTemplateDesc": "¿Seguro que quieres eliminar esta plantilla? Se eliminarán los productos y traducciones asociadas."
   },
   "common": {
     "save": "Guardar",

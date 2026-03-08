@@ -14,6 +14,7 @@ import AdminCategories from '@/pages/admin/AdminCategories';
 import AdminBrands from '@/pages/admin/AdminBrands';
 import AdminOrders from '@/pages/admin/AdminOrders';
 import AdminOrderStatuses from '@/pages/admin/AdminOrderStatuses';
+import AdminTemplates from '@/pages/admin/AdminTemplates';
 
 const AdminPlaceholder: React.FC<{ titleKey: string }> = ({ titleKey }) => {
   const { t } = useTranslation();
@@ -40,7 +41,7 @@ const AdminDashboard: React.FC = () => {
         <Route path="categories" element={<AdminCategories />} />
         <Route path="marques" element={<AdminBrands />} />
         <Route path="comandes" element={<AdminOrders />} />
-        <Route path="plantilles" element={<AdminPlaceholder titleKey="templates" />} />
+        <Route path="plantilles" element={<AdminTemplates />} />
         <Route path="usuaris" element={<AdminPlaceholder titleKey="users" />} />
         <Route path="enviaments" element={<AdminShipping />} />
         <Route path="configuracio" element={<AdminTaxRates />} />
