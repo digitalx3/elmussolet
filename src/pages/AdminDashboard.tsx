@@ -14,15 +14,22 @@ import AdminBrands from '@/pages/admin/AdminBrands';
 import AdminOrders from '@/pages/admin/AdminOrders';
 import AdminOrderStatuses from '@/pages/admin/AdminOrderStatuses';
 
-const AdminOverview: React.FC = () => {
-  const { t } = useTranslation();
-  return (
-    <div>
-      <h1 className="font-display text-2xl font-bold mb-4">{t('admin.dashboard')}</h1>
-      <p className="text-muted-foreground">Pròximament: estadístiques i resum.</p>
-    </div>
-  );
-};
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { Routes, Route } from 'react-router-dom';
+import AdminLayout from '@/components/admin/AdminLayout';
+import AdminOverview from '@/components/admin/AdminOverview';
+import AdminProductList from '@/pages/admin/AdminProductList';
+import AdminProductForm from '@/pages/admin/AdminProductForm';
+import AdminVariantTypes from '@/pages/admin/AdminVariantTypes';
+import AdminBirthListList from '@/pages/admin/AdminBirthListList';
+import AdminBirthListForm from '@/pages/admin/AdminBirthListForm';
+import AdminShipping from '@/pages/admin/AdminShipping';
+import AdminTaxRates from '@/pages/admin/AdminTaxRates';
+import AdminCategories from '@/pages/admin/AdminCategories';
+import AdminBrands from '@/pages/admin/AdminBrands';
+import AdminOrders from '@/pages/admin/AdminOrders';
+import AdminOrderStatuses from '@/pages/admin/AdminOrderStatuses';
 
 const AdminPlaceholder: React.FC<{ titleKey: string }> = ({ titleKey }) => {
   const { t } = useTranslation();
