@@ -58,6 +58,7 @@ const AdminProductForm: React.FC = () => {
         weight_grams: product.weight_grams,
         category_id: product.category_id,
         brand_id: product.brand_id,
+        tax_rate_id: (product as any).tax_rate_id ?? null,
         translations: {
           ca: { name: ca?.name || '', short_description: ca?.short_description || '', description: ca?.description || '' },
           es: { name: es?.name || '', short_description: es?.short_description || '', description: es?.description || '' },
