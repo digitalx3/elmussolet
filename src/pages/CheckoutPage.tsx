@@ -69,13 +69,12 @@ const CheckoutPage: React.FC = () => {
   });
 
   const shippingData = form.watch();
-  const allCartItems = [...standardItems, ...listItems];
+  const allItems = [...standardItems, ...listItems];
   const postalCode = shippingData.postalCode ?? '';
   const shipping = useShippingCost(postalCode, allItems, deliveryMethod);
   const shippingCost = shipping.cost ?? 0;
 
   // Calculate tax breakdown by rate across all items
-  const allItems = [...standardItems, ...listItems];
   const taxBreakdown = useMemo(() => {
     const map = new Map<number, { base: number; tax: number }>();
     allItems.forEach(item => {
