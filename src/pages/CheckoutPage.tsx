@@ -390,14 +390,17 @@ const CheckoutPage: React.FC = () => {
                 <span>{deliveryMethod === 'pickup' ? '0.00 €' : shipping.cost !== null ? `${shipping.cost.toFixed(2)} €` : '—'}</span>
               </div>
               <Separator className="my-3" />
-              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>IVA inclòs en productes</span>
-                <span>inclòs</span>
-              </div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Desglossament IVA</p>
+              {taxBreakdown.map(tb => (
+                <div key={tb.percentage} className="flex justify-between text-xs text-muted-foreground mb-0.5">
+                  <span>Base {tb.percentage}%: {tb.base.toFixed(2)} €</span>
+                  <span>IVA: {tb.tax.toFixed(2)} €</span>
+                </div>
+              ))}
               {deliveryMethod === 'shipping' && shippingCost > 0 && (
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>IVA enviament ({shippingTaxRate}%)</span>
-                  <span>{shippingTaxAmount.toFixed(2)} €</span>
+                <div className="flex justify-between text-xs text-muted-foreground mb-0.5">
+                  <span>Enviament (base {(shippingCost - shippingTaxAmount).toFixed(2)} €, {shippingTaxRate}%)</span>
+                  <span>IVA: {shippingTaxAmount.toFixed(2)} €</span>
                 </div>
               )}
               <Separator className="my-3" />
