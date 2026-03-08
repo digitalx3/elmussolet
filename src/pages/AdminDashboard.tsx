@@ -12,6 +12,7 @@ import AdminTaxRates from '@/pages/admin/AdminTaxRates';
 import AdminCategories from '@/pages/admin/AdminCategories';
 import AdminBrands from '@/pages/admin/AdminBrands';
 import AdminOrders from '@/pages/admin/AdminOrders';
+import AdminOrderStatuses from '@/pages/admin/AdminOrderStatuses';
 
 const AdminOverview: React.FC = () => {
   const { t } = useTranslation();
@@ -52,6 +53,7 @@ const AdminDashboard: React.FC = () => {
         <Route path="usuaris" element={<AdminPlaceholder titleKey="users" />} />
         <Route path="enviaments" element={<AdminShipping />} />
         <Route path="configuracio" element={<AdminTaxRates />} />
+        <Route path="configuracio/estats" element={<AdminOrderStatuses />} />
       </Routes>
     </AdminLayout>
   );

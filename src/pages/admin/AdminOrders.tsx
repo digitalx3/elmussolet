@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrderStatuses } from '@/hooks/useOrderStatuses';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -18,20 +19,8 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ca, es } from 'date-fns/locale';
 
-const ORDER_STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'] as const;
-type OrderStatus = typeof ORDER_STATUSES[number];
-
 const PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'refunded'] as const;
 type PaymentStatus = typeof PAYMENT_STATUSES[number];
-
-const statusColors: Record<OrderStatus, string> = {
-  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  confirmed: 'bg-blue-100 text-blue-800 border-blue-200',
-  processing: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-  shipped: 'bg-purple-100 text-purple-800 border-purple-200',
-  delivered: 'bg-green-100 text-green-800 border-green-200',
-  cancelled: 'bg-red-100 text-red-800 border-red-200',
-};
 
 const paymentColors: Record<PaymentStatus, string> = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -55,7 +44,7 @@ interface OrderRow {
   shipping_address: any;
   created_at: string;
   user_id: string;
-  profiles: { full_name: string | null; email?: string } | null;
+  profiles: { full_name: string | null } | null;
 }
 
 interface OrderItemRow {
@@ -81,6 +70,8 @@ const AdminOrders: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
+
+  const { data: orderStatuses = [] } = useOrderStatuses();
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['admin-orders', statusFilter],
@@ -117,6 +108,15 @@ const AdminOrders: React.FC = () => {
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase.from('orders').update({ status }).eq('id', id);
       if (error) throw error;
+
+      // Trigger email notification
+      try {
+        await supabase.functions.invoke('send-order-status-email', {
+          body: { order_id: id, new_status: status },
+        });
+      } catch (e) {
+        console.warn('Email notification failed:', e);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-orders'] });
@@ -159,7 +159,17 @@ const AdminOrders: React.FC = () => {
     return name;
   };
 
-  const getStatusLabel = (status: string) => t(`account.status_${status}`);
+  const getStatusName = (statusSlug: string | null) => {
+    if (!statusSlug) return '—';
+    const found = orderStatuses.find(s => s.slug === statusSlug);
+    return found?.name || statusSlug;
+  };
+
+  const getStatusColor = (statusSlug: string | null) => {
+    if (!statusSlug) return '#6b7280';
+    const found = orderStatuses.find(s => s.slug === statusSlug);
+    return found?.color || '#6b7280';
+  };
 
   const getPaymentLabel = (status: string) => t(`admin.payment_${status}`);
 
@@ -194,13 +204,13 @@ const AdminOrders: React.FC = () => {
           )}
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[200px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('common.all')}</SelectItem>
-            {ORDER_STATUSES.map(s => (
-              <SelectItem key={s} value={s}>{getStatusLabel(s)}</SelectItem>
+            {orderStatuses.map(s => (
+              <SelectItem key={s.slug} value={s.slug}>{s.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -234,14 +244,17 @@ const AdminOrders: React.FC = () => {
                     value={order.status || 'pending'}
                     onValueChange={status => updateStatusMutation.mutate({ id: order.id, status })}
                   >
-                    <SelectTrigger className="w-[140px] h-8 text-xs">
-                      <Badge className={`text-xs border ${statusColors[(order.status || 'pending') as OrderStatus]}`}>
-                        {getStatusLabel(order.status || 'pending')}
+                    <SelectTrigger className="w-[180px] h-8 text-xs">
+                      <Badge
+                        className="text-xs border text-white"
+                        style={{ backgroundColor: getStatusColor(order.status) }}
+                      >
+                        {getStatusName(order.status || 'pending')}
                       </Badge>
                     </SelectTrigger>
                     <SelectContent>
-                      {ORDER_STATUSES.map(s => (
-                        <SelectItem key={s} value={s}>{getStatusLabel(s)}</SelectItem>
+                      {orderStatuses.map(s => (
+                        <SelectItem key={s.slug} value={s.slug}>{s.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -309,8 +322,8 @@ const AdminOrders: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">{t('admin.status')}</p>
-                  <Badge className={`text-xs border ${statusColors[(selectedOrder.status || 'pending') as OrderStatus]}`}>
-                    {getStatusLabel(selectedOrder.status || 'pending')}
+                  <Badge className="text-xs border text-white" style={{ backgroundColor: getStatusColor(selectedOrder.status) }}>
+                    {getStatusName(selectedOrder.status || 'pending')}
                   </Badge>
                 </div>
               </div>
@@ -342,7 +355,6 @@ const AdminOrders: React.FC = () => {
 
               <Separator />
 
-              {/* Order Items */}
               <div className="py-3">
                 <p className="text-sm font-semibold mb-3">{t('admin.orderItems')}</p>
                 <Table>
@@ -373,7 +385,6 @@ const AdminOrders: React.FC = () => {
 
               <Separator />
 
-              {/* Totals */}
               <div className="space-y-1 py-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t('cart.subtotal')}</span>

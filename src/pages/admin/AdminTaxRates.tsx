@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Trash2, Edit2, Check, X, Star } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Star, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +19,7 @@ import { useTaxRates, type TaxRate } from '@/hooks/useTaxRates';
 const emptyForm = { name: '', percentage: 21, country_code: 'ES', region: '', is_default: false, is_active: true };
 
 const AdminTaxRates: React.FC = () => {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const { data: taxRates = [], isLoading } = useTaxRates();
   const [editing, setEditing] = useState<string | null>(null);
@@ -108,6 +111,18 @@ const AdminTaxRates: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-4xl">
+      {/* Config sub-navigation */}
+      <div className="flex gap-2">
+        <Link to="/admin/configuracio">
+          <Button variant="secondary" size="sm">Impostos</Button>
+        </Link>
+        <Link to="/admin/configuracio/estats">
+          <Button variant="outline" size="sm" className="gap-1">
+            <ClipboardList className="h-4 w-4" />
+            {t('admin.orderStatuses')}
+          </Button>
+        </Link>
+      </div>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold">Impostos</h1>

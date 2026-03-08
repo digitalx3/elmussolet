@@ -438,6 +438,91 @@ export type Database = {
           },
         ]
       }
+      order_status_email_templates: {
+        Row: {
+          body_html: string
+          id: string
+          language: string
+          status_id: string
+          subject: string
+        }
+        Insert: {
+          body_html?: string
+          id?: string
+          language: string
+          status_id: string
+          subject?: string
+        }
+        Update: {
+          body_html?: string
+          id?: string
+          language?: string
+          status_id?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_email_templates_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "order_statuses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_status_translations: {
+        Row: {
+          id: string
+          language: string
+          name: string
+          status_id: string
+        }
+        Insert: {
+          id?: string
+          language: string
+          name: string
+          status_id: string
+        }
+        Update: {
+          id?: string
+          language?: string
+          name?: string
+          status_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_translations_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "order_statuses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_statuses: {
+        Row: {
+          color: string
+          id: string
+          is_active: boolean | null
+          slug: string
+          sort_order: number | null
+        }
+        Insert: {
+          color?: string
+          id?: string
+          is_active?: boolean | null
+          slug: string
+          sort_order?: number | null
+        }
+        Update: {
+          color?: string
+          id?: string
+          is_active?: boolean | null
+          slug?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string
