@@ -51,6 +51,20 @@ const CheckoutPage: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [paymentSettings, setPaymentSettings] = useState<Record<string, string>>({});
+
+  // Fetch payment settings from site_settings
+  useEffect(() => {
+    supabase
+      .from('site_settings')
+      .select('key, value')
+      .in('key', ['payment_bizum_phone', 'payment_transfer_iban', 'payment_transfer_beneficiary'])
+      .then(({ data }) => {
+        const map: Record<string, string> = {};
+        data?.forEach(row => { map[row.key] = row.value; });
+        setPaymentSettings(map);
+      });
+  }, []);
 
   const subtotal = standardTotal + listTotal;
   const isEmpty = standardItems.length === 0 && listItems.length === 0;
