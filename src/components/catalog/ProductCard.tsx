@@ -126,7 +126,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
           {product.name}
         </h3>
         <div className="mt-auto pt-2 flex items-center justify-between">
-          <span className="font-display text-base font-bold text-foreground">{formatPrice(product.basePrice)}</span>
+          <span className="font-display text-base font-bold text-foreground">{formatPriceWithTax(product)}</span>
           <Button
             size="icon"
             variant="ghost"
