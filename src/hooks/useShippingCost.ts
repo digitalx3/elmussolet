@@ -89,12 +89,19 @@ export function useShippingCost(
       });
   }, [items.map(i => i.productId).join(',')]);
 
+  const base = { freeShippingThreshold };
+  const qualifiesFree = freeShippingThreshold > 0 && subtotal >= freeShippingThreshold;
+
   if (deliveryMethod === 'pickup') {
-    return { cost: 0, zoneName: null, loading: false, error: null };
+    return { ...base, cost: 0, zoneName: null, loading: false, error: null, isFreeShipping: false };
+  }
+
+  if (qualifiesFree) {
+    return { ...base, cost: 0, zoneName: null, loading: false, error: null, isFreeShipping: true };
   }
 
   if (!postalCode || postalCode.length < 4 || zones.length === 0) {
-    return { cost: null, zoneName: null, loading: false, error: null };
+    return { ...base, cost: null, zoneName: null, loading: false, error: null, isFreeShipping: false };
   }
 
   // Calculate total weight
@@ -105,21 +112,22 @@ export function useShippingCost(
   // Find matching zone (sorted by sort_order, first match wins)
   const zone = zones.find(z => matchesPostalCode(postalCode, z.postal_code_pattern));
   if (!zone) {
-    return { cost: null, zoneName: null, loading: false, error: 'no_zone' };
+    return { ...base, cost: null, zoneName: null, loading: false, error: 'no_zone', isFreeShipping: false };
   }
 
   // Find rate bracket
   const rate = zone.rates.find(r => totalWeight >= r.min_weight_grams && totalWeight <= r.max_weight_grams);
   if (!rate) {
-    // Use highest bracket if weight exceeds all
     const highest = zone.rates[zone.rates.length - 1];
     return {
+      ...base,
       cost: highest ? highest.price : null,
       zoneName: zone.name,
       loading: false,
       error: highest ? null : 'no_rate',
+      isFreeShipping: false,
     };
   }
 
-  return { cost: rate.price, zoneName: zone.name, loading: false, error: null };
+  return { ...base, cost: rate.price, zoneName: zone.name, loading: false, error: null, isFreeShipping: false };
 }
