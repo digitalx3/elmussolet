@@ -293,6 +293,20 @@ const CheckoutPage: React.FC = () => {
               </Form>
             )}
 
+            {/* Shipping cost preview */}
+            {deliveryMethod === 'shipping' && postalCode.length >= 5 && (
+              <div className="mt-4 p-3 rounded-lg bg-muted/50 text-sm">
+                {shipping.cost !== null ? (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('cart.shipping')} {shipping.zoneName && <span className="text-xs">({shipping.zoneName})</span>}</span>
+                    <span className="font-semibold text-foreground">{shipping.cost.toFixed(2)} €</span>
+                  </div>
+                ) : shipping.error === 'no_zone' ? (
+                  <p className="text-destructive">{t('checkout.noShippingZone')}</p>
+                ) : null}
+              </div>
+            )}
+
             <div className="mt-4">
               <Label htmlFor="notes" className="text-sm">{t('admin.notes')}</Label>
               <Textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} className="mt-1" maxLength={500} placeholder="..." />
