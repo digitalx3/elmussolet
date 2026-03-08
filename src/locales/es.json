@@ -117,7 +117,9 @@
     "backToStore": "Volver a la tienda",
     "noShippingZone": "No se puede enviar a este código postal",
     "freeShipping": "¡Envío gratuito!",
-    "freeShippingHint": "Envío gratuito para pedidos superiores a {{amount}} €"
+    "freeShippingHint": "Envío gratuito para pedidos superiores a {{amount}} €",
+    "paymentAfterConfirm": "Realiza el pago después de confirmar el pedido.",
+    "paymentConcept": "Concepto"
   },
   "list": {
     "title": "Listas de Nacimiento",

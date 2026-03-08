@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -51,6 +51,20 @@ const CheckoutPage: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [paymentSettings, setPaymentSettings] = useState<Record<string, string>>({});
+
+  // Fetch payment settings from site_settings
+  useEffect(() => {
+    supabase
+      .from('site_settings')
+      .select('key, value')
+      .in('key', ['payment_bizum_phone', 'payment_transfer_iban', 'payment_transfer_beneficiary'])
+      .then(({ data }) => {
+        const map: Record<string, string> = {};
+        data?.forEach(row => { map[row.key] = row.value; });
+        setPaymentSettings(map);
+      });
+  }, []);
 
   const subtotal = standardTotal + listTotal;
   const isEmpty = standardItems.length === 0 && listItems.length === 0;
@@ -380,6 +394,25 @@ const CheckoutPage: React.FC = () => {
               </div>
             </RadioGroup>
 
+            {/* Payment details for selected method */}
+            {paymentMethod === 'bizum' && paymentSettings.payment_bizum_phone && (
+              <div className="bg-muted/50 rounded-lg p-4 mb-6">
+                <p className="text-sm font-medium mb-1">{t('checkout.bizum')}</p>
+                <p className="text-sm text-muted-foreground">{t('admin.bizumPhone')}: <span className="font-mono font-semibold text-foreground">{paymentSettings.payment_bizum_phone}</span></p>
+                <p className="text-xs text-muted-foreground mt-1">{t('checkout.paymentAfterConfirm')}</p>
+              </div>
+            )}
+            {paymentMethod === 'transfer' && paymentSettings.payment_transfer_iban && (
+              <div className="bg-muted/50 rounded-lg p-4 mb-6">
+                <p className="text-sm font-medium mb-1">{t('checkout.bankTransfer')}</p>
+                <p className="text-sm text-muted-foreground">IBAN: <span className="font-mono font-semibold text-foreground">{paymentSettings.payment_transfer_iban}</span></p>
+                {paymentSettings.payment_transfer_beneficiary && (
+                  <p className="text-sm text-muted-foreground">{t('admin.transferBeneficiary')}: <span className="font-semibold text-foreground">{paymentSettings.payment_transfer_beneficiary}</span></p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">{t('checkout.paymentAfterConfirm')}</p>
+              </div>
+            )}
+
             {/* Order summary */}
             <div className="bg-card rounded-lg p-5 shadow-soft mb-6">
               <h3 className="font-display text-lg font-semibold mb-3">{t('checkout.step1')}</h3>
@@ -447,15 +480,18 @@ const CheckoutPage: React.FC = () => {
             {paymentMethod === 'transfer' && (
               <div className="bg-card rounded-lg p-4 shadow-soft text-left mb-6 max-w-sm mx-auto">
                 <p className="text-sm font-medium mb-2">{t('checkout.bankTransfer')}</p>
-                <p className="text-xs text-muted-foreground">IBAN: ES00 0000 0000 0000 0000 0000</p>
-                <p className="text-xs text-muted-foreground">Concepte: {orderNumber}</p>
+                <p className="text-xs text-muted-foreground">IBAN: <span className="font-mono font-semibold text-foreground">{paymentSettings.payment_transfer_iban || '—'}</span></p>
+                {paymentSettings.payment_transfer_beneficiary && (
+                  <p className="text-xs text-muted-foreground">{t('admin.transferBeneficiary')}: {paymentSettings.payment_transfer_beneficiary}</p>
+                )}
+                <p className="text-xs text-muted-foreground">{t('checkout.paymentConcept')}: <span className="font-semibold">{orderNumber}</span></p>
               </div>
             )}
             {paymentMethod === 'bizum' && (
               <div className="bg-card rounded-lg p-4 shadow-soft text-left mb-6 max-w-sm mx-auto">
                 <p className="text-sm font-medium mb-2">Bizum</p>
-                <p className="text-xs text-muted-foreground">Telèfon: 600 000 000</p>
-                <p className="text-xs text-muted-foreground">Concepte: {orderNumber}</p>
+                <p className="text-xs text-muted-foreground">{t('admin.bizumPhone')}: <span className="font-mono font-semibold text-foreground">{paymentSettings.payment_bizum_phone || '—'}</span></p>
+                <p className="text-xs text-muted-foreground">{t('checkout.paymentConcept')}: <span className="font-semibold">{orderNumber}</span></p>
               </div>
             )}
 
