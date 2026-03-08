@@ -19,6 +19,7 @@ import { useTaxRates, type TaxRate } from '@/hooks/useTaxRates';
 const emptyForm = { name: '', percentage: 21, country_code: 'ES', region: '', is_default: false, is_active: true };
 
 const AdminTaxRates: React.FC = () => {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const { data: taxRates = [], isLoading } = useTaxRates();
   const [editing, setEditing] = useState<string | null>(null);
