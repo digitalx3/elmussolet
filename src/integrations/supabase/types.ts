@@ -369,31 +369,40 @@ export type Database = {
       }
       order_items: {
         Row: {
+          base_unit_price: number | null
           id: string
           list_item_id: string | null
           order_id: string
           product_id: string
           quantity: number
+          tax_amount: number | null
+          tax_percentage: number | null
           total_price: number
           unit_price: number
           variant_id: string | null
         }
         Insert: {
+          base_unit_price?: number | null
           id?: string
           list_item_id?: string | null
           order_id: string
           product_id: string
           quantity: number
+          tax_amount?: number | null
+          tax_percentage?: number | null
           total_price: number
           unit_price: number
           variant_id?: string | null
         }
         Update: {
+          base_unit_price?: number | null
           id?: string
           list_item_id?: string | null
           order_id?: string
           product_id?: string
           quantity?: number
+          tax_amount?: number | null
+          tax_percentage?: number | null
           total_price?: number
           unit_price?: number
           variant_id?: string | null
