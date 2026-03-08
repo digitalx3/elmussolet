@@ -80,6 +80,7 @@ export interface ProductFormData {
   weight_grams: number;
   category_id: string | null;
   brand_id: string | null;
+  tax_rate_id: string | null;
   translations: {
     ca: { name: string; short_description: string; description: string };
     es: { name: string; short_description: string; description: string };
