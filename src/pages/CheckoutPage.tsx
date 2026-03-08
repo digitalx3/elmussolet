@@ -394,6 +394,25 @@ const CheckoutPage: React.FC = () => {
               </div>
             </RadioGroup>
 
+            {/* Payment details for selected method */}
+            {paymentMethod === 'bizum' && paymentSettings.payment_bizum_phone && (
+              <div className="bg-muted/50 rounded-lg p-4 mb-6">
+                <p className="text-sm font-medium mb-1">{t('checkout.bizum')}</p>
+                <p className="text-sm text-muted-foreground">{t('admin.bizumPhone')}: <span className="font-mono font-semibold text-foreground">{paymentSettings.payment_bizum_phone}</span></p>
+                <p className="text-xs text-muted-foreground mt-1">{t('checkout.paymentAfterConfirm')}</p>
+              </div>
+            )}
+            {paymentMethod === 'transfer' && paymentSettings.payment_transfer_iban && (
+              <div className="bg-muted/50 rounded-lg p-4 mb-6">
+                <p className="text-sm font-medium mb-1">{t('checkout.bankTransfer')}</p>
+                <p className="text-sm text-muted-foreground">IBAN: <span className="font-mono font-semibold text-foreground">{paymentSettings.payment_transfer_iban}</span></p>
+                {paymentSettings.payment_transfer_beneficiary && (
+                  <p className="text-sm text-muted-foreground">{t('admin.transferBeneficiary')}: <span className="font-semibold text-foreground">{paymentSettings.payment_transfer_beneficiary}</span></p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">{t('checkout.paymentAfterConfirm')}</p>
+              </div>
+            )}
+
             {/* Order summary */}
             <div className="bg-card rounded-lg p-5 shadow-soft mb-6">
               <h3 className="font-display text-lg font-semibold mb-3">{t('checkout.step1')}</h3>
