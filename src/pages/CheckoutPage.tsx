@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -74,9 +74,22 @@ const CheckoutPage: React.FC = () => {
   const shipping = useShippingCost(postalCode, allItems, deliveryMethod);
   const shippingCost = shipping.cost ?? 0;
 
-  // Tax is already included in item prices (priceWithTax stored in cart)
-  // We estimate the tax portion for display purposes assuming a default rate
-  // The actual tax was baked in when products were added to cart
+  // Calculate tax breakdown by rate across all items
+  const taxBreakdown = useMemo(() => {
+    const map = new Map<number, { base: number; tax: number }>();
+    allItems.forEach(item => {
+      const pct = item.taxPercentage ?? 0;
+      const baseTotal = (item.basePriceNoTax ?? item.price) * item.quantity;
+      const taxTotal = baseTotal * (pct / 100);
+      const existing = map.get(pct) ?? { base: 0, tax: 0 };
+      map.set(pct, { base: existing.base + baseTotal, tax: existing.tax + taxTotal });
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([pct, vals]) => ({ percentage: pct, base: vals.base, tax: vals.tax }));
+  }, [standardItems, listItems]);
+
+  const totalProductTax = taxBreakdown.reduce((s, t) => s + t.tax, 0);
   const shippingTaxRate = 21; // Shipping IVA in Spain
   const shippingTaxAmount = shippingCost * (shippingTaxRate / (100 + shippingTaxRate));
   const grandTotal = subtotal + shippingCost;
@@ -149,7 +162,7 @@ const CheckoutPage: React.FC = () => {
           payment_method: paymentMethod === 'bizum' ? 'bizum' : 'bank_transfer',
           shipping_address: shippingAddress,
           shipping_cost: shippingCost,
-          tax_amount: shippingTaxAmount,
+          tax_amount: totalProductTax + shippingTaxAmount,
           subtotal,
           total,
           notes: notes.trim() || null,
@@ -162,15 +175,23 @@ const CheckoutPage: React.FC = () => {
       if (orderError) throw orderError;
 
       // Create order items
-      const dbItems = orderItems.map(item => ({
-        order_id: order.id,
-        product_id: item.productId,
-        variant_id: item.variantId || null,
-        quantity: item.quantity,
-        unit_price: item.price,
-        total_price: item.price * item.quantity,
-        list_item_id: null, // could be mapped if needed
-      }));
+      const dbItems = orderItems.map(item => {
+        const baseUnit = item.basePriceNoTax ?? item.price;
+        const taxPct = item.taxPercentage ?? 0;
+        const lineTax = baseUnit * (taxPct / 100) * item.quantity;
+        return {
+          order_id: order.id,
+          product_id: item.productId,
+          variant_id: item.variantId || null,
+          quantity: item.quantity,
+          unit_price: item.price,
+          total_price: item.price * item.quantity,
+          base_unit_price: baseUnit,
+          tax_percentage: taxPct,
+          tax_amount: lineTax,
+          list_item_id: null,
+        };
+      });
 
       const { error: itemsError } = await supabase
         .from('order_items')
@@ -369,14 +390,17 @@ const CheckoutPage: React.FC = () => {
                 <span>{deliveryMethod === 'pickup' ? '0.00 €' : shipping.cost !== null ? `${shipping.cost.toFixed(2)} €` : '—'}</span>
               </div>
               <Separator className="my-3" />
-              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>IVA inclòs en productes</span>
-                <span>inclòs</span>
-              </div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Desglossament IVA</p>
+              {taxBreakdown.map(tb => (
+                <div key={tb.percentage} className="flex justify-between text-xs text-muted-foreground mb-0.5">
+                  <span>Base {tb.percentage}%: {tb.base.toFixed(2)} €</span>
+                  <span>IVA: {tb.tax.toFixed(2)} €</span>
+                </div>
+              ))}
               {deliveryMethod === 'shipping' && shippingCost > 0 && (
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>IVA enviament ({shippingTaxRate}%)</span>
-                  <span>{shippingTaxAmount.toFixed(2)} €</span>
+                <div className="flex justify-between text-xs text-muted-foreground mb-0.5">
+                  <span>Enviament (base {(shippingCost - shippingTaxAmount).toFixed(2)} €, {shippingTaxRate}%)</span>
+                  <span>IVA: {shippingTaxAmount.toFixed(2)} €</span>
                 </div>
               )}
               <Separator className="my-3" />
