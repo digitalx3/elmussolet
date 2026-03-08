@@ -52,8 +52,14 @@ const CheckoutPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
-  const grandTotal = standardTotal + listTotal;
+  const subtotal = standardTotal + listTotal;
   const isEmpty = standardItems.length === 0 && listItems.length === 0;
+
+  const allItems = [...standardItems, ...listItems];
+  const postalCode = form.watch('postalCode') ?? '';
+  const shipping = useShippingCost(postalCode, allItems, deliveryMethod);
+  const shippingCost = shipping.cost ?? 0;
+  const grandTotal = subtotal + shippingCost;
 
   const form = useForm<ShippingForm>({
     resolver: zodResolver(shippingSchema),
