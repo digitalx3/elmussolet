@@ -168,7 +168,7 @@ const CheckoutPage: React.FC = () => {
 
       const { error: itemsError } = await supabase
         .from('order_items')
-        .insert(orderItems);
+        .insert(dbItems);
 
       if (itemsError) throw itemsError;
 
