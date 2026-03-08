@@ -156,7 +156,7 @@ const CheckoutPage: React.FC = () => {
       if (orderError) throw orderError;
 
       // Create order items
-      const orderItems = allItems.map(item => ({
+      const dbItems = orderItems.map(item => ({
         order_id: order.id,
         product_id: item.productId,
         variant_id: item.variantId || null,
