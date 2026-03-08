@@ -480,15 +480,18 @@ const CheckoutPage: React.FC = () => {
             {paymentMethod === 'transfer' && (
               <div className="bg-card rounded-lg p-4 shadow-soft text-left mb-6 max-w-sm mx-auto">
                 <p className="text-sm font-medium mb-2">{t('checkout.bankTransfer')}</p>
-                <p className="text-xs text-muted-foreground">IBAN: ES00 0000 0000 0000 0000 0000</p>
-                <p className="text-xs text-muted-foreground">Concepte: {orderNumber}</p>
+                <p className="text-xs text-muted-foreground">IBAN: <span className="font-mono font-semibold text-foreground">{paymentSettings.payment_transfer_iban || '—'}</span></p>
+                {paymentSettings.payment_transfer_beneficiary && (
+                  <p className="text-xs text-muted-foreground">{t('admin.transferBeneficiary')}: {paymentSettings.payment_transfer_beneficiary}</p>
+                )}
+                <p className="text-xs text-muted-foreground">{t('checkout.paymentConcept')}: <span className="font-semibold">{orderNumber}</span></p>
               </div>
             )}
             {paymentMethod === 'bizum' && (
               <div className="bg-card rounded-lg p-4 shadow-soft text-left mb-6 max-w-sm mx-auto">
                 <p className="text-sm font-medium mb-2">Bizum</p>
-                <p className="text-xs text-muted-foreground">Telèfon: 600 000 000</p>
-                <p className="text-xs text-muted-foreground">Concepte: {orderNumber}</p>
+                <p className="text-xs text-muted-foreground">{t('admin.bizumPhone')}: <span className="font-mono font-semibold text-foreground">{paymentSettings.payment_bizum_phone || '—'}</span></p>
+                <p className="text-xs text-muted-foreground">{t('checkout.paymentConcept')}: <span className="font-semibold">{orderNumber}</span></p>
               </div>
             )}
 
