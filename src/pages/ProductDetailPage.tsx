@@ -56,6 +56,8 @@ const ProductDetailPage: React.FC = () => {
       name: product.name + (selectedVariant ? ` - ${selectedVariant.value}` : ''),
       image: product.images[0]?.image_url,
       price: currentPrice,
+      basePriceNoTax: basePrice,
+      taxPercentage: taxPct,
       quantity,
       variantLabel: selectedVariant?.value,
     });

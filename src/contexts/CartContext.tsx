@@ -5,7 +5,9 @@ export interface CartItem {
   variantId?: string;
   name: string;
   image?: string;
-  price: number;
+  price: number; // price with tax included (PVP)
+  basePriceNoTax: number; // unit price before tax
+  taxPercentage: number; // tax rate applied (e.g. 21)
   quantity: number;
   maxQuantity?: number;
   variantLabel?: string;

@@ -128,12 +128,16 @@ const BirthListViewPage: React.FC = () => {
     const qty = remaining(item);
     if (qty <= 0) return;
 
+    const base = item.variant?.price_override != null ? item.variant.price_override : item.product.base_price;
+    const taxPct = (item.product as any).tax_rates?.percentage ?? 0;
     addListItem({
       productId: item.product_id,
       variantId: item.variant_id || undefined,
       name: getProductName(item) + (item.variant ? ` (${item.variant.value})` : ''),
       image: getProductImage(item),
       price: getPrice(item),
+      basePriceNoTax: base,
+      taxPercentage: taxPct,
       quantity: 1,
       maxQuantity: qty,
       variantLabel: item.variant?.value,

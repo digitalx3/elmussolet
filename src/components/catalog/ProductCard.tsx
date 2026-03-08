@@ -43,6 +43,8 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
       name: product.name,
       image: product.primaryImage ?? undefined,
       price: product.priceWithTax,
+      basePriceNoTax: product.basePrice,
+      taxPercentage: product.taxPercentage ?? 0,
       quantity: 1,
     });
   };
