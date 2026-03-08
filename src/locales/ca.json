@@ -107,7 +107,8 @@
     "termsAccept": "Accepto els termes i condicions",
     "orderConfirmed": "Comanda confirmada!",
     "orderNumber": "Número de comanda",
-    "backToStore": "Tornar a la botiga"
+    "backToStore": "Tornar a la botiga",
+    "noShippingZone": "No es pot enviar a aquest codi postal"
   },
   "list": {
     "title": "Llistes de Naixement",

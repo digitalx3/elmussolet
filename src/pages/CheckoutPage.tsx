@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useShippingCost } from '@/hooks/useShippingCost';
 
 const shippingSchema = z.object({
   fullName: z.string().trim().min(1, 'Required').max(100),
@@ -51,7 +52,7 @@ const CheckoutPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
-  const grandTotal = standardTotal + listTotal;
+  const subtotal = standardTotal + listTotal;
   const isEmpty = standardItems.length === 0 && listItems.length === 0;
 
   const form = useForm<ShippingForm>({
@@ -68,6 +69,11 @@ const CheckoutPage: React.FC = () => {
   });
 
   const shippingData = form.watch();
+  const allItems = [...standardItems, ...listItems];
+  const postalCode = shippingData.postalCode ?? '';
+  const shipping = useShippingCost(postalCode, allItems, deliveryMethod);
+  const shippingCost = shipping.cost ?? 0;
+  const grandTotal = subtotal + shippingCost;
 
   // Require login
   if (!user) {
@@ -112,9 +118,7 @@ const CheckoutPage: React.FC = () => {
     setSubmitting(true);
 
     try {
-      const allItems = [...standardItems, ...listItems];
-      const subtotal = grandTotal;
-      const shippingCost = deliveryMethod === 'pickup' ? 0 : 0; // TODO: calculate from shipping_rates
+      const orderItems = [...standardItems, ...listItems];
       const total = subtotal + shippingCost;
       const num = generateOrderNumber();
 
@@ -151,7 +155,7 @@ const CheckoutPage: React.FC = () => {
       if (orderError) throw orderError;
 
       // Create order items
-      const orderItems = allItems.map(item => ({
+      const dbItems = orderItems.map(item => ({
         order_id: order.id,
         product_id: item.productId,
         variant_id: item.variantId || null,
@@ -163,7 +167,7 @@ const CheckoutPage: React.FC = () => {
 
       const { error: itemsError } = await supabase
         .from('order_items')
-        .insert(orderItems);
+        .insert(dbItems);
 
       if (itemsError) throw itemsError;
 
@@ -288,6 +292,20 @@ const CheckoutPage: React.FC = () => {
               </Form>
             )}
 
+            {/* Shipping cost preview */}
+            {deliveryMethod === 'shipping' && postalCode.length >= 5 && (
+              <div className="mt-4 p-3 rounded-lg bg-muted/50 text-sm">
+                {shipping.cost !== null ? (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('cart.shipping')} {shipping.zoneName && <span className="text-xs">({shipping.zoneName})</span>}</span>
+                    <span className="font-semibold text-foreground">{shipping.cost.toFixed(2)} €</span>
+                  </div>
+                ) : shipping.error === 'no_zone' ? (
+                  <p className="text-destructive">{t('checkout.noShippingZone')}</p>
+                ) : null}
+              </div>
+            )}
+
             <div className="mt-4">
               <Label htmlFor="notes" className="text-sm">{t('admin.notes')}</Label>
               <Textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} className="mt-1" maxLength={500} placeholder="..." />
@@ -340,8 +358,8 @@ const CheckoutPage: React.FC = () => {
                 </div>
               )}
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-muted-foreground">{t('cart.shipping')}</span>
-                <span>{deliveryMethod === 'pickup' ? '0.00 €' : t('cart.shippingCalc')}</span>
+                <span className="text-muted-foreground">{t('cart.shipping')} {shipping.zoneName && <span className="text-xs">({shipping.zoneName})</span>}</span>
+                <span>{deliveryMethod === 'pickup' ? '0.00 €' : shipping.cost !== null ? `${shipping.cost.toFixed(2)} €` : '—'}</span>
               </div>
               <Separator className="my-3" />
               <div className="flex justify-between text-lg font-bold">
