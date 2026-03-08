@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAdminProduct, useSaveProduct, useVariantTypes, type ProductFormData } from '@/hooks/useAdminProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useBrands } from '@/hooks/useBrands';
+import { useActiveTaxRates, priceWithTax } from '@/hooks/useTaxRates';
 
 const emptyTranslation = { name: '', short_description: '', description: '' };
 
