@@ -117,7 +117,9 @@
     "backToStore": "Tornar a la botiga",
     "noShippingZone": "No es pot enviar a aquest codi postal",
     "freeShipping": "Enviament gratuït!",
-    "freeShippingHint": "Enviament gratuït per a comandes superiors a {{amount}} €"
+    "freeShippingHint": "Enviament gratuït per a comandes superiors a {{amount}} €",
+    "paymentAfterConfirm": "Realitza el pagament després de confirmar la comanda.",
+    "paymentConcept": "Concepte"
   },
   "list": {
     "title": "Llistes de Naixement",
