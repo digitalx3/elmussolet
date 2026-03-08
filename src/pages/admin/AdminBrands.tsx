@@ -68,9 +68,13 @@ const AdminBrands: React.FC = () => {
   };
 
   const deleteLogo = async (url: string) => {
-    const parts = url.split('/brand-logos/');
-    if (parts.length > 1) {
-      await supabase.storage.from('brand-logos').remove([parts[1]]);
+    try {
+      const parts = url.split('/brand-logos/');
+      if (parts.length > 1) {
+        await supabase.storage.from('brand-logos').remove([parts[1]]);
+      }
+    } catch (err) {
+      console.warn('Failed to delete old logo, continuing:', err);
     }
   };
 
