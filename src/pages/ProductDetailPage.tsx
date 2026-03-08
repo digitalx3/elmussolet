@@ -173,6 +173,11 @@ const ProductDetailPage: React.FC = () => {
             <span className="font-display text-2xl font-bold text-primary">
               {formatPrice(currentPrice)}
             </span>
+            {product.taxName && (
+              <span className="text-xs text-muted-foreground">({product.taxName} {product.taxPercentage}% inclòs)</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
             {product.stockStatus === 'in_stock' && (
               <Badge variant="secondary" className="bg-sage text-sage-foreground">{t('products.inStock')}</Badge>
             )}
