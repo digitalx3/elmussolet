@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Trash2, Edit2, Check, X, Star, ClipboardList } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Star, ClipboardList, Store, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -112,9 +112,18 @@ const AdminTaxRates: React.FC = () => {
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Config sub-navigation */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
+        <Link to="/admin/configuracio/general">
+          <Button variant="outline" size="sm" className="gap-1">
+            <Store className="h-4 w-4" />
+            {t('admin.settingsGeneral')}
+          </Button>
+        </Link>
         <Link to="/admin/configuracio">
-          <Button variant="secondary" size="sm">Impostos</Button>
+          <Button variant="secondary" size="sm" className="gap-1">
+            <Receipt className="h-4 w-4" />
+            {t('admin.settingsTaxes')}
+          </Button>
         </Link>
         <Link to="/admin/configuracio/estats">
           <Button variant="outline" size="sm" className="gap-1">
