@@ -54,7 +54,8 @@ export function useTranslatedProducts(filters: ProductFilters = {}) {
           *,
           product_translations!inner(name, short_description, description, language),
           product_images(image_url, is_primary, sort_order),
-          brands(name, logo_url)
+          brands(name, logo_url),
+          tax_rates(id, name, percentage)
         `)
         .eq('is_active', true)
         .eq('product_translations.language', lang);
