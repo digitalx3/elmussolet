@@ -106,11 +106,18 @@ export function useTranslatedProducts(filters: ProductFilters = {}) {
         const images = p.product_images || [];
         const primaryImg = images.find((i: any) => i.is_primary) || images.sort((a: any, b: any) => a.sort_order - b.sort_order)[0];
 
+        const basePrice = Number(p.base_price);
+        const taxPct = (p as any).tax_rates?.percentage ?? 0;
+        const taxName = (p as any).tax_rates?.name ?? null;
+
         return {
           id: p.id,
           slug: p.slug,
           sku: p.sku,
-          basePrice: Number(p.base_price),
+          basePrice,
+          priceWithTax: basePrice * (1 + taxPct / 100),
+          taxPercentage: taxPct,
+          taxName,
           stockQuantity: p.stock_quantity ?? 0,
           stockStatus: p.stock_status ?? 'in_stock',
           isActive: p.is_active,
