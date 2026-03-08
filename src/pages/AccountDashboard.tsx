@@ -242,7 +242,6 @@ function OrdersTab() {
                         const name = Array.isArray(translations)
                           ? (translations.find((t: any) => t.language === lang)?.name || translations[0]?.name || item.product_id)
                           : item.product_id;
-                          : item.product_id;
                         return (
                           <TableRow key={item.id}>
                             <TableCell className="font-medium">{name}</TableCell>
