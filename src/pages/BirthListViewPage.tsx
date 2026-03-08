@@ -110,8 +110,9 @@ const BirthListViewPage: React.FC = () => {
   };
 
   const getPrice = (item: ListItemWithProduct) => {
-    if (item.variant?.price_override != null) return item.variant.price_override;
-    return item.product.base_price;
+    const base = item.variant?.price_override != null ? item.variant.price_override : item.product.base_price;
+    const taxPct = (item.product as any).tax_rates?.percentage ?? 0;
+    return base * (1 + taxPct / 100);
   };
 
   const getStatus = (item: ListItemWithProduct) => {
