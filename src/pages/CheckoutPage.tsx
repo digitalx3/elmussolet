@@ -149,12 +149,13 @@ const CheckoutPage: React.FC = () => {
           payment_method: paymentMethod === 'bizum' ? 'bizum' : 'bank_transfer',
           shipping_address: shippingAddress,
           shipping_cost: shippingCost,
+          tax_amount: shippingTaxAmount,
           subtotal,
           total,
           notes: notes.trim() || null,
           status: 'pending',
           payment_status: 'pending',
-        })
+        } as any)
         .select('id')
         .single();
 
