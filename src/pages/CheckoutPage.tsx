@@ -162,7 +162,7 @@ const CheckoutPage: React.FC = () => {
           payment_method: paymentMethod === 'bizum' ? 'bizum' : 'bank_transfer',
           shipping_address: shippingAddress,
           shipping_cost: shippingCost,
-          tax_amount: shippingTaxAmount,
+          tax_amount: totalProductTax + shippingTaxAmount,
           subtotal,
           total,
           notes: notes.trim() || null,
