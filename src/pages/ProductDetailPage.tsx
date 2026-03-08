@@ -39,7 +39,9 @@ const ProductDetailPage: React.FC = () => {
   }, [product]);
 
   const selectedVariant = product?.variants.find(v => v.id === selectedVariantId);
-  const currentPrice = selectedVariant?.priceOverride ?? product?.basePrice ?? 0;
+  const basePrice = selectedVariant?.priceOverride ?? product?.basePrice ?? 0;
+  const taxPct = product?.taxPercentage ?? 0;
+  const currentPrice = basePrice * (1 + taxPct / 100);
   const currentStock = selectedVariant ? selectedVariant.stockQuantity : (product?.stockQuantity ?? 0);
 
   const handleAddToCart = () => {
