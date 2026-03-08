@@ -76,7 +76,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
           </div>
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-2">
-              <span className="font-display text-lg font-bold text-foreground">{formatPrice(product.basePrice)}</span>
+              <span className="font-display text-lg font-bold text-foreground">{formatPriceWithTax(product)}</span>
               {stockBadge(product.stockStatus, t)}
             </div>
             <Button
