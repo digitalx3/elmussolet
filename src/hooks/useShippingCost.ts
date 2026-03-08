@@ -15,6 +15,8 @@ interface ShippingResult {
   zoneName: string | null;
   loading: boolean;
   error: string | null;
+  freeShippingThreshold: number;
+  isFreeShipping: boolean;
 }
 
 /**
