@@ -47,31 +47,31 @@ export function useShippingCost(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch zones + rates once
+  // Fetch zones + rates + free shipping threshold once
   useEffect(() => {
-    const fetch = async () => {
-      const { data: zoneData } = await supabase
-        .from('shipping_zones')
-        .select('id, name, postal_code_pattern, sort_order')
-        .eq('is_active', true)
-        .order('sort_order');
+    const fetchData = async () => {
+      const [zonesRes, ratesRes, settingRes] = await Promise.all([
+        supabase.from('shipping_zones').select('id, name, postal_code_pattern, sort_order').eq('is_active', true).order('sort_order'),
+        supabase.from('shipping_rates').select('zone_id, min_weight_grams, max_weight_grams, price'),
+        supabase.from('site_settings').select('value').eq('key', 'free_shipping_threshold').single(),
+      ]);
 
-      if (!zoneData) return;
+      if (zonesRes.data) {
+        const mapped: ShippingZoneWithRates[] = zonesRes.data.map(z => ({
+          ...z,
+          sort_order: z.sort_order ?? 0,
+          rates: (ratesRes.data ?? [])
+            .filter(r => r.zone_id === z.id)
+            .sort((a, b) => a.min_weight_grams - b.min_weight_grams),
+        }));
+        setZones(mapped);
+      }
 
-      const { data: rateData } = await supabase
-        .from('shipping_rates')
-        .select('zone_id, min_weight_grams, max_weight_grams, price');
-
-      const mapped: ShippingZoneWithRates[] = zoneData.map(z => ({
-        ...z,
-        sort_order: z.sort_order ?? 0,
-        rates: (rateData ?? [])
-          .filter(r => r.zone_id === z.id)
-          .sort((a, b) => a.min_weight_grams - b.min_weight_grams),
-      }));
-      setZones(mapped);
+      if (settingRes.data?.value) {
+        setFreeShippingThreshold(parseFloat(settingRes.data.value) || 0);
+      }
     };
-    fetch();
+    fetchData();
   }, []);
 
   // Fetch product weights when items change
