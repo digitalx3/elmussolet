@@ -111,6 +111,18 @@ const AdminTaxRates: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-4xl">
+      {/* Config sub-navigation */}
+      <div className="flex gap-2">
+        <Link to="/admin/configuracio">
+          <Button variant="secondary" size="sm">Impostos</Button>
+        </Link>
+        <Link to="/admin/configuracio/estats">
+          <Button variant="outline" size="sm" className="gap-1">
+            <ClipboardList className="h-4 w-4" />
+            {t('admin.orderStatuses')}
+          </Button>
+        </Link>
+      </div>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold">Impostos</h1>
