@@ -238,9 +238,10 @@ function OrdersTab() {
                     </TableHeader>
                     <TableBody>
                       {order.order_items.map(item => {
-                        const tr = (item as any).product_translations;
-                        const name = Array.isArray(tr)
-                          ? (tr.find((t: any) => t.language === lang)?.name || tr[0]?.name || item.product_id)
+                        const translations = (item as any).products?.product_translations;
+                        const name = Array.isArray(translations)
+                          ? (translations.find((t: any) => t.language === lang)?.name || translations[0]?.name || item.product_id)
+                          : item.product_id;
                           : item.product_id;
                         return (
                           <TableRow key={item.id}>
