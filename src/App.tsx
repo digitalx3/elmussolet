@@ -41,6 +41,7 @@ const App = () => (
                   <Route path="/llista-naixement/:listCode" element={<PublicLayout><BirthListViewPage /></PublicLayout>} />
                   <Route path="/producte/:slug" element={<PublicLayout><ProductDetailPage /></PublicLayout>} />
                   <Route path="/cistella" element={<PublicLayout><CartPage /></PublicLayout>} />
+                  <Route path="/checkout" element={<PublicLayout><CheckoutPage /></PublicLayout>} />
                   <Route path="/login" element={<PublicLayout><LoginPage /></PublicLayout>} />
                   <Route path="/registre" element={<PublicLayout><RegisterPage /></PublicLayout>} />
 
