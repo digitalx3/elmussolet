@@ -239,7 +239,19 @@
     "save": "Guardar",
     "create": "Crear",
     "cancel": "Cancel·lar",
-    "delete": "Eliminar"
+    "delete": "Eliminar",
+    "addBrand": "Nova marca",
+    "editBrand": "Editar marca",
+    "addBrandDesc": "Crea una nova marca amb logo opcional.",
+    "editBrandDesc": "Modifica les dades de la marca.",
+    "brandName": "Nom",
+    "noBrands": "No hi ha marques.",
+    "brandCreated": "Marca creada correctament.",
+    "brandUpdated": "Marca actualitzada correctament.",
+    "brandDeleted": "Marca eliminada correctament.",
+    "confirmDeleteBrandDesc": "Segur que vols eliminar aquesta marca? S'eliminarà també el logo.",
+    "uploadLogo": "Puja un logo",
+    "changeLogo": "Canviar logo"
   },
   "common": {
     "save": "Guardar",
