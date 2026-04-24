@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useListAccess } from '@/contexts/ListAccessContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import PublicListSteps from '@/components/list/PublicListSteps';
 
 const BirthListAccessPage: React.FC = () => {
   const { t } = useTranslation();
@@ -54,7 +55,8 @@ const BirthListAccessPage: React.FC = () => {
   };
 
   return (
-    <div className="container py-16 max-w-md mx-auto">
+    <div className="container py-12 max-w-md mx-auto">
+      <PublicListSteps current="access" />
       <div className="text-center mb-8">
         <Heart className="h-10 w-10 text-primary mx-auto mb-4" />
         <h1 className="font-display text-3xl font-bold mb-3">{t('list.accessTitle')}</h1>

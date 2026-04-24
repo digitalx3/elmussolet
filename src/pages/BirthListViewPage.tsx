@@ -11,6 +11,7 @@ import { useListAccess } from '@/contexts/ListAccessContext';
 import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import PublicListSteps from '@/components/list/PublicListSteps';
 
 interface ListItemWithProduct {
   id: string;
@@ -161,6 +162,7 @@ const BirthListViewPage: React.FC = () => {
 
   return (
     <div className="container py-8 max-w-4xl mx-auto">
+      <PublicListSteps current="view" />
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
