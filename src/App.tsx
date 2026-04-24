@@ -21,6 +21,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import ProductDetailPage from "@/pages/ProductDetailPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import CreateBirthListPage from "@/pages/CreateBirthListPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const App = () => (
                   <Route path="/reset-password" element={<PublicLayout><ResetPasswordPage /></PublicLayout>} />
 
                   {/* Protected routes */}
+                  <Route path="/la-meva-llista" element={<PublicLayout><ProtectedRoute><CreateBirthListPage /></ProtectedRoute></PublicLayout>} />
                   <Route path="/el-meu-compte" element={<PublicLayout><ProtectedRoute><AccountDashboard /></ProtectedRoute></PublicLayout>} />
                   <Route path="/el-meu-compte/*" element={<PublicLayout><ProtectedRoute><AccountDashboard /></ProtectedRoute></PublicLayout>} />
 

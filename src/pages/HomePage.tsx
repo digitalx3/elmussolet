@@ -63,7 +63,7 @@ const HomePage: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button
-                onClick={() => navigate(user ? '/el-meu-compte/la-meva-llista' : '/registre')}
+                onClick={() => navigate(user ? '/la-meva-llista' : '/registre')}
                 className="gap-2"
               >
                 {t('home.createList')}
