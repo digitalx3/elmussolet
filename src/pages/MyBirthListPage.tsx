@@ -287,14 +287,57 @@ const MyBirthListPage: React.FC = () => {
     return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   }
 
+  // Determine current step: 1=create, 2=edit, 3=share
+  const currentStep = !listId ? 1 : (form.status === 'active' || form.status === 'closed' ? 3 : 2);
+  const steps = [
+    { n: 1, label: t('list.stepCreate') },
+    { n: 2, label: t('list.stepEdit') },
+    { n: 3, label: t('list.stepShare') },
+  ];
+
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs / Steps */}
+      <nav aria-label="Progress">
+        <ol className="flex items-center gap-2 sm:gap-3 text-sm">
+          {steps.map((s, i) => {
+            const isActive = s.n === currentStep;
+            const isDone = s.n < currentStep;
+            return (
+              <li key={s.n} className="flex items-center gap-2 sm:gap-3">
+                <div
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${
+                    isActive
+                      ? 'bg-primary text-primary-foreground border-primary font-medium'
+                      : isDone
+                        ? 'bg-primary/10 text-primary border-primary/30'
+                        : 'bg-muted text-muted-foreground border-border'
+                  }`}
+                >
+                  <span className={`flex items-center justify-center h-5 w-5 rounded-full text-xs font-semibold ${
+                    isActive ? 'bg-primary-foreground text-primary' : isDone ? 'bg-primary text-primary-foreground' : 'bg-background'
+                  }`}>
+                    {s.n}
+                  </span>
+                  <span className="hidden sm:inline">{s.label}</span>
+                </div>
+                {i < steps.length - 1 && (
+                  <span className="h-px w-4 sm:w-8 bg-border" aria-hidden="true" />
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
+
       <div className="flex items-center gap-3">
         <Heart className="h-6 w-6 text-primary" />
         <div>
           <h2 className="font-display text-2xl font-bold">{t('list.myList')}</h2>
           <p className="text-sm text-muted-foreground">
-            {listId ? t('list.myListEditDesc') : t('list.myListCreateDesc')}
+            {currentStep === 1 ? t('list.myListCreateDesc')
+              : currentStep === 2 ? t('list.myListEditDesc')
+              : t('list.myListShareDesc')}
           </p>
         </div>
       </div>
