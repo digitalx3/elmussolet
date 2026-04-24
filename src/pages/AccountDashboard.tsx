@@ -54,11 +54,14 @@ const statusColorMap: Record<string, string> = {
 const AccountDashboard: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { profile, refreshProfile } = useAuth();
+  const initialTab = typeof window !== 'undefined' && window.location.pathname.includes('la-meva-llista')
+    ? 'my-list'
+    : 'profile';
 
   return (
     <div className="container py-8 max-w-4xl">
       <h1 className="font-display text-3xl font-bold mb-6">{t('account.title')}</h1>
-      <Tabs defaultValue="profile">
+      <Tabs defaultValue={initialTab}>
         <TabsList className="mb-6">
           <TabsTrigger value="profile" className="gap-2"><User className="h-4 w-4" />{t('account.profile')}</TabsTrigger>
           <TabsTrigger value="orders" className="gap-2"><ShoppingBag className="h-4 w-4" />{t('account.orders')}</TabsTrigger>
