@@ -119,7 +119,15 @@
     "freeShipping": "¡Envío gratuito!",
     "freeShippingHint": "Envío gratuito para pedidos superiores a {{amount}} €",
     "paymentAfterConfirm": "Realiza el pago después de confirmar el pedido.",
-    "paymentConcept": "Concepto"
+    "paymentConcept": "Concepto",
+    "paymentInstructions": "Instrucciones de pago",
+    "amountToPay": "Importe a pagar",
+    "useThisConcept": "Importante: Indica este concepto en el pago para que podamos identificar tu pedido.",
+    "bizumInstructions": "Envía un Bizum al siguiente número con el concepto indicado:",
+    "transferInstructions": "Haz una transferencia a la siguiente cuenta indicando el concepto:",
+    "copy": "Copiar",
+    "copied": "¡Copiado!",
+    "thanksMessage": "¡Gracias por tu compra! Te enviaremos un correo cuando recibamos el pago y preparemos el pedido."
   },
   "list": {
     "title": "Listas de Nacimiento",
