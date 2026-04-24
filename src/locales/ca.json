@@ -119,7 +119,15 @@
     "freeShipping": "Enviament gratuït!",
     "freeShippingHint": "Enviament gratuït per a comandes superiors a {{amount}} €",
     "paymentAfterConfirm": "Realitza el pagament després de confirmar la comanda.",
-    "paymentConcept": "Concepte"
+    "paymentConcept": "Concepte",
+    "paymentInstructions": "Instruccions de pagament",
+    "amountToPay": "Import a pagar",
+    "useThisConcept": "Important: Indica aquest concepte al pagament perquè puguem identificar la teva comanda.",
+    "bizumInstructions": "Envia un Bizum al següent número amb el concepte indicat:",
+    "transferInstructions": "Fes una transferència al següent compte indicant el concepte:",
+    "copy": "Copiar",
+    "copied": "Copiat!",
+    "thanksMessage": "Gràcies per la teva compra! T'enviarem un correu quan rebem el pagament i preparem la comanda."
   },
   "list": {
     "title": "Llistes de Naixement",
