@@ -480,33 +480,90 @@ const CheckoutPage: React.FC = () => {
 
         {/* STEP 3: Confirmation */}
         {step === 'confirmation' && orderNumber && (
-          <motion.div key="confirmation" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
-            <CheckCircle2 className="h-16 w-16 text-primary mx-auto mb-4" />
-            <h2 className="font-display text-2xl font-bold mb-2">{t('checkout.orderConfirmed')}</h2>
-            <p className="text-muted-foreground mb-1">{t('checkout.orderNumber')}</p>
-            <p className="text-xl font-mono font-bold text-foreground mb-6">{orderNumber}</p>
+          <motion.div key="confirmation" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="py-4">
+            <div className="text-center mb-8">
+              <CheckCircle2 className="h-16 w-16 text-primary mx-auto mb-4" />
+              <h2 className="font-display text-2xl font-bold mb-2">{t('checkout.orderConfirmed')}</h2>
+              <p className="text-muted-foreground mb-1">{t('checkout.orderNumber')}</p>
+              <p className="text-xl font-mono font-bold text-foreground">{orderNumber}</p>
+            </div>
 
-            {paymentMethod === 'transfer' && (
-              <div className="bg-card rounded-lg p-4 shadow-soft text-left mb-6 max-w-sm mx-auto">
-                <p className="text-sm font-medium mb-2">{t('checkout.bankTransfer')}</p>
-                <p className="text-xs text-muted-foreground">IBAN: <span className="font-mono font-semibold text-foreground">{paymentSettings.payment_transfer_iban || '—'}</span></p>
-                {paymentSettings.payment_transfer_beneficiary && (
-                  <p className="text-xs text-muted-foreground">{t('admin.transferBeneficiary')}: {paymentSettings.payment_transfer_beneficiary}</p>
+            {/* Payment instructions */}
+            <div className="bg-card rounded-lg p-5 shadow-soft mb-6 border border-border">
+              <h3 className="font-display text-lg font-semibold mb-3 flex items-center gap-2">
+                {paymentMethod === 'bizum' ? <CreditCard className="h-5 w-5 text-primary" /> : <Landmark className="h-5 w-5 text-primary" />}
+                {t('checkout.paymentInstructions')}
+              </h3>
+
+              <p className="text-sm text-muted-foreground mb-4">
+                {paymentMethod === 'bizum' ? t('checkout.bizumInstructions') : t('checkout.transferInstructions')}
+              </p>
+
+              <div className="space-y-3">
+                {paymentMethod === 'bizum' ? (
+                  <div className="flex items-center justify-between gap-2 p-3 rounded-md bg-muted/50">
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground">{t('admin.bizumPhone')}</p>
+                      <p className="font-mono font-semibold text-foreground truncate">{paymentSettings.payment_bizum_phone || '—'}</p>
+                    </div>
+                    {paymentSettings.payment_bizum_phone && (
+                      <Button size="sm" variant="outline" onClick={() => copyToClipboard(paymentSettings.payment_bizum_phone, 'bizum')}>
+                        {copiedField === 'bizum' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between gap-2 p-3 rounded-md bg-muted/50">
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground">IBAN</p>
+                        <p className="font-mono font-semibold text-foreground truncate">{paymentSettings.payment_transfer_iban || '—'}</p>
+                      </div>
+                      {paymentSettings.payment_transfer_iban && (
+                        <Button size="sm" variant="outline" onClick={() => copyToClipboard(paymentSettings.payment_transfer_iban, 'iban')}>
+                          {copiedField === 'iban' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      )}
+                    </div>
+                    {paymentSettings.payment_transfer_beneficiary && (
+                      <div className="p-3 rounded-md bg-muted/50">
+                        <p className="text-xs text-muted-foreground">{t('admin.transferBeneficiary')}</p>
+                        <p className="font-semibold text-foreground">{paymentSettings.payment_transfer_beneficiary}</p>
+                      </div>
+                    )}
+                  </>
                 )}
-                <p className="text-xs text-muted-foreground">{t('checkout.paymentConcept')}: <span className="font-semibold">{orderNumber}</span></p>
-              </div>
-            )}
-            {paymentMethod === 'bizum' && (
-              <div className="bg-card rounded-lg p-4 shadow-soft text-left mb-6 max-w-sm mx-auto">
-                <p className="text-sm font-medium mb-2">Bizum</p>
-                <p className="text-xs text-muted-foreground">{t('admin.bizumPhone')}: <span className="font-mono font-semibold text-foreground">{paymentSettings.payment_bizum_phone || '—'}</span></p>
-                <p className="text-xs text-muted-foreground">{t('checkout.paymentConcept')}: <span className="font-semibold">{orderNumber}</span></p>
-              </div>
-            )}
 
-            <Button asChild>
-              <Link to="/">{t('checkout.backToStore')}</Link>
-            </Button>
+                <div className="flex items-center justify-between gap-2 p-3 rounded-md bg-primary/10 border border-primary/20">
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">{t('checkout.paymentConcept')}</p>
+                    <p className="font-mono font-semibold text-foreground truncate">{orderNumber}</p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => copyToClipboard(orderNumber, 'concept')}>
+                    {copiedField === 'concept' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 p-3 rounded-md bg-primary text-primary-foreground">
+                  <p className="text-sm font-medium">{t('checkout.amountToPay')}</p>
+                  <p className="text-lg font-bold">{grandTotal.toFixed(2)} €</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground mt-4">
+                ⓘ {t('checkout.useThisConcept')}
+              </p>
+            </div>
+
+            <p className="text-sm text-muted-foreground text-center mb-6">
+              {t('checkout.thanksMessage')}
+            </p>
+
+            <div className="text-center">
+              <Button asChild>
+                <Link to="/">{t('checkout.backToStore')}</Link>
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
