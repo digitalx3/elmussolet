@@ -52,6 +52,15 @@ const CheckoutPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [paymentSettings, setPaymentSettings] = useState<Record<string, string>>({});
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const copyToClipboard = (value: string, field: string) => {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopiedField(field);
+      toast.success(t('checkout.copied'));
+      setTimeout(() => setCopiedField(null), 2000);
+    });
+  };
 
   // Fetch payment settings from site_settings
   useEffect(() => {
