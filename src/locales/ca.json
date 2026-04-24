@@ -168,7 +168,17 @@
     "giftAdded": "Regal afegit a la cistella!",
     "exitList": "Sortir de la llista",
     "viewCart": "Veure cistella",
-    "listNotActive": "Aquesta llista no està activa"
+    "listNotActive": "Aquesta llista no està activa",
+    "myListCreateDesc": "Crea la teva llista i comparteix el codi i la contrasenya amb familiars i amics.",
+    "myListEditDesc": "Edita la teva llista i comparteix el codi amb familiars i amics.",
+    "shareHint": "Comparteix el codi i la contrasenya només amb les persones que vulguis convidar a fer regals.",
+    "shareMessage": "Hola! T'invito a la nostra llista de naixement {{babyName}}. Codi: {{code}}. Accedeix a {{url}}",
+    "codeAutoGen": "Codi generat automàticament",
+    "productAlreadyAdded": "Aquest producte ja està a la llista",
+    "firstNameRequired": "El nom és obligatori",
+    "passwordRequired": "Cal una contrasenya",
+    "passwordTooShort": "La contrasenya ha de tenir mínim 6 caràcters",
+    "copied": "copiat"
   },
   "account": {
     "title": "El meu compte",

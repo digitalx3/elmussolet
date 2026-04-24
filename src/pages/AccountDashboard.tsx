@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { formatPrice } from '@/hooks/useTaxRates';
-import { Package, ChevronDown, ChevronUp, User, ShoppingBag } from 'lucide-react';
+import { Package, ChevronDown, ChevronUp, User, ShoppingBag, Heart } from 'lucide-react';
+import MyBirthListPage from './MyBirthListPage';
 
 interface OrderItem {
   id: string;
@@ -53,14 +54,18 @@ const statusColorMap: Record<string, string> = {
 const AccountDashboard: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { profile, refreshProfile } = useAuth();
+  const initialTab = typeof window !== 'undefined' && window.location.pathname.includes('la-meva-llista')
+    ? 'my-list'
+    : 'profile';
 
   return (
     <div className="container py-8 max-w-4xl">
       <h1 className="font-display text-3xl font-bold mb-6">{t('account.title')}</h1>
-      <Tabs defaultValue="profile">
+      <Tabs defaultValue={initialTab}>
         <TabsList className="mb-6">
           <TabsTrigger value="profile" className="gap-2"><User className="h-4 w-4" />{t('account.profile')}</TabsTrigger>
           <TabsTrigger value="orders" className="gap-2"><ShoppingBag className="h-4 w-4" />{t('account.orders')}</TabsTrigger>
+          <TabsTrigger value="my-list" className="gap-2"><Heart className="h-4 w-4" />{t('account.myList')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -68,6 +73,9 @@ const AccountDashboard: React.FC = () => {
         </TabsContent>
         <TabsContent value="orders">
           <OrdersTab />
+        </TabsContent>
+        <TabsContent value="my-list">
+          <MyBirthListPage />
         </TabsContent>
       </Tabs>
     </div>
