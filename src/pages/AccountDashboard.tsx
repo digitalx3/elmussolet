@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { formatPrice } from '@/hooks/useTaxRates';
-import { Package, ChevronDown, ChevronUp, User, ShoppingBag } from 'lucide-react';
+import { Package, ChevronDown, ChevronUp, User, ShoppingBag, Heart } from 'lucide-react';
+import MyBirthListPage from './MyBirthListPage';
 
 interface OrderItem {
   id: string;
@@ -61,6 +62,7 @@ const AccountDashboard: React.FC = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="profile" className="gap-2"><User className="h-4 w-4" />{t('account.profile')}</TabsTrigger>
           <TabsTrigger value="orders" className="gap-2"><ShoppingBag className="h-4 w-4" />{t('account.orders')}</TabsTrigger>
+          <TabsTrigger value="my-list" className="gap-2"><Heart className="h-4 w-4" />{t('account.myList')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -68,6 +70,9 @@ const AccountDashboard: React.FC = () => {
         </TabsContent>
         <TabsContent value="orders">
           <OrdersTab />
+        </TabsContent>
+        <TabsContent value="my-list">
+          <MyBirthListPage />
         </TabsContent>
       </Tabs>
     </div>
