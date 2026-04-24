@@ -26,6 +26,7 @@ const Header: React.FC = () => {
   const navLinks = [
     { to: '/cataleg', label: t('nav.catalog') },
     { to: '/llista-naixement', label: t('nav.birthList') },
+    ...(user ? [{ to: '/la-meva-llista', label: t('home.createList') }] : []),
   ];
 
   return (
