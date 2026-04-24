@@ -168,7 +168,17 @@
     "giftAdded": "¡Regalo añadido a la cesta!",
     "exitList": "Salir de la lista",
     "viewCart": "Ver cesta",
-    "listNotActive": "Esta lista no está activa"
+    "listNotActive": "Esta lista no está activa",
+    "myListCreateDesc": "Crea tu lista y comparte el código y la contraseña con familiares y amigos.",
+    "myListEditDesc": "Edita tu lista y comparte el código con familiares y amigos.",
+    "shareHint": "Comparte el código y la contraseña solo con las personas que quieras invitar a hacer regalos.",
+    "shareMessage": "¡Hola! Te invito a nuestra lista de nacimiento {{babyName}}. Código: {{code}}. Accede en {{url}}",
+    "codeAutoGen": "Código generado automáticamente",
+    "productAlreadyAdded": "Este producto ya está en la lista",
+    "firstNameRequired": "El nombre es obligatorio",
+    "passwordRequired": "Hace falta una contraseña",
+    "passwordTooShort": "La contraseña debe tener mínimo 6 caracteres",
+    "copied": "copiado"
   },
   "account": {
     "title": "Mi cuenta",
