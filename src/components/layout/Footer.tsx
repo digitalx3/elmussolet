@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Mail, Phone, MapPin } from 'lucide-react';
+import logoSquare from '@/assets/mussolet-logo-square.png.asset.json';
 
 const Footer: React.FC = () => {
   const { t } = useTranslation();
@@ -13,7 +14,7 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div>
-            <h3 className="font-display text-lg font-bold text-primary mb-3">El Mussolet</h3>
+            <img src={logoSquare.url} alt="El Mussolet" className="h-20 w-20 mb-3" />
             <p className="text-sm text-muted-foreground leading-relaxed">
               La teva botiga de puericultura de confiança al Berguedà.
             </p>

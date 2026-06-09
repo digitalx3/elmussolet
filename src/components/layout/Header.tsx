@@ -5,6 +5,7 @@ import { ShoppingBag, Menu, X, User, Globe, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
+import logoHorizontal from '@/assets/mussolet-logo-horizontal.png.asset.json';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,7 +35,7 @@ const Header: React.FC = () => {
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <span className="font-display text-xl font-bold text-primary">El Mussolet</span>
+          <img src={logoHorizontal.url} alt="El Mussolet" className="h-10 md:h-12 w-auto" />
         </Link>
 
         {/* Desktop Nav */}
