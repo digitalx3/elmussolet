@@ -1,97 +1,107 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Sweet Pea';
+  src: url('/__l5e/assets-v1/95edd4f7-84a2-4015-92e0-a701f58d2b66/sweet-pea.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
-    /* El Mussolet — Warm puericulture palette */
-    --background: 40 33% 98%;
-    --foreground: 25 30% 12%;
+    /* El Mussolet — Warm owl-inspired palette (cream, terracotta, brown) */
+    --background: 38 50% 97%;
+    --foreground: 20 35% 15%;
 
-    --card: 40 30% 97%;
-    --card-foreground: 25 30% 12%;
+    --card: 38 45% 99%;
+    --card-foreground: 20 35% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 25 30% 12%;
+    --popover-foreground: 20 35% 15%;
 
-    --primary: 152 35% 42%;
-    --primary-foreground: 40 33% 98%;
+    /* Primary: deep terracotta brown (owl body) */
+    --primary: 18 50% 35%;
+    --primary-foreground: 38 50% 97%;
 
-    --secondary: 30 45% 92%;
-    --secondary-foreground: 25 30% 20%;
+    /* Secondary: soft peach */
+    --secondary: 28 55% 90%;
+    --secondary-foreground: 20 40% 22%;
 
-    --muted: 35 20% 94%;
-    --muted-foreground: 25 10% 50%;
+    --muted: 35 30% 93%;
+    --muted-foreground: 20 15% 40%;
 
-    --accent: 22 70% 62%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent: warm peach (owl face) */
+    --accent: 25 65% 68%;
+    --accent-foreground: 20 40% 18%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 35 20% 88%;
-    --input: 35 20% 88%;
-    --ring: 152 35% 42%;
+    --border: 30 25% 86%;
+    --input: 30 25% 86%;
+    --ring: 18 50% 35%;
 
-    --radius: 0.625rem;
+    --radius: 1rem;
 
-    /* Custom tokens */
-    --warm: 30 50% 96%;
-    --warm-foreground: 25 30% 25%;
-    --sage: 152 25% 90%;
-    --sage-foreground: 152 35% 30%;
-    --terracotta: 16 60% 55%;
+    --warm: 30 55% 95%;
+    --warm-foreground: 20 35% 22%;
+    --sage: 28 55% 92%;
+    --sage-foreground: 18 50% 30%;
+    --terracotta: 16 60% 50%;
     --terracotta-foreground: 0 0% 100%;
-    --cream: 40 40% 95%;
-    --sand: 35 30% 85%;
+    --cream: 38 55% 95%;
+    --sand: 30 40% 85%;
 
-    --font-display: 'Playfair Display', serif;
-    --font-body: 'DM Sans', sans-serif;
+    --font-display: 'Sweet Pea', 'Caveat', cursive;
+    --font-body: 'Nunito', 'Quicksand', sans-serif;
 
-    --shadow-soft: 0 2px 15px -3px hsl(25 30% 12% / 0.06), 0 4px 6px -4px hsl(25 30% 12% / 0.04);
-    --shadow-card: 0 4px 20px -4px hsl(25 30% 12% / 0.08);
-    --shadow-elevated: 0 10px 40px -8px hsl(25 30% 12% / 0.12);
+    --shadow-soft: 0 2px 15px -3px hsl(20 35% 15% / 0.06), 0 4px 6px -4px hsl(20 35% 15% / 0.04);
+    --shadow-card: 0 4px 20px -4px hsl(20 35% 15% / 0.08);
+    --shadow-elevated: 0 10px 40px -8px hsl(18 50% 25% / 0.18);
 
-    --sidebar-background: 40 30% 97%;
-    --sidebar-foreground: 25 30% 20%;
-    --sidebar-primary: 152 35% 42%;
-    --sidebar-primary-foreground: 40 33% 98%;
-    --sidebar-accent: 35 20% 94%;
-    --sidebar-accent-foreground: 25 30% 20%;
-    --sidebar-border: 35 20% 88%;
-    --sidebar-ring: 152 35% 42%;
+    --sidebar-background: 38 45% 97%;
+    --sidebar-foreground: 20 35% 20%;
+    --sidebar-primary: 18 50% 35%;
+    --sidebar-primary-foreground: 38 50% 97%;
+    --sidebar-accent: 35 30% 93%;
+    --sidebar-accent-foreground: 20 35% 20%;
+    --sidebar-border: 30 25% 86%;
+    --sidebar-ring: 18 50% 35%;
   }
 
   .dark {
-    --background: 25 20% 8%;
-    --foreground: 40 20% 92%;
-    --card: 25 18% 12%;
-    --card-foreground: 40 20% 92%;
-    --popover: 25 18% 12%;
-    --popover-foreground: 40 20% 92%;
-    --primary: 152 35% 50%;
-    --primary-foreground: 25 20% 8%;
-    --secondary: 25 15% 18%;
-    --secondary-foreground: 40 20% 92%;
-    --muted: 25 15% 18%;
-    --muted-foreground: 35 10% 55%;
-    --accent: 22 70% 62%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62% 30%;
+    --background: 20 25% 9%;
+    --foreground: 38 40% 92%;
+    --card: 20 25% 13%;
+    --card-foreground: 38 40% 92%;
+    --popover: 20 25% 13%;
+    --popover-foreground: 38 40% 92%;
+    --primary: 25 65% 60%;
+    --primary-foreground: 20 25% 9%;
+    --secondary: 20 20% 18%;
+    --secondary-foreground: 38 40% 92%;
+    --muted: 20 20% 18%;
+    --muted-foreground: 35 15% 60%;
+    --accent: 25 65% 68%;
+    --accent-foreground: 20 25% 9%;
+    --destructive: 0 62% 35%;
     --destructive-foreground: 0 0% 100%;
-    --border: 25 15% 20%;
-    --input: 25 15% 20%;
-    --ring: 152 35% 50%;
-    --sidebar-background: 25 18% 10%;
-    --sidebar-foreground: 40 20% 90%;
-    --sidebar-primary: 152 35% 50%;
-    --sidebar-primary-foreground: 25 20% 8%;
-    --sidebar-accent: 25 15% 15%;
-    --sidebar-accent-foreground: 40 20% 90%;
-    --sidebar-border: 25 15% 20%;
-    --sidebar-ring: 152 35% 50%;
+    --border: 20 20% 20%;
+    --input: 20 20% 20%;
+    --ring: 25 65% 60%;
+    --sidebar-background: 20 25% 11%;
+    --sidebar-foreground: 38 40% 90%;
+    --sidebar-primary: 25 65% 60%;
+    --sidebar-primary-foreground: 20 25% 9%;
+    --sidebar-accent: 20 20% 16%;
+    --sidebar-accent-foreground: 38 40% 90%;
+    --sidebar-border: 20 20% 20%;
+    --sidebar-ring: 25 65% 60%;
   }
 }
 
@@ -106,11 +116,15 @@
 
   h1, h2, h3, h4 {
     font-family: var(--font-display);
+    letter-spacing: 0.01em;
   }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  .font-display {
+    font-family: var(--font-display);
   }
 }
