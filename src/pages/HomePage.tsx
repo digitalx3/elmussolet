@@ -2,9 +2,12 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import { Package, Store, Heart, ArrowRight, Sparkles, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import HeroCarousel from '@/components/home/HeroCarousel';
 import heroImage from '@/assets/hero-mussolet.jpg';
 import logoSquare from '@/assets/mussolet-logo-square.png.asset.json';
 
@@ -13,9 +16,22 @@ const HomePage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const { data: hasCustomHeros } = useQuery({
+    queryKey: ['hero-slides-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('hero_slides')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_active', true);
+      return (count ?? 0) > 0;
+    },
+  });
+
   return (
     <div className="bg-background">
-      {/* Hero */}
+      {hasCustomHeros ? (
+        <HeroCarousel />
+      ) : (
       <section className="relative overflow-hidden bg-gradient-to-br from-secondary via-background to-cream">
         <div className="absolute inset-0 opacity-30 pointer-events-none">
           <div className="absolute -top-20 -right-20 h-96 w-96 rounded-full bg-accent/40 blur-3xl" />
