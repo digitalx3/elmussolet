@@ -379,7 +379,8 @@
     "freeShippingDesc": "Configura el llindar a partir del qual l'enviament és gratuït.",
     "freeShippingThreshold": "Import mínim",
     "freeShippingHint": "Posa 0 per desactivar l'enviament gratuït.",
-    "settingsSaved": "Configuració guardada correctament."
+    "settingsSaved": "Configuració guardada correctament.",
+    "heros": "Heros"
   },
   "common": {
     "save": "Guardar",
