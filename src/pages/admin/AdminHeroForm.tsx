@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Save, Upload } from 'lucide-react';
+import { ArrowLeft, Save, Upload, Monitor, Tablet, Smartphone, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import HeroCanvasEditor, { defaultLayout, Layout, Device } from '@/components/admin/HeroCanvasEditor';
+import HeroSlideView, { Slide } from '@/components/home/HeroSlideView';
+
+const PREVIEW_WIDTHS: Record<Device, number> = { desktop: 1200, tablet: 768, mobile: 375 };
 
 const BUTTON_VARIANTS = ['default', 'outline', 'secondary', 'ghost'];
 
@@ -286,7 +289,91 @@ const AdminHeroForm: React.FC = () => {
           <p className="text-xs text-muted-foreground mt-3">
             Arrossega i redimensiona els elements directament sobre la imatge. Configura cada dispositiu (PC / Tablet / Mòbil) per separat.
           </p>
+
+          <LivePreview
+            bgUrl={bgUrl}
+            overlay={overlay}
+            badgeCa={badgeCa} badgeEs={badgeEs}
+            titleCa={titleCa} titleEs={titleEs}
+            subtitleCa={subtitleCa} subtitleEs={subtitleEs}
+            btn1Ca={btn1Ca} btn1Es={btn1Es} btn1Url={btn1Url} btn1Variant={btn1Variant}
+            btn2Ca={btn2Ca} btn2Es={btn2Es} btn2Url={btn2Url} btn2Variant={btn2Variant}
+            layout={layout}
+            canvasHeights={canvasHeights}
+          />
         </div>
+      </div>
+    </div>
+  );
+};
+
+interface LivePreviewProps {
+  bgUrl: string | null;
+  overlay: number;
+  badgeCa: string; badgeEs: string;
+  titleCa: string; titleEs: string;
+  subtitleCa: string; subtitleEs: string;
+  btn1Ca: string; btn1Es: string; btn1Url: string; btn1Variant: string;
+  btn2Ca: string; btn2Es: string; btn2Url: string; btn2Variant: string;
+  layout: Layout;
+  canvasHeights: Record<Device, number>;
+}
+
+const LivePreview: React.FC<LivePreviewProps> = (p) => {
+  const [device, setDevice] = useState<Device>('desktop');
+
+  const slide: Slide = {
+    background_image_url: p.bgUrl,
+    background_overlay: p.overlay,
+    badge_text_ca: p.badgeCa || null, badge_text_es: p.badgeEs || null,
+    title_ca: p.titleCa || null, title_es: p.titleEs || null,
+    subtitle_ca: p.subtitleCa || null, subtitle_es: p.subtitleEs || null,
+    button1_text_ca: p.btn1Ca || null, button1_text_es: p.btn1Es || null,
+    button1_url: p.btn1Url || null, button1_variant: p.btn1Variant,
+    button2_text_ca: p.btn2Ca || null, button2_text_es: p.btn2Es || null,
+    button2_url: p.btn2Url || null, button2_variant: p.btn2Variant,
+    layout: p.layout,
+    canvas_heights: p.canvasHeights,
+  };
+
+  return (
+    <div className="mt-6 pt-6 border-t border-border">
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+        <div className="flex items-center gap-2">
+          <Eye className="h-4 w-4 text-primary" />
+          <h3 className="font-semibold">Vista prèvia en temps real</h3>
+        </div>
+        <div className="inline-flex rounded-lg border border-border bg-muted p-1">
+          {([
+            ['desktop', Monitor, 'PC'],
+            ['tablet', Tablet, 'Tablet'],
+            ['mobile', Smartphone, 'Mòbil'],
+          ] as const).map(([d, Icon, label]) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => setDevice(d)}
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                device === d ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-muted/30 rounded-lg p-4 overflow-auto">
+        <div
+          className="mx-auto bg-background rounded-lg overflow-hidden shadow-elevated border border-border"
+          style={{ width: '100%', maxWidth: PREVIEW_WIDTHS[device] }}
+        >
+          <HeroSlideView slide={slide} device={device} interactive={false} />
+        </div>
+        <p className="text-center text-xs text-muted-foreground mt-2">
+          Tal com es veurà a la home — {device.toUpperCase()}
+        </p>
       </div>
     </div>
   );
