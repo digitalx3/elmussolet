@@ -63,9 +63,9 @@ const AdminHeroForm: React.FC = () => {
     setBtn1Url(existing.button1_url ?? ''); setBtn1Variant(existing.button1_variant ?? 'default');
     setBtn2Ca(existing.button2_text_ca ?? ''); setBtn2Es(existing.button2_text_es ?? '');
     setBtn2Url(existing.button2_url ?? ''); setBtn2Variant(existing.button2_variant ?? 'outline');
-    const lay = existing.layout as Layout | null;
+    const lay = existing.layout as unknown as Layout | null;
     if (lay && lay.desktop) setLayout(lay);
-    const ch = existing.canvas_heights as Record<Device, number> | null;
+    const ch = existing.canvas_heights as unknown as Record<Device, number> | null;
     if (ch) setCanvasHeights(ch);
   }, [existing]);
 
@@ -101,17 +101,18 @@ const AdminHeroForm: React.FC = () => {
         button1_url: btn1Url || null, button1_variant: btn1Variant,
         button2_text_ca: btn2Ca || null, button2_text_es: btn2Es || null,
         button2_url: btn2Url || null, button2_variant: btn2Variant,
-        layout: layout as unknown as Record<string, unknown>,
-        canvas_heights: canvasHeights as unknown as Record<string, unknown>,
+        layout: layout as never,
+        canvas_heights: canvasHeights as never,
       };
       if (isNew) {
         const { data: maxRow } = await supabase.from('hero_slides').select('sort_order').order('sort_order', { ascending: false }).limit(1).maybeSingle();
-        const nextOrder = (maxRow?.sort_order ?? -1) + 1;
-        const { data, error } = await supabase.from('hero_slides').insert({ ...payload, sort_order: nextOrder }).select().single();
+        const nextOrder = ((maxRow as { sort_order?: number } | null)?.sort_order ?? -1) + 1;
+        const insertPayload = { ...payload, sort_order: nextOrder } as never;
+        const { data, error } = await supabase.from('hero_slides').insert(insertPayload).select().single();
         if (error) throw error;
         return data;
       }
-      const { data, error } = await supabase.from('hero_slides').update(payload).eq('id', id).select().single();
+      const { data, error } = await supabase.from('hero_slides').update(payload).eq('id', id!).select().single();
       if (error) throw error;
       return data;
     },
