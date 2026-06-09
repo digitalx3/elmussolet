@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, Link } from 'react-router-dom';
 import {
   Package, LayoutDashboard, Tags, Bookmark, ListChecks,
-  FileText, ShoppingCart, Users, Truck, Settings, ArrowLeft, SlidersHorizontal
+  FileText, ShoppingCart, Users, Truck, Settings, ArrowLeft, SlidersHorizontal, Image as ImageIcon
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel,
@@ -19,6 +19,7 @@ const navItems = [
   { key: 'attributes', path: '/admin/atributs', icon: SlidersHorizontal },
   { key: 'categories', path: '/admin/categories', icon: Tags },
   { key: 'brands', path: '/admin/marques', icon: Bookmark },
+  { key: 'heros', path: '/admin/heros', icon: ImageIcon },
   { key: 'orders', path: '/admin/comandes', icon: ShoppingCart },
   { key: 'lists', path: '/admin/llistes', icon: ListChecks },
   { key: 'templates', path: '/admin/plantilles', icon: FileText },

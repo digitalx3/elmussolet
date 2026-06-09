@@ -162,6 +162,87 @@ export type Database = {
           },
         ]
       }
+      hero_slides: {
+        Row: {
+          background_image_url: string | null
+          background_overlay: number
+          badge_text_ca: string | null
+          badge_text_es: string | null
+          button1_text_ca: string | null
+          button1_text_es: string | null
+          button1_url: string | null
+          button1_variant: string | null
+          button2_text_ca: string | null
+          button2_text_es: string | null
+          button2_url: string | null
+          button2_variant: string | null
+          canvas_heights: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          layout: Json
+          name: string
+          sort_order: number
+          subtitle_ca: string | null
+          subtitle_es: string | null
+          title_ca: string | null
+          title_es: string | null
+          updated_at: string
+        }
+        Insert: {
+          background_image_url?: string | null
+          background_overlay?: number
+          badge_text_ca?: string | null
+          badge_text_es?: string | null
+          button1_text_ca?: string | null
+          button1_text_es?: string | null
+          button1_url?: string | null
+          button1_variant?: string | null
+          button2_text_ca?: string | null
+          button2_text_es?: string | null
+          button2_url?: string | null
+          button2_variant?: string | null
+          canvas_heights?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          layout?: Json
+          name: string
+          sort_order?: number
+          subtitle_ca?: string | null
+          subtitle_es?: string | null
+          title_ca?: string | null
+          title_es?: string | null
+          updated_at?: string
+        }
+        Update: {
+          background_image_url?: string | null
+          background_overlay?: number
+          badge_text_ca?: string | null
+          badge_text_es?: string | null
+          button1_text_ca?: string | null
+          button1_text_es?: string | null
+          button1_url?: string | null
+          button1_variant?: string | null
+          button2_text_ca?: string | null
+          button2_text_es?: string | null
+          button2_url?: string | null
+          button2_variant?: string | null
+          canvas_heights?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          layout?: Json
+          name?: string
+          sort_order?: number
+          subtitle_ca?: string | null
+          subtitle_es?: string | null
+          title_ca?: string | null
+          title_es?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       list_items: {
         Row: {
           added_at: string
