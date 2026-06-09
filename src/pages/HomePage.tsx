@@ -88,6 +88,7 @@ const HomePage: React.FC = () => {
           </motion.div>
         </div>
       </section>
+      )}
 
       {/* Trust signals */}
       <section className="py-16 md:py-20">
