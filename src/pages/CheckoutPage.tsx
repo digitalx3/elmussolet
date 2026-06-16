@@ -51,6 +51,7 @@ const CheckoutPage: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [finalTotal, setFinalTotal] = useState<number>(0);
   const [paymentSettings, setPaymentSettings] = useState<Record<string, string>>({});
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -223,6 +224,8 @@ const CheckoutPage: React.FC = () => {
       if (itemsError) throw itemsError;
 
       // Clear cart
+      // Capture total BEFORE clearing the cart so confirmation step shows correct amount
+      setFinalTotal(total);
       clearStandard();
       clearList();
       setOrderNumber(num);
@@ -546,7 +549,7 @@ const CheckoutPage: React.FC = () => {
 
                 <div className="flex items-center justify-between gap-2 p-3 rounded-md bg-primary text-primary-foreground">
                   <p className="text-sm font-medium">{t('checkout.amountToPay')}</p>
-                  <p className="text-lg font-bold">{grandTotal.toFixed(2)} €</p>
+                  <p className="text-lg font-bold">{finalTotal.toFixed(2)} €</p>
                 </div>
               </div>
 
