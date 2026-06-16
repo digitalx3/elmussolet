@@ -12,7 +12,7 @@ import { useTranslatedProducts, type ProductFilters } from '@/hooks/useTranslate
 import { useCategories } from '@/hooks/useCategories';
 import { useBrands } from '@/hooks/useBrands';
 
-const MAX_PRICE_DEFAULT = 500;
+const MAX_PRICE_DEFAULT = 10000;
 
 const CatalogPage: React.FC = () => {
   const { t } = useTranslation();

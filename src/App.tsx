@@ -23,6 +23,7 @@ import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import CreateBirthListPage from "@/pages/CreateBirthListPage";
 import NotFound from "@/pages/NotFound";
+import CmsPagePage from "@/pages/CmsPagePage";
 
 const queryClient = new QueryClient();
 
@@ -49,15 +50,16 @@ const App = () => (
                   <Route path="/registre" element={<PublicLayout><RegisterPage /></PublicLayout>} />
                   <Route path="/recuperar-contrasenya" element={<PublicLayout><ForgotPasswordPage /></PublicLayout>} />
                   <Route path="/reset-password" element={<PublicLayout><ResetPasswordPage /></PublicLayout>} />
+                  <Route path="/pagina/:slug" element={<PublicLayout><CmsPagePage /></PublicLayout>} />
 
                   {/* Protected routes */}
                   <Route path="/la-meva-llista" element={<PublicLayout><ProtectedRoute><CreateBirthListPage /></ProtectedRoute></PublicLayout>} />
                   <Route path="/el-meu-compte" element={<PublicLayout><ProtectedRoute><AccountDashboard /></ProtectedRoute></PublicLayout>} />
                   <Route path="/el-meu-compte/*" element={<PublicLayout><ProtectedRoute><AccountDashboard /></ProtectedRoute></PublicLayout>} />
 
-                  {/* Admin routes */}
-                  <Route path="/admin" element={<PublicLayout><AdminRoute><AdminDashboard /></AdminRoute></PublicLayout>} />
-                  <Route path="/admin/*" element={<PublicLayout><AdminRoute><AdminDashboard /></AdminRoute></PublicLayout>} />
+                  {/* Admin routes — no PublicLayout to avoid sticky header overlapping the sidebar */}
+                  <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+                  <Route path="/admin/*" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
 
                   <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
                 </Routes>
