@@ -46,7 +46,7 @@ const ProductDetailPage: React.FC = () => {
 
   const handleAddToCart = () => {
     if (!product) return;
-    if (product.hasVariants && !selectedVariantId) {
+    if (product.hasVariants && variantGroups.length > 0 && !selectedVariantId) {
       toast.error('Selecciona una variant');
       return;
     }

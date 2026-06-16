@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import type { TranslatedCategory } from '@/hooks/useCategories';
 import type { Brand } from '@/hooks/useBrands';
 
@@ -72,25 +71,23 @@ const CatalogFilters: React.FC<Props> = ({
       {/* Categories */}
       <div>
         <Label className="text-sm font-semibold mb-2 block">{t('products.category')}</Label>
-        <ScrollArea className="max-h-48">
-          <div className="space-y-1">
+        <div className="max-h-60 overflow-y-auto pr-1 space-y-1">
+          <button
+            onClick={() => onCategoryChange(undefined)}
+            className={`block w-full text-left text-sm px-2 py-1.5 rounded-md transition-colors ${!selectedCategory ? 'bg-primary/10 text-primary font-medium' : 'text-foreground/80 hover:bg-muted'}`}
+          >
+            {t('products.allProducts')}
+          </button>
+          {categories.map(cat => (
             <button
-              onClick={() => onCategoryChange(undefined)}
-              className={`block w-full text-left text-sm px-2 py-1.5 rounded-md transition-colors ${!selectedCategory ? 'bg-primary/10 text-primary font-medium' : 'text-foreground/80 hover:bg-muted'}`}
+              key={cat.id}
+              onClick={() => onCategoryChange(cat.id === selectedCategory ? undefined : cat.id)}
+              className={`block w-full text-left text-sm px-2 py-1.5 rounded-md transition-colors ${cat.id === selectedCategory ? 'bg-primary/10 text-primary font-medium' : 'text-foreground/80 hover:bg-muted'}`}
             >
-              {t('products.allProducts')}
+              {cat.name}
             </button>
-            {categories.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => onCategoryChange(cat.id === selectedCategory ? undefined : cat.id)}
-                className={`block w-full text-left text-sm px-2 py-1.5 rounded-md transition-colors ${cat.id === selectedCategory ? 'bg-primary/10 text-primary font-medium' : 'text-foreground/80 hover:bg-muted'}`}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
-        </ScrollArea>
+          ))}
+        </div>
       </div>
 
       <Separator />
@@ -99,25 +96,23 @@ const CatalogFilters: React.FC<Props> = ({
       {brands.length > 0 && (
         <div>
           <Label className="text-sm font-semibold mb-2 block">{t('products.brand')}</Label>
-          <ScrollArea className="max-h-48">
-            <div className="space-y-1">
+          <div className="max-h-60 overflow-y-auto pr-1 space-y-1">
+            <button
+              onClick={() => onBrandChange(undefined)}
+              className={`block w-full text-left text-sm px-2 py-1.5 rounded-md transition-colors ${!selectedBrand ? 'bg-primary/10 text-primary font-medium' : 'text-foreground/80 hover:bg-muted'}`}
+            >
+              {t('common.all')}
+            </button>
+            {brands.map(brand => (
               <button
-                onClick={() => onBrandChange(undefined)}
-                className={`block w-full text-left text-sm px-2 py-1.5 rounded-md transition-colors ${!selectedBrand ? 'bg-primary/10 text-primary font-medium' : 'text-foreground/80 hover:bg-muted'}`}
+                key={brand.id}
+                onClick={() => onBrandChange(brand.id === selectedBrand ? undefined : brand.id)}
+                className={`block w-full text-left text-sm px-2 py-1.5 rounded-md transition-colors ${brand.id === selectedBrand ? 'bg-primary/10 text-primary font-medium' : 'text-foreground/80 hover:bg-muted'}`}
               >
-                {t('common.all')}
+                {brand.name}
               </button>
-              {brands.map(brand => (
-                <button
-                  key={brand.id}
-                  onClick={() => onBrandChange(brand.id === selectedBrand ? undefined : brand.id)}
-                  className={`block w-full text-left text-sm px-2 py-1.5 rounded-md transition-colors ${brand.id === selectedBrand ? 'bg-primary/10 text-primary font-medium' : 'text-foreground/80 hover:bg-muted'}`}
-                >
-                  {brand.name}
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
+            ))}
+          </div>
         </div>
       )}
 
