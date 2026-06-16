@@ -34,10 +34,11 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="font-display text-sm font-semibold mb-3 text-foreground">{t('footer.contact')}</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/avis-legal" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.legal')}</Link></li>
-              <li><Link to="/privacitat" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.privacy')}</Link></li>
-              <li><Link to="/cookies" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.cookies')}</Link></li>
-              <li><Link to="/condicions" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.terms')}</Link></li>
+              <li><Link to="/pagina/avis-legal" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.legal')}</Link></li>
+              <li><Link to="/pagina/privacitat" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.privacy')}</Link></li>
+              <li><Link to="/pagina/cookies" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.cookies')}</Link></li>
+              <li><Link to="/pagina/condicions" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.terms')}</Link></li>
+              <li><Link to="/pagina/enviaments-devolucions" className="text-muted-foreground hover:text-primary transition-colors">Enviaments i devolucions</Link></li>
             </ul>
           </div>
 

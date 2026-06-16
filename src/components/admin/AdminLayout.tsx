@@ -1,9 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Package, LayoutDashboard, Tags, Bookmark, ListChecks,
-  FileText, ShoppingCart, Users, Truck, Settings, ArrowLeft, SlidersHorizontal, Image as ImageIcon
+  FileText, ShoppingCart, Users, Truck, Settings, ArrowLeft, SlidersHorizontal, Image as ImageIcon,
+  FileEdit, Home,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel,
@@ -20,6 +21,8 @@ const navItems = [
   { key: 'categories', path: '/admin/categories', icon: Tags },
   { key: 'brands', path: '/admin/marques', icon: Bookmark },
   { key: 'heros', path: '/admin/heros', icon: ImageIcon },
+  { key: 'homeContent', path: '/admin/home', icon: Home, label: "Pàgina d'inici" },
+  { key: 'pages', path: '/admin/pagines', icon: FileEdit, label: 'Pàgines' },
   { key: 'orders', path: '/admin/comandes', icon: ShoppingCart },
   { key: 'lists', path: '/admin/llistes', icon: ListChecks },
   { key: 'templates', path: '/admin/plantilles', icon: FileText },
@@ -32,7 +35,6 @@ function AdminSidebar() {
   const { t } = useTranslation();
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const location = useLocation();
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
@@ -55,7 +57,7 @@ function AdminSidebar() {
                       activeClassName="bg-primary/10 text-primary font-medium"
                     >
                       <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{t(`admin.${item.key}`)}</span>}
+                      {!collapsed && <span>{(item as any).label ?? t(`admin.${item.key}`)}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -71,10 +73,10 @@ function AdminSidebar() {
 const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <SidebarProvider>
-      <div className="min-h-[calc(100vh-8rem)] flex w-full">
+      <div className="min-h-screen flex w-full bg-background">
         <AdminSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-12 flex items-center border-b border-border px-4 gap-2">
+          <header className="h-14 flex items-center border-b border-border px-4 gap-2 bg-card sticky top-0 z-30">
             <SidebarTrigger />
             <Link to="/">
               <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
@@ -93,3 +95,4 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 export default AdminLayout;
+

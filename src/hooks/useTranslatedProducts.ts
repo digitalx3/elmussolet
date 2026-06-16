@@ -69,12 +69,7 @@ export function useTranslatedProducts(filters: ProductFilters = {}) {
       if (filters.availability) {
         query = query.eq('stock_status', filters.availability);
       }
-      if (filters.minPrice !== undefined) {
-        query = query.gte('base_price', filters.minPrice);
-      }
-      if (filters.maxPrice !== undefined) {
-        query = query.lte('base_price', filters.maxPrice);
-      }
+      // Note: price filter is applied client-side below using priceWithTax (tax-inclusive)
 
       // Sorting
       switch (filters.sortBy) {
@@ -142,6 +137,14 @@ export function useTranslatedProducts(filters: ProductFilters = {}) {
           p.name.toLowerCase().includes(s) ||
           (p.shortDescription?.toLowerCase().includes(s))
         );
+      }
+
+      // Client-side price filter (tax-inclusive) so slider matches displayed prices
+      if (filters.minPrice !== undefined) {
+        products = products.filter(p => p.priceWithTax >= filters.minPrice!);
+      }
+      if (filters.maxPrice !== undefined) {
+        products = products.filter(p => p.priceWithTax <= filters.maxPrice!);
       }
 
       // Client-side name sort
