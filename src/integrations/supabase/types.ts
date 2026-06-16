@@ -162,6 +162,66 @@ export type Database = {
           },
         ]
       }
+      cms_blocks: {
+        Row: {
+          content_ca: string | null
+          content_es: string | null
+          created_at: string
+          cta_label_ca: string | null
+          cta_label_es: string | null
+          cta_url: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          kind: string
+          slug: string
+          sort_order: number
+          subtitle_ca: string | null
+          subtitle_es: string | null
+          title_ca: string | null
+          title_es: string | null
+          updated_at: string
+        }
+        Insert: {
+          content_ca?: string | null
+          content_es?: string | null
+          created_at?: string
+          cta_label_ca?: string | null
+          cta_label_es?: string | null
+          cta_url?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          kind: string
+          slug: string
+          sort_order?: number
+          subtitle_ca?: string | null
+          subtitle_es?: string | null
+          title_ca?: string | null
+          title_es?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content_ca?: string | null
+          content_es?: string | null
+          created_at?: string
+          cta_label_ca?: string | null
+          cta_label_es?: string | null
+          cta_url?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          slug?: string
+          sort_order?: number
+          subtitle_ca?: string | null
+          subtitle_es?: string | null
+          title_ca?: string | null
+          title_es?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hero_slides: {
         Row: {
           background_image_url: string | null
