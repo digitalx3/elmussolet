@@ -414,6 +414,7 @@ export type Database = {
           id: string
           product_id: string
           quantity: number | null
+          section_id: string | null
           sort_order: number | null
           template_id: string
           variant_id: string | null
@@ -422,6 +423,7 @@ export type Database = {
           id?: string
           product_id: string
           quantity?: number | null
+          section_id?: string | null
           sort_order?: number | null
           template_id: string
           variant_id?: string | null
@@ -430,6 +432,7 @@ export type Database = {
           id?: string
           product_id?: string
           quantity?: number | null
+          section_id?: string | null
           sort_order?: number | null
           template_id?: string
           variant_id?: string | null
@@ -440,6 +443,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "list_template_items_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "list_template_sections"
             referencedColumns: ["id"]
           },
           {
@@ -454,6 +464,44 @@ export type Database = {
             columns: ["variant_id"]
             isOneToOne: false
             referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      list_template_sections: {
+        Row: {
+          created_at: string
+          id: string
+          name_ca: string
+          name_es: string | null
+          sort_order: number
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name_ca: string
+          name_es?: string | null
+          sort_order?: number
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name_ca?: string
+          name_es?: string | null
+          sort_order?: number
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_template_sections_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "list_templates"
             referencedColumns: ["id"]
           },
         ]
