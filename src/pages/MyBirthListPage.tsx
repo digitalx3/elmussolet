@@ -348,8 +348,30 @@ const MyBirthListPage: React.FC = () => {
           .eq('user_id', user.id);
       }
 
-      // Sync items: delete + insert
+      // Sync sections: delete + insert (simple resync each save)
       await supabase.from('list_items').delete().eq('list_id', currentId);
+      await supabase.from('list_sections').delete().eq('list_id', currentId);
+
+      const sectionIdMap = new Map<string, string>(); // temp_id -> real id
+      if (sections.length > 0) {
+        const secsToInsert = sections.map((s, i) => ({
+          list_id: currentId!,
+          name_ca: s.name_ca,
+          name_es: s.name_es,
+          sort_order: i,
+        }));
+        const { data: insertedSecs, error: secErr } = await supabase
+          .from('list_sections')
+          .insert(secsToInsert)
+          .select('id, sort_order');
+        if (secErr) throw secErr;
+        // Map by order (we inserted in array order)
+        sections.forEach((s, i) => {
+          const match = (insertedSecs || []).find(is => is.sort_order === i);
+          if (match) sectionIdMap.set(s.temp_id, match.id);
+        });
+      }
+
       if (form.items.length > 0) {
         const itemsToInsert = form.items.map((item, idx) => ({
           list_id: currentId!,
@@ -358,10 +380,12 @@ const MyBirthListPage: React.FC = () => {
           quantity_desired: item.quantity_desired,
           priority: item.priority,
           sort_order: idx,
+          section_id: item.section_temp_id ? (sectionIdMap.get(item.section_temp_id) || null) : null,
         }));
         const { error } = await supabase.from('list_items').insert(itemsToInsert);
         if (error) throw error;
       }
+
 
       queryClient.invalidateQueries({ queryKey: ['my-birth-list', user.id] });
       toast.success(t('common.success'));
