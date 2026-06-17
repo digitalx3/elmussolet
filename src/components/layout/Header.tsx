@@ -20,6 +20,9 @@ const Header: React.FC = () => {
   const { totalItemsCount } = useCart();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: settings } = useSiteSettings(['logo_header_url', 'store_name']);
+  const logoUrl = settings?.logo_header_url || logoHorizontal.url;
+  const storeName = settings?.store_name || 'El Mussolet';
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
