@@ -21,6 +21,7 @@ import AdminHeroList from '@/pages/admin/AdminHeroList';
 import AdminHeroForm from '@/pages/admin/AdminHeroForm';
 import AdminPages from '@/pages/admin/AdminPages';
 import AdminHomeContent from '@/pages/admin/AdminHomeContent';
+import AdminAppearance from '@/pages/admin/AdminAppearance';
 
 const AdminPlaceholder: React.FC<{ titleKey: string }> = ({ titleKey }) => {
   const { t } = useTranslation();
@@ -58,6 +59,7 @@ const AdminDashboard: React.FC = () => {
         <Route path="heros/:id" element={<AdminHeroForm />} />
         <Route path="pagines" element={<AdminPages />} />
         <Route path="home" element={<AdminHomeContent />} />
+        <Route path="aparenca" element={<AdminAppearance />} />
       </Routes>
     </AdminLayout>
   );
