@@ -44,6 +44,7 @@ const AdminHeroForm: React.FC = () => {
   const [layout, setLayout] = useState<Layout>(defaultLayout());
   const [canvasHeights, setCanvasHeights] = useState<Record<Device, number>>({ desktop: 600, tablet: 520, mobile: 560 });
   const [uploading, setUploading] = useState(false);
+  const [floatingImages, setFloatingImages] = useState<FloatingImage[]>([]);
 
   const { data: existing } = useQuery({
     queryKey: ['hero-slide', id],
