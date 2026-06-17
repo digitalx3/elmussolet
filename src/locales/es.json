@@ -405,7 +405,19 @@
     "freeShippingThreshold": "Importe mínimo",
     "freeShippingHint": "Pon 0 para desactivar el envío gratuito.",
     "settingsSaved": "Configuración guardada correctamente.",
-    "heros": "Heros"
+    "heros": "Heros",
+    "deployment": "Despliegue y medios",
+    "deploymentDesc": "Configura las URLs para el despliegue en tu propio VPS. Déjalo vacío para usar Supabase Storage.",
+    "siteCanonicalUrl": "URL canónica del sitio",
+    "siteCanonicalUrlHint": "URL pública donde se aloja la tienda (para SEO y emails).",
+    "mediaBaseUrl": "URL base de medios",
+    "mediaBaseUrlHint": "Base donde se sirven las imágenes de productos, logos, etc. Si está vacío, se usa Supabase Storage.",
+    "assetsBaseUrl": "URL base de assets",
+    "assetsBaseUrlHint": "Base para recursos estáticos (fuentes, iconos, PDFs). Opcional.",
+    "apiBaseUrl": "URL base de la API",
+    "apiBaseUrlHint": "Endpoint del backend Express en el VPS (uploads, edge functions migradas).",
+    "storageProvider": "Proveedor de almacenamiento",
+    "storageProviderHint": "Dónde se suben las imágenes nuevas. Cambiar a VPS requiere tener el backend desplegado."
   },
   "common": {
     "save": "Guardar",
