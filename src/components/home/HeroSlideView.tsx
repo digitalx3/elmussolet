@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { CANVAS_WIDTH, DEFAULT_BOX, Device, ElementBox, Layout } from '@/components/admin/HeroCanvasEditor';
+import { CANVAS_WIDTH, DEFAULT_BOX, DEFAULT_FLOATING_BOX, Device, ElementBox, FloatingImage, Layout } from '@/components/admin/HeroCanvasEditor';
 
 export type Slide = {
   id?: string;
@@ -17,7 +17,29 @@ export type Slide = {
   button2_url: string | null; button2_variant: string | null;
   layout: Layout;
   canvas_heights: Record<Device, number>;
+  floating_images?: FloatingImage[];
 };
+
+function floatingFrameStyle(fi: FloatingImage): React.CSSProperties {
+  const base: React.CSSProperties = {
+    width: '100%', height: '100%',
+    opacity: fi.opacity,
+    borderRadius: fi.rounded,
+    overflow: 'hidden',
+  };
+  switch (fi.frame) {
+    case 'white':
+      return { ...base, background: '#fff', padding: '4%', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' };
+    case 'shadow':
+      return { ...base, boxShadow: '0 16px 40px rgba(0,0,0,0.25)' };
+    case 'polaroid':
+      return { ...base, background: '#fff', padding: '5% 5% 15%', boxShadow: '0 10px 28px rgba(0,0,0,0.2)' };
+    case 'rounded':
+      return { ...base, borderRadius: 9999 };
+    default:
+      return base;
+  }
+}
 
 interface Props {
   slide: Slide;
@@ -113,6 +135,32 @@ const HeroSlideView: React.FC<Props> = ({ slide, device, interactive = true }) =
         <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: slide.background_overlay }} />
       )}
       <div className="absolute inset-0">
+        {(slide.floating_images ?? []).map((fi) => {
+          const box: ElementBox = (layout[`img:${fi.id}`] ?? DEFAULT_FLOATING_BOX);
+          if (box.visible === false || !fi.url) return null;
+          const leftPct = (box.x / canvasW) * 100;
+          const topPct = (box.y / canvasH) * 100;
+          const widthPct = (box.w / canvasW) * 100;
+          const heightPct = (box.h / canvasH) * 100;
+          return (
+            <div
+              key={`img:${fi.id}`}
+              className="absolute"
+              style={{
+                left: `${leftPct}%`,
+                top: `${topPct}%`,
+                width: `${widthPct}%`,
+                height: `${heightPct}%`,
+                zIndex: fi.zIndex,
+                transform: `rotate(${fi.rotation}deg)`,
+              }}
+            >
+              <div style={floatingFrameStyle(fi)}>
+                <img src={fi.url} alt={fi.alt || ''} className="w-full h-full object-cover" style={{ borderRadius: 'inherit' }} />
+              </div>
+            </div>
+          );
+        })}
         {items.map((it) => {
           const leftPct = (it.box.x / canvasW) * 100;
           const topPct = (it.box.y / canvasH) * 100;
@@ -133,6 +181,7 @@ const HeroSlideView: React.FC<Props> = ({ slide, device, interactive = true }) =
                 fontSize: fontSizeStyle,
                 color: it.box.color,
                 textAlign: it.box.textAlign,
+                zIndex: 100,
                 justifyContent:
                   it.box.textAlign === 'center' ? 'center' :
                   it.box.textAlign === 'right' ? 'flex-end' : 'flex-start',
@@ -145,6 +194,7 @@ const HeroSlideView: React.FC<Props> = ({ slide, device, interactive = true }) =
           );
         })}
       </div>
+
     </div>
   );
 };
