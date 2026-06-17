@@ -24,7 +24,18 @@ interface ListItem {
   sort_order: number;
   productName?: string;
   price?: number;
+  section_id?: string | null;
+  section_temp_id?: string | null;
 }
+
+interface PendingSection {
+  temp_id: string;
+  id?: string;
+  name_ca: string;
+  name_es: string;
+  sort_order: number;
+}
+
 
 const generateCode = () => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
