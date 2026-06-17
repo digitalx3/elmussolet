@@ -73,6 +73,8 @@ const AdminHeroForm: React.FC = () => {
     if (lay && lay.desktop) setLayout(lay);
     const ch = existing.canvas_heights as unknown as Record<Device, number> | null;
     if (ch) setCanvasHeights(ch);
+    const fi = (existing as unknown as { floating_images?: FloatingImage[] }).floating_images;
+    if (Array.isArray(fi)) setFloatingImages(fi);
   }, [existing]);
 
   const handleUpload = async (file: File) => {
@@ -109,6 +111,7 @@ const AdminHeroForm: React.FC = () => {
         button2_url: btn2Url || null, button2_variant: btn2Variant,
         layout: layout as never,
         canvas_heights: canvasHeights as never,
+        floating_images: floatingImages as never,
       };
       if (isNew) {
         const { data: maxRow } = await supabase.from('hero_slides').select('sort_order').order('sort_order', { ascending: false }).limit(1).maybeSingle();
