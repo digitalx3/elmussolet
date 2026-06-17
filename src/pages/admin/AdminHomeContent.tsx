@@ -132,18 +132,12 @@ const AdminHomeContent: React.FC = () => {
                     </Label>
                   </div>
                 </div>
-                <div className="grid sm:grid-cols-2 gap-3">
+                <div className="grid sm:grid-cols-[1fr_auto] gap-3 items-start">
                   <div>
                     <Label>Icona</Label>
-                    <select
-                      className="w-full border border-input rounded-md h-10 px-3 bg-background text-sm"
-                      value={b.icon ?? ''}
-                      onChange={e => updateBlock(b.id, { icon: e.target.value })}
-                    >
-                      {ICON_OPTIONS.map(i => <option key={i} value={i}>{i}</option>)}
-                    </select>
+                    <IconPicker value={b.icon ?? ''} onChange={v => updateBlock(b.id, { icon: v })} />
                   </div>
-                  <div>
+                  <div className="w-32">
                     <Label>Ordre</Label>
                     <Input type="number" value={b.sort_order} onChange={e => updateBlock(b.id, { sort_order: Number(e.target.value) })} />
                   </div>
