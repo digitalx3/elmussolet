@@ -405,7 +405,19 @@
     "freeShippingThreshold": "Import mínim",
     "freeShippingHint": "Posa 0 per desactivar l'enviament gratuït.",
     "settingsSaved": "Configuració guardada correctament.",
-    "heros": "Heros"
+    "heros": "Heros",
+    "deployment": "Desplegament i mitjans",
+    "deploymentDesc": "Configura les URLs per al desplegament al teu propi VPS. Deixa-ho buit per fer servir Supabase Storage.",
+    "siteCanonicalUrl": "URL canònica del lloc",
+    "siteCanonicalUrlHint": "URL pública on s'allotja la botiga (per SEO i correus).",
+    "mediaBaseUrl": "URL base de mitjans",
+    "mediaBaseUrlHint": "Base on es serveixen les imatges de productes, logos, etc. Si està buit, s'utilitza Supabase Storage.",
+    "assetsBaseUrl": "URL base d'assets",
+    "assetsBaseUrlHint": "Base per a recursos estàtics (fonts, icones, PDFs). Opcional.",
+    "apiBaseUrl": "URL base de l'API",
+    "apiBaseUrlHint": "Endpoint del backend Express al VPS (uploads, edge functions migrades).",
+    "storageProvider": "Proveïdor d'emmagatzematge",
+    "storageProviderHint": "On es pugen les imatges noves. Canviar a VPS requereix tenir el backend desplegat."
   },
   "common": {
     "save": "Guardar",

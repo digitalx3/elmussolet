@@ -25,6 +25,7 @@ import CreateBirthListPage from "@/pages/CreateBirthListPage";
 import NotFound from "@/pages/NotFound";
 import CmsPagePage from "@/pages/CmsPagePage";
 import AppearanceInjector from "@/components/AppearanceInjector";
+import MediaConfigLoader from "@/components/MediaConfigLoader";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
             <TooltipProvider>
               <Sonner />
               <AppearanceInjector />
+              <MediaConfigLoader />
               <BrowserRouter>
                 <Routes>
                   {/* Public routes */}
