@@ -13,10 +13,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import PublicListSteps from '@/components/list/PublicListSteps';
 
+interface ListSection {
+  id: string;
+  name_ca: string;
+  name_es: string;
+  sort_order: number;
+}
+
 interface ListItemWithProduct {
   id: string;
   product_id: string;
   variant_id: string | null;
+  section_id: string | null;
   quantity_desired: number;
   quantity_purchased: number;
   priority: string;
@@ -36,6 +44,7 @@ interface ListItemWithProduct {
     variant_type_id: string;
   } | null;
 }
+
 
 const BirthListViewPage: React.FC = () => {
   const { t, i18n } = useTranslation();
