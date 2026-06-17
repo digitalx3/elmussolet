@@ -135,6 +135,32 @@ const HeroSlideView: React.FC<Props> = ({ slide, device, interactive = true }) =
         <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: slide.background_overlay }} />
       )}
       <div className="absolute inset-0">
+        {(slide.floating_images ?? []).map((fi) => {
+          const box: ElementBox = (layout[`img:${fi.id}`] ?? DEFAULT_FLOATING_BOX);
+          if (box.visible === false || !fi.url) return null;
+          const leftPct = (box.x / canvasW) * 100;
+          const topPct = (box.y / canvasH) * 100;
+          const widthPct = (box.w / canvasW) * 100;
+          const heightPct = (box.h / canvasH) * 100;
+          return (
+            <div
+              key={`img:${fi.id}`}
+              className="absolute"
+              style={{
+                left: `${leftPct}%`,
+                top: `${topPct}%`,
+                width: `${widthPct}%`,
+                height: `${heightPct}%`,
+                zIndex: fi.zIndex,
+                transform: `rotate(${fi.rotation}deg)`,
+              }}
+            >
+              <div style={floatingFrameStyle(fi)}>
+                <img src={fi.url} alt={fi.alt || ''} className="w-full h-full object-cover" style={{ borderRadius: 'inherit' }} />
+              </div>
+            </div>
+          );
+        })}
         {items.map((it) => {
           const leftPct = (it.box.x / canvasW) * 100;
           const topPct = (it.box.y / canvasH) * 100;
@@ -155,6 +181,7 @@ const HeroSlideView: React.FC<Props> = ({ slide, device, interactive = true }) =
                 fontSize: fontSizeStyle,
                 color: it.box.color,
                 textAlign: it.box.textAlign,
+                zIndex: 100,
                 justifyContent:
                   it.box.textAlign === 'center' ? 'center' :
                   it.box.textAlign === 'right' ? 'flex-end' : 'flex-start',
@@ -167,6 +194,7 @@ const HeroSlideView: React.FC<Props> = ({ slide, device, interactive = true }) =
           );
         })}
       </div>
+
     </div>
   );
 };
