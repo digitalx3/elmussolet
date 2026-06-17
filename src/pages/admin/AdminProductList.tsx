@@ -75,6 +75,7 @@ const AdminProductList: React.FC = () => {
                 <TableHead>{t('admin.products')}</TableHead>
                 <TableHead>SKU</TableHead>
                 <TableHead>{t('products.price')}</TableHead>
+                <TableHead className="text-center">{t('admin.stockUnits')}</TableHead>
                 <TableHead>{t('products.availability')}</TableHead>
                 <TableHead className="text-center">{t('common.active')}</TableHead>
                 <TableHead className="w-24"></TableHead>
