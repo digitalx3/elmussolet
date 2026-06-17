@@ -225,6 +225,45 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_read: boolean
+          language: string | null
+          message: string
+          name: string
+          phone: string | null
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          is_read?: boolean
+          language?: string | null
+          message: string
+          name: string
+          phone?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_read?: boolean
+          language?: string | null
+          message?: string
+          name?: string
+          phone?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hero_slides: {
         Row: {
           background_image_url: string | null
