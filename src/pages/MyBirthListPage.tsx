@@ -24,7 +24,18 @@ interface ListItem {
   sort_order: number;
   productName?: string;
   price?: number;
+  section_id?: string | null;
+  section_temp_id?: string | null;
 }
+
+interface PendingSection {
+  temp_id: string;
+  id?: string;
+  name_ca: string;
+  name_es: string;
+  sort_order: number;
+}
+
 
 const generateCode = () => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -55,6 +66,23 @@ const MyBirthListPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [sections, setSections] = useState<PendingSection[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
+
+  // Templates available to copy from (only relevant while creating)
+  const { data: templates = [] } = useQuery({
+    queryKey: ['list-templates-options'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('list_templates')
+        .select('id, name, is_active, list_template_translations(language, name)')
+        .eq('is_active', true)
+        .order('name');
+      return data || [];
+    },
+  });
+
 
   // Load existing list owned by this user
   const { data: existing, isLoading } = useQuery({
@@ -69,20 +97,26 @@ const MyBirthListPage: React.FC = () => {
       if (!ownerships || ownerships.length === 0) return null;
 
       const listIdLocal = ownerships[0].list_id;
-      const [{ data: list }, { data: items }] = await Promise.all([
+      const [{ data: list }, { data: items }, { data: secs }] = await Promise.all([
         supabase.from('birth_lists').select('*').eq('id', listIdLocal).single(),
         supabase
           .from('list_items')
           .select(`
-            id, product_id, variant_id, quantity_desired, priority, sort_order,
+            id, product_id, variant_id, section_id, quantity_desired, priority, sort_order,
             product:products(id, base_price, product_translations(language, name))
           `)
           .eq('list_id', listIdLocal)
           .order('sort_order', { ascending: true }),
+        supabase
+          .from('list_sections')
+          .select('id, name_ca, name_es, sort_order')
+          .eq('list_id', listIdLocal)
+          .order('sort_order', { ascending: true }),
       ]);
-      return { list, items: items || [], owner: ownerships[0] };
+      return { list, items: items || [], owner: ownerships[0], sections: secs || [] };
     },
   });
+
 
   useEffect(() => {
     if (existing?.list) {
@@ -109,9 +143,19 @@ const MyBirthListPage: React.FC = () => {
             sort_order: item.sort_order,
             productName: tr?.name || item.product_id,
             price: item.product?.base_price,
+            section_id: item.section_id || null,
+            section_temp_id: item.section_id || null,
           };
         }),
       }));
+      setSections((existing.sections || []).map((s: any) => ({
+        temp_id: s.id,
+        id: s.id,
+        name_ca: s.name_ca,
+        name_es: s.name_es,
+        sort_order: s.sort_order,
+      })));
+
     } else if (existing === null && profile) {
       // Pre-fill name from profile
       const parts = (profile.full_name || '').trim().split(' ');
@@ -172,6 +216,66 @@ const MyBirthListPage: React.FC = () => {
       items: prev.items.map((it, i) => i === idx ? { ...it, [field]: value } : it),
     }));
   };
+
+  const loadTemplate = async () => {
+    if (!selectedTemplateId) return;
+    setLoadingTemplate(true);
+    try {
+      const [{ data: secs }, { data: tplItems }] = await Promise.all([
+        supabase
+          .from('list_template_sections')
+          .select('id, name_ca, name_es, sort_order')
+          .eq('template_id', selectedTemplateId)
+          .order('sort_order', { ascending: true }),
+        supabase
+          .from('list_template_items')
+          .select(`
+            section_id, product_id, variant_id, quantity_desired, priority, sort_order,
+            product:products(id, base_price, slug, product_translations(language, name))
+          `)
+          .eq('template_id', selectedTemplateId)
+          .order('sort_order', { ascending: true }),
+      ]);
+
+      const newSections: PendingSection[] = (secs || []).map((s: any) => ({
+        temp_id: `tpl-${s.id}`,
+        name_ca: s.name_ca,
+        name_es: s.name_es,
+        sort_order: s.sort_order,
+      }));
+
+      const newItems: ListItem[] = (tplItems || []).map((it: any, idx: number) => {
+        const tr = it.product?.product_translations?.find((tt: any) => tt.language === lang)
+          || it.product?.product_translations?.[0];
+        return {
+          product_id: it.product_id,
+          variant_id: it.variant_id || null,
+          quantity_desired: it.quantity_desired || 1,
+          priority: it.priority || 'medium',
+          sort_order: idx,
+          productName: tr?.name || it.product?.slug || it.product_id,
+          price: it.product?.base_price,
+          section_temp_id: it.section_id ? `tpl-${it.section_id}` : null,
+        };
+      });
+
+      setSections(newSections);
+      setForm(prev => ({ ...prev, items: newItems }));
+      toast.success(t('list.templateLoaded'));
+    } catch (e: any) {
+      toast.error(e.message || t('errors.generic'));
+    } finally {
+      setLoadingTemplate(false);
+    }
+  };
+
+  const assignItemSection = (idx: number, sectionTempId: string | null) => {
+    setForm(prev => ({
+      ...prev,
+      items: prev.items.map((it, i) => i === idx ? { ...it, section_temp_id: sectionTempId } : it),
+    }));
+  };
+
 
   const handleSave = async () => {
     if (!user) return;
@@ -244,8 +348,30 @@ const MyBirthListPage: React.FC = () => {
           .eq('user_id', user.id);
       }
 
-      // Sync items: delete + insert
+      // Sync sections: delete + insert (simple resync each save)
       await supabase.from('list_items').delete().eq('list_id', currentId);
+      await supabase.from('list_sections').delete().eq('list_id', currentId);
+
+      const sectionIdMap = new Map<string, string>(); // temp_id -> real id
+      if (sections.length > 0) {
+        const secsToInsert = sections.map((s, i) => ({
+          list_id: currentId!,
+          name_ca: s.name_ca,
+          name_es: s.name_es,
+          sort_order: i,
+        }));
+        const { data: insertedSecs, error: secErr } = await supabase
+          .from('list_sections')
+          .insert(secsToInsert)
+          .select('id, sort_order');
+        if (secErr) throw secErr;
+        // Map by order (we inserted in array order)
+        sections.forEach((s, i) => {
+          const match = (insertedSecs || []).find(is => is.sort_order === i);
+          if (match) sectionIdMap.set(s.temp_id, match.id);
+        });
+      }
+
       if (form.items.length > 0) {
         const itemsToInsert = form.items.map((item, idx) => ({
           list_id: currentId!,
@@ -254,10 +380,12 @@ const MyBirthListPage: React.FC = () => {
           quantity_desired: item.quantity_desired,
           priority: item.priority,
           sort_order: idx,
+          section_id: item.section_temp_id ? (sectionIdMap.get(item.section_temp_id) || null) : null,
         }));
         const { error } = await supabase.from('list_items').insert(itemsToInsert);
         if (error) throw error;
       }
+
 
       queryClient.invalidateQueries({ queryKey: ['my-birth-list', user.id] });
       toast.success(t('common.success'));
@@ -448,6 +576,107 @@ const MyBirthListPage: React.FC = () => {
           <CardTitle className="text-base">{t('admin.listProducts')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Template loader (only when creating a new list) */}
+          {!listId && templates.length > 0 && (
+            <div className="rounded-md border border-dashed border-primary/40 bg-primary/5 p-3 space-y-2">
+              <Label className="text-sm">{t('list.useTemplate')}</Label>
+              <div className="flex gap-2">
+                <select
+                  value={selectedTemplateId}
+                  onChange={e => setSelectedTemplateId(e.target.value)}
+                  className="flex-1 h-9 rounded-md border border-input bg-background px-2 text-sm"
+                >
+                  <option value="">— {t('common.select') || '...'} —</option>
+                  {templates.map((tpl: any) => {
+                    const tr = tpl.list_template_translations?.find((tt: any) => tt.language === lang)
+                      || tpl.list_template_translations?.[0];
+                    return <option key={tpl.id} value={tpl.id}>{tr?.name || tpl.name}</option>;
+                  })}
+                </select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!selectedTemplateId || loadingTemplate}
+                  onClick={loadTemplate}
+                >
+                  {loadingTemplate && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                  {t('list.loadTemplate')}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">{t('list.useTemplateHint')}</p>
+            </div>
+          )}
+
+          {/* Sections manager */}
+          {(sections.length > 0 || form.items.length > 0) && (
+            <div className="rounded-md border border-border p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">{t('list.sections')}</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSections(prev => [...prev, {
+                    temp_id: `new-${Date.now()}-${prev.length}`,
+                    name_ca: '',
+                    name_es: '',
+                    sort_order: prev.length,
+                  }])}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" /> {t('list.addSection')}
+                </Button>
+              </div>
+              {sections.length === 0 ? (
+                <p className="text-xs text-muted-foreground">{t('list.noSections')}</p>
+              ) : (
+                <div className="space-y-2">
+                  {sections.map((s, sIdx) => (
+                    <div key={s.temp_id} className="flex items-center gap-2">
+                      <Input
+                        value={s.name_ca}
+                        placeholder="Nom (CA)"
+                        onChange={e => setSections(prev => prev.map((x, i) => i === sIdx ? { ...x, name_ca: e.target.value } : x))}
+                        className="h-8 text-sm"
+                      />
+                      <Input
+                        value={s.name_es}
+                        placeholder="Nombre (ES)"
+                        onChange={e => setSections(prev => prev.map((x, i) => i === sIdx ? { ...x, name_es: e.target.value } : x))}
+                        className="h-8 text-sm"
+                      />
+                      <Button type="button" variant="ghost" size="icon"
+                        disabled={sIdx === 0}
+                        onClick={() => setSections(prev => {
+                          const next = [...prev];
+                          [next[sIdx - 1], next[sIdx]] = [next[sIdx], next[sIdx - 1]];
+                          return next.map((x, i) => ({ ...x, sort_order: i }));
+                        })}
+                      >↑</Button>
+                      <Button type="button" variant="ghost" size="icon"
+                        disabled={sIdx === sections.length - 1}
+                        onClick={() => setSections(prev => {
+                          const next = [...prev];
+                          [next[sIdx + 1], next[sIdx]] = [next[sIdx], next[sIdx + 1]];
+                          return next.map((x, i) => ({ ...x, sort_order: i }));
+                        })}
+                      >↓</Button>
+                      <Button type="button" variant="ghost" size="icon" onClick={() => {
+                        const removedId = sections[sIdx].temp_id;
+                        setSections(prev => prev.filter((_, i) => i !== sIdx));
+                        setForm(prev => ({
+                          ...prev,
+                          items: prev.items.map(it => it.section_temp_id === removedId ? { ...it, section_temp_id: null } : it),
+                        }));
+                      }}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Product search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -489,6 +718,20 @@ const MyBirthListPage: React.FC = () => {
                       <p className="text-xs text-muted-foreground">{formatPrice(item.price)}</p>
                     )}
                   </div>
+                  {sections.length > 0 && (
+                    <select
+                      value={item.section_temp_id || ''}
+                      onChange={e => assignItemSection(idx, e.target.value || null)}
+                      className="h-8 rounded-md border border-input bg-background px-2 text-xs max-w-[140px]"
+                    >
+                      <option value="">— {t('list.noSection')} —</option>
+                      {sections.map(s => (
+                        <option key={s.temp_id} value={s.temp_id}>
+                          {(lang === 'es' ? s.name_es : s.name_ca) || '(?)'}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   <div className="w-20">
                     <Input
                       type="number"
@@ -514,6 +757,7 @@ const MyBirthListPage: React.FC = () => {
             </div>
           )}
         </CardContent>
+
       </Card>
 
       <div className="flex justify-end">

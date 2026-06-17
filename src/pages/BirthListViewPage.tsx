@@ -13,10 +13,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import PublicListSteps from '@/components/list/PublicListSteps';
 
+interface ListSection {
+  id: string;
+  name_ca: string;
+  name_es: string;
+  sort_order: number;
+}
+
 interface ListItemWithProduct {
   id: string;
   product_id: string;
   variant_id: string | null;
+  section_id: string | null;
   quantity_desired: number;
   quantity_purchased: number;
   priority: string;
@@ -37,6 +45,7 @@ interface ListItemWithProduct {
   } | null;
 }
 
+
 const BirthListViewPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -44,6 +53,7 @@ const BirthListViewPage: React.FC = () => {
   const { hasAccess, listId, babyName, owners, expectedDate, token, clearAccess } = useListAccess();
   const { addListItem } = useCart();
   const [items, setItems] = useState<ListItemWithProduct[]>([]);
+  const [sections, setSections] = useState<ListSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const lang = i18n.language === 'es' ? 'es' : 'ca';
@@ -59,21 +69,29 @@ const BirthListViewPage: React.FC = () => {
   const fetchListItems = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('list_items')
-        .select(`
-          id, product_id, variant_id, quantity_desired, quantity_purchased, priority, sort_order,
-          product:products(
-            id, slug, base_price, has_variants,
-            product_translations(language, name, short_description),
-            product_images(image_url, is_primary, alt_text),
-            tax_rates(percentage)
-          )
-        `)
-        .eq('list_id', listId!)
-        .order('sort_order', { ascending: true });
+      const [{ data, error }, { data: secData }] = await Promise.all([
+        supabase
+          .from('list_items')
+          .select(`
+            id, product_id, variant_id, section_id, quantity_desired, quantity_purchased, priority, sort_order,
+            product:products(
+              id, slug, base_price, has_variants,
+              product_translations(language, name, short_description),
+              product_images(image_url, is_primary, alt_text),
+              tax_rates(percentage)
+            )
+          `)
+          .eq('list_id', listId!)
+          .order('sort_order', { ascending: true }),
+        supabase
+          .from('list_sections')
+          .select('id, name_ca, name_es, sort_order')
+          .eq('list_id', listId!)
+          .order('sort_order', { ascending: true }),
+      ]);
 
       if (error) throw error;
+      setSections((secData as ListSection[]) || []);
 
       // Fetch variant info for items with variants
       const withVariants = await Promise.all(
@@ -98,6 +116,7 @@ const BirthListViewPage: React.FC = () => {
       setLoading(false);
     }
   };
+
 
   const getProductName = (item: ListItemWithProduct) => {
     const tr = item.product.product_translations.find(t => t.language === lang)
@@ -223,31 +242,21 @@ const BirthListViewPage: React.FC = () => {
           <Gift className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground">{search ? t('common.noResults') : t('list.emptyList')}</p>
         </div>
-      ) : (
-        <div className="space-y-3">
-          {filteredItems.map((item, index) => {
+      ) : (() => {
+          const renderItem = (item: ListItemWithProduct, index: number) => {
             const status = getStatus(item);
             const isPurchased = status === 'purchased';
-
             return (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
+                transition={{ delay: Math.min(index, 8) * 0.04 }}
                 className={`flex gap-4 p-4 rounded-lg bg-card shadow-soft ${isPurchased ? 'opacity-60' : ''}`}
               >
-                {/* Image */}
                 <div className="w-20 h-20 rounded-md overflow-hidden flex-shrink-0 bg-muted">
-                  <img
-                    src={getProductImage(item)}
-                    alt={getProductName(item)}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
+                  <img src={getProductImage(item)} alt={getProductName(item)} className="w-full h-full object-cover" loading="lazy" />
                 </div>
-
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -257,49 +266,68 @@ const BirthListViewPage: React.FC = () => {
                           <span className="text-muted-foreground ml-1">({item.variant.value})</span>
                         )}
                       </h3>
-                      <p className="text-primary font-semibold text-sm mt-1">
-                        {getPrice(item).toFixed(2)} €
-                      </p>
+                      <p className="text-primary font-semibold text-sm mt-1">{getPrice(item).toFixed(2)} €</p>
                     </div>
-
-                    {/* Status badge */}
                     {status === 'purchased' && (
                       <Badge variant="secondary" className="flex-shrink-0 gap-1">
-                        <Check className="h-3 w-3" />
-                        {t('list.purchased')}
+                        <Check className="h-3 w-3" />{t('list.purchased')}
                       </Badge>
                     )}
                     {status === 'partial' && (
                       <Badge variant="outline" className="flex-shrink-0 gap-1 border-accent text-accent">
-                        <Minus className="h-3 w-3" />
-                        {item.quantity_purchased}/{item.quantity_desired}
+                        <Minus className="h-3 w-3" />{item.quantity_purchased}/{item.quantity_desired}
                       </Badge>
                     )}
                   </div>
-
-                  {/* Quantity & Buy */}
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-xs text-muted-foreground">
                       {item.quantity_desired > 1 && `${t('products.quantity')}: ${item.quantity_desired}`}
                     </span>
-
                     {!isPurchased && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleBuyGift(item)}
-                        className="gap-1 text-xs"
-                      >
-                        <ShoppingBag className="h-3 w-3" />
-                        {t('list.buyGift')}
+                      <Button size="sm" onClick={() => handleBuyGift(item)} className="gap-1 text-xs">
+                        <ShoppingBag className="h-3 w-3" />{t('list.buyGift')}
                       </Button>
                     )}
                   </div>
                 </div>
               </motion.div>
             );
-          })}
-        </div>
-      )}
+          };
+
+          if (sections.length === 0) {
+            return <div className="space-y-3">{filteredItems.map(renderItem)}</div>;
+          }
+
+          const grouped = sections.map(sec => ({
+            section: sec,
+            items: filteredItems.filter(i => i.section_id === sec.id),
+          }));
+          const uncategorized = filteredItems.filter(i => !i.section_id || !sections.some(s => s.id === i.section_id));
+
+          return (
+            <div className="space-y-8">
+              {grouped.map(g => g.items.length > 0 && (
+                <section key={g.section.id}>
+                  <h2 className="font-display text-xl font-semibold mb-3 pb-2 border-b border-border">
+                    {lang === 'es' ? g.section.name_es : g.section.name_ca}
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">({g.items.length})</span>
+                  </h2>
+                  <div className="space-y-3">{g.items.map(renderItem)}</div>
+                </section>
+              ))}
+              {uncategorized.length > 0 && (
+                <section>
+                  <h2 className="font-display text-xl font-semibold mb-3 pb-2 border-b border-border">
+                    {t('list.otherGifts')}
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">({uncategorized.length})</span>
+                  </h2>
+                  <div className="space-y-3">{uncategorized.map(renderItem)}</div>
+                </section>
+              )}
+            </div>
+          );
+        })()}
+
 
       {/* Cart CTA */}
       <div className="mt-8 text-center">
