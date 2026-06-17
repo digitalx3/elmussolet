@@ -143,9 +143,19 @@ const MyBirthListPage: React.FC = () => {
             sort_order: item.sort_order,
             productName: tr?.name || item.product_id,
             price: item.product?.base_price,
+            section_id: item.section_id || null,
+            section_temp_id: item.section_id || null,
           };
         }),
       }));
+      setSections((existing.sections || []).map((s: any) => ({
+        temp_id: s.id,
+        id: s.id,
+        name_ca: s.name_ca,
+        name_es: s.name_es,
+        sort_order: s.sort_order,
+      })));
+
     } else if (existing === null && profile) {
       // Pre-fill name from profile
       const parts = (profile.full_name || '').trim().split(' ');
