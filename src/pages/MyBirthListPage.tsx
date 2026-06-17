@@ -97,20 +97,26 @@ const MyBirthListPage: React.FC = () => {
       if (!ownerships || ownerships.length === 0) return null;
 
       const listIdLocal = ownerships[0].list_id;
-      const [{ data: list }, { data: items }] = await Promise.all([
+      const [{ data: list }, { data: items }, { data: secs }] = await Promise.all([
         supabase.from('birth_lists').select('*').eq('id', listIdLocal).single(),
         supabase
           .from('list_items')
           .select(`
-            id, product_id, variant_id, quantity_desired, priority, sort_order,
+            id, product_id, variant_id, section_id, quantity_desired, priority, sort_order,
             product:products(id, base_price, product_translations(language, name))
           `)
           .eq('list_id', listIdLocal)
           .order('sort_order', { ascending: true }),
+        supabase
+          .from('list_sections')
+          .select('id, name_ca, name_es, sort_order')
+          .eq('list_id', listIdLocal)
+          .order('sort_order', { ascending: true }),
       ]);
-      return { list, items: items || [], owner: ownerships[0] };
+      return { list, items: items || [], owner: ownerships[0], sections: secs || [] };
     },
   });
+
 
   useEffect(() => {
     if (existing?.list) {
