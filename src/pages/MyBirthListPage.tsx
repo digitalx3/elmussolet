@@ -66,6 +66,23 @@ const MyBirthListPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [sections, setSections] = useState<PendingSection[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
+
+  // Templates available to copy from (only relevant while creating)
+  const { data: templates = [] } = useQuery({
+    queryKey: ['list-templates-options'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('list_templates')
+        .select('id, name, is_active, list_template_translations(language, name)')
+        .eq('is_active', true)
+        .order('name');
+      return data || [];
+    },
+  });
+
 
   // Load existing list owned by this user
   const { data: existing, isLoading } = useQuery({
