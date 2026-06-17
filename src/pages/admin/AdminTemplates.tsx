@@ -16,8 +16,15 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2, Search, Package, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Package, X, GripVertical, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext, verticalListSortingStrategy, arrayMove, useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface TemplateRow {
   id: string;
