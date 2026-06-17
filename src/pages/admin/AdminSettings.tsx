@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Store, CreditCard, Truck, ClipboardList, Receipt } from 'lucide-react';
+import { Store, CreditCard, Truck, ClipboardList, Receipt, Server } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,8 @@ const SETTINGS_KEYS = [
   'store_name', 'store_email', 'store_phone', 'store_address', 'store_nif',
   'payment_bizum_phone', 'payment_transfer_iban', 'payment_transfer_beneficiary',
   'free_shipping_threshold', 'default_language',
+  // Deployment / self-hosting
+  'site_canonical_url', 'media_base_url', 'assets_base_url', 'api_base_url', 'storage_provider',
 ];
 
 const AdminSettings: React.FC = () => {
@@ -183,6 +185,67 @@ const AdminSettings: React.FC = () => {
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">{t('admin.freeShippingHint')}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Deployment / Self-hosting */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Server className="h-5 w-5" />
+            {t('admin.deployment')}
+          </CardTitle>
+          <CardDescription>{t('admin.deploymentDesc')}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>{t('admin.siteCanonicalUrl')}</Label>
+            <Input
+              value={form.site_canonical_url || ''}
+              onChange={e => update('site_canonical_url', e.target.value)}
+              placeholder="https://elmussolet.com"
+            />
+            <p className="text-xs text-muted-foreground mt-1">{t('admin.siteCanonicalUrlHint')}</p>
+          </div>
+          <div>
+            <Label>{t('admin.mediaBaseUrl')}</Label>
+            <Input
+              value={form.media_base_url || ''}
+              onChange={e => update('media_base_url', e.target.value)}
+              placeholder="https://media.elmussolet.com"
+            />
+            <p className="text-xs text-muted-foreground mt-1">{t('admin.mediaBaseUrlHint')}</p>
+          </div>
+          <div>
+            <Label>{t('admin.assetsBaseUrl')}</Label>
+            <Input
+              value={form.assets_base_url || ''}
+              onChange={e => update('assets_base_url', e.target.value)}
+              placeholder="https://cdn.elmussolet.com/assets"
+            />
+            <p className="text-xs text-muted-foreground mt-1">{t('admin.assetsBaseUrlHint')}</p>
+          </div>
+          <div>
+            <Label>{t('admin.apiBaseUrl')}</Label>
+            <Input
+              value={form.api_base_url || ''}
+              onChange={e => update('api_base_url', e.target.value)}
+              placeholder="https://api.elmussolet.com"
+            />
+            <p className="text-xs text-muted-foreground mt-1">{t('admin.apiBaseUrlHint')}</p>
+          </div>
+          <div>
+            <Label>{t('admin.storageProvider')}</Label>
+            <select
+              value={form.storage_provider || 'supabase'}
+              onChange={e => update('storage_provider', e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="supabase">Supabase Storage</option>
+              <option value="vps">VPS (api_base_url)</option>
+            </select>
+            <p className="text-xs text-muted-foreground mt-1">{t('admin.storageProviderHint')}</p>
           </div>
         </CardContent>
       </Card>
