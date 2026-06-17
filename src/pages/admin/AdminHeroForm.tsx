@@ -273,6 +273,76 @@ const AdminHeroForm: React.FC = () => {
               </select>
             </div>
           </div>
+
+          <div className="border-t border-border pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="font-semibold text-sm">Imatges flotants</div>
+              <Button type="button" variant="outline" size="sm" className="gap-1"
+                onClick={() => {
+                  const newId = Math.random().toString(36).slice(2, 10);
+                  const nextZ = Math.max(0, ...floatingImages.map(f => f.zIndex)) + 1;
+                  setFloatingImages([...floatingImages, {
+                    id: newId, url: '', frame: 'white', rounded: 16, opacity: 1, zIndex: nextZ, rotation: 0,
+                  }]);
+                  setLayout({
+                    ...layout,
+                    desktop: { ...layout.desktop, [`img:${newId}`]: { ...DEFAULT_FLOATING_BOX } },
+                    tablet:  { ...layout.tablet,  [`img:${newId}`]: { ...DEFAULT_FLOATING_BOX, x: 380, y: 80, w: 320, h: 320 } },
+                    mobile:  { ...layout.mobile,  [`img:${newId}`]: { ...DEFAULT_FLOATING_BOX, x: 30,  y: 380, w: 315, h: 220 } },
+                  });
+                }}>
+                <Plus className="h-3.5 w-3.5" /> Afegir
+              </Button>
+            </div>
+            {floatingImages.length === 0 && (
+              <p className="text-xs text-muted-foreground">Cap imatge flotant. Afegeix-ne per col·locar-la sobre el hero amb marc, capa, rotació…</p>
+            )}
+            {floatingImages.map((fi, idx) => (
+              <div key={fi.id} className="rounded-md border border-border p-2 space-y-2 bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium">Imatge {idx + 1}</span>
+                  <Button type="button" variant="ghost" size="sm" className="text-destructive h-7 px-2"
+                    onClick={() => {
+                      setFloatingImages(floatingImages.filter(x => x.id !== fi.id));
+                      const stripped: Layout = { ...layout };
+                      (['desktop','tablet','mobile'] as Device[]).forEach(d => {
+                        const copy = { ...stripped[d] };
+                        delete copy[`img:${fi.id}`];
+                        stripped[d] = copy;
+                      });
+                      setLayout(stripped);
+                    }}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <ImageUploader
+                  value={fi.url}
+                  onChange={(url) => setFloatingImages(floatingImages.map(x => x.id === fi.id ? { ...x, url } : x))}
+                  pathPrefix="hero/floating"
+                  previewClassName="h-20"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Marc</Label>
+                    <select value={fi.frame}
+                      onChange={(e) => setFloatingImages(floatingImages.map(x => x.id === fi.id ? { ...x, frame: e.target.value as FloatingImage['frame'] } : x))}
+                      className="w-full h-8 text-xs rounded border border-input bg-background px-2">
+                      <option value="none">Sense</option>
+                      <option value="white">Marc blanc</option>
+                      <option value="shadow">Ombra</option>
+                      <option value="polaroid">Polaroid</option>
+                      <option value="rounded">Arrodonida</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Capa (z)</Label>
+                    <Input type="number" value={fi.zIndex} className="h-8 text-xs"
+                      onChange={(e) => setFloatingImages(floatingImages.map(x => x.id === fi.id ? { ...x, zIndex: parseInt(e.target.value) || 0 } : x))} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Canvas editor */}
@@ -291,6 +361,10 @@ const AdminHeroForm: React.FC = () => {
               button1: btn1Ca || btn1Es,
               button2: btn2Ca || btn2Es,
             }}
+            floatingImages={floatingImages}
+            onFloatingImageUpdate={(fid, patch) =>
+              setFloatingImages(floatingImages.map(x => x.id === fid ? { ...x, ...patch } : x))
+            }
           />
           <p className="text-xs text-muted-foreground mt-3">
             Arrossega i redimensiona els elements directament sobre la imatge. Configura cada dispositiu (PC / Tablet / Mòbil) per separat.
@@ -306,8 +380,10 @@ const AdminHeroForm: React.FC = () => {
             btn2Ca={btn2Ca} btn2Es={btn2Es} btn2Url={btn2Url} btn2Variant={btn2Variant}
             layout={layout}
             canvasHeights={canvasHeights}
+            floatingImages={floatingImages}
           />
         </div>
+
       </div>
     </div>
   );
