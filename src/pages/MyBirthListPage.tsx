@@ -576,6 +576,107 @@ const MyBirthListPage: React.FC = () => {
           <CardTitle className="text-base">{t('admin.listProducts')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Template loader (only when creating a new list) */}
+          {!listId && templates.length > 0 && (
+            <div className="rounded-md border border-dashed border-primary/40 bg-primary/5 p-3 space-y-2">
+              <Label className="text-sm">{t('list.useTemplate')}</Label>
+              <div className="flex gap-2">
+                <select
+                  value={selectedTemplateId}
+                  onChange={e => setSelectedTemplateId(e.target.value)}
+                  className="flex-1 h-9 rounded-md border border-input bg-background px-2 text-sm"
+                >
+                  <option value="">— {t('common.select') || '...'} —</option>
+                  {templates.map((tpl: any) => {
+                    const tr = tpl.list_template_translations?.find((tt: any) => tt.language === lang)
+                      || tpl.list_template_translations?.[0];
+                    return <option key={tpl.id} value={tpl.id}>{tr?.name || tpl.name}</option>;
+                  })}
+                </select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!selectedTemplateId || loadingTemplate}
+                  onClick={loadTemplate}
+                >
+                  {loadingTemplate && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                  {t('list.loadTemplate')}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">{t('list.useTemplateHint')}</p>
+            </div>
+          )}
+
+          {/* Sections manager */}
+          {(sections.length > 0 || form.items.length > 0) && (
+            <div className="rounded-md border border-border p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">{t('list.sections')}</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSections(prev => [...prev, {
+                    temp_id: `new-${Date.now()}-${prev.length}`,
+                    name_ca: '',
+                    name_es: '',
+                    sort_order: prev.length,
+                  }])}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" /> {t('list.addSection')}
+                </Button>
+              </div>
+              {sections.length === 0 ? (
+                <p className="text-xs text-muted-foreground">{t('list.noSections')}</p>
+              ) : (
+                <div className="space-y-2">
+                  {sections.map((s, sIdx) => (
+                    <div key={s.temp_id} className="flex items-center gap-2">
+                      <Input
+                        value={s.name_ca}
+                        placeholder="Nom (CA)"
+                        onChange={e => setSections(prev => prev.map((x, i) => i === sIdx ? { ...x, name_ca: e.target.value } : x))}
+                        className="h-8 text-sm"
+                      />
+                      <Input
+                        value={s.name_es}
+                        placeholder="Nombre (ES)"
+                        onChange={e => setSections(prev => prev.map((x, i) => i === sIdx ? { ...x, name_es: e.target.value } : x))}
+                        className="h-8 text-sm"
+                      />
+                      <Button type="button" variant="ghost" size="icon"
+                        disabled={sIdx === 0}
+                        onClick={() => setSections(prev => {
+                          const next = [...prev];
+                          [next[sIdx - 1], next[sIdx]] = [next[sIdx], next[sIdx - 1]];
+                          return next.map((x, i) => ({ ...x, sort_order: i }));
+                        })}
+                      >↑</Button>
+                      <Button type="button" variant="ghost" size="icon"
+                        disabled={sIdx === sections.length - 1}
+                        onClick={() => setSections(prev => {
+                          const next = [...prev];
+                          [next[sIdx + 1], next[sIdx]] = [next[sIdx], next[sIdx + 1]];
+                          return next.map((x, i) => ({ ...x, sort_order: i }));
+                        })}
+                      >↓</Button>
+                      <Button type="button" variant="ghost" size="icon" onClick={() => {
+                        const removedId = sections[sIdx].temp_id;
+                        setSections(prev => prev.filter((_, i) => i !== sIdx));
+                        setForm(prev => ({
+                          ...prev,
+                          items: prev.items.map(it => it.section_temp_id === removedId ? { ...it, section_temp_id: null } : it),
+                        }));
+                      }}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Product search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -617,6 +718,20 @@ const MyBirthListPage: React.FC = () => {
                       <p className="text-xs text-muted-foreground">{formatPrice(item.price)}</p>
                     )}
                   </div>
+                  {sections.length > 0 && (
+                    <select
+                      value={item.section_temp_id || ''}
+                      onChange={e => assignItemSection(idx, e.target.value || null)}
+                      className="h-8 rounded-md border border-input bg-background px-2 text-xs max-w-[140px]"
+                    >
+                      <option value="">— {t('list.noSection')} —</option>
+                      {sections.map(s => (
+                        <option key={s.temp_id} value={s.temp_id}>
+                          {(lang === 'es' ? s.name_es : s.name_ca) || '(?)'}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   <div className="w-20">
                     <Input
                       type="number"
@@ -642,6 +757,7 @@ const MyBirthListPage: React.FC = () => {
             </div>
           )}
         </CardContent>
+
       </Card>
 
       <div className="flex justify-end">
