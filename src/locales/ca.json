@@ -382,6 +382,7 @@
     "usersTotal": "usuaris",
     "noUsers": "No s'han trobat usuaris.",
     "userRoleUpdated": "Rol d'usuari actualitzat.",
+    "stockUnits": "Estoc",
     "userDetailDesc": "Detall de l'usuari amb comandes i llistes associades.",
     "noUserLists": "Aquest usuari no té llistes.",
     "settingsGeneral": "General",

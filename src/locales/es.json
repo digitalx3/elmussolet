@@ -382,6 +382,7 @@
     "usersTotal": "usuarios",
     "noUsers": "No se han encontrado usuarios.",
     "userRoleUpdated": "Rol de usuario actualizado.",
+    "stockUnits": "Stock",
     "userDetailDesc": "Detalle del usuario con pedidos y listas asociadas.",
     "noUserLists": "Este usuario no tiene listas.",
     "settingsGeneral": "General",
