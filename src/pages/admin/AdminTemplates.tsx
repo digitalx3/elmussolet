@@ -224,21 +224,7 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
     },
     onError: (e: any) => toast.error(e.message),
   });
-      if (!activeSectionId) throw new Error(t('admin.pickSectionFirst') as string);
-      const sectionItems = items.filter((i: any) => i.section_id === activeSectionId);
-      const maxSort = sectionItems.reduce((m: number, i: any) => Math.max(m, i.sort_order || 0), 0);
-      const { error } = await supabase.from('list_template_items').insert({
-        template_id: templateId,
-        product_id: productId,
-        section_id: activeSectionId,
-        quantity: 1,
-        sort_order: maxSort + 1,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['template-items', templateId] }),
-    onError: (e: any) => toast.error(e.message),
-  });
+
 
   const removeItem = useMutation({
     mutationFn: async (id: string) => {
