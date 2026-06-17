@@ -84,12 +84,14 @@ const AdminProductList: React.FC = () => {
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     {t('common.noResults')}
                   </TableCell>
                 </TableRow>
               ) : filtered.map(p => {
                 const img = p.product_images.find(i => i.is_primary) || p.product_images[0];
+                const variantStock = (p.product_variants || []).reduce((s: number, v: any) => s + (v.stock_quantity || 0), 0);
+                const totalStock = variantStock > 0 ? variantStock : (p.stock_quantity || 0);
                 return (
                   <TableRow key={p.id}>
                     <TableCell>
@@ -107,6 +109,11 @@ const AdminProductList: React.FC = () => {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{p.sku}</TableCell>
                     <TableCell className="font-medium">{formatPrice(p.base_price)}</TableCell>
+                    <TableCell className="text-center">
+                      <span className={`text-sm font-medium ${totalStock === 0 ? 'text-destructive' : totalStock < 5 ? 'text-amber-600' : 'text-foreground'}`}>
+                        {totalStock}
+                      </span>
+                    </TableCell>
                     <TableCell>{stockBadge(p.stock_status)}</TableCell>
                     <TableCell className="text-center">
                       <Badge variant={p.is_active ? 'default' : 'secondary'}>
