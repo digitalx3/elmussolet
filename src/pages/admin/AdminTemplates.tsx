@@ -622,7 +622,7 @@ const AdminTemplates: React.FC = () => {
 
       {/* Products Dialog */}
       <Dialog open={!!itemsDialogId} onOpenChange={() => setItemsDialogId(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
+        <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>{t('admin.templateProducts')}</DialogTitle>
             <DialogDescription>{t('admin.templateProductsDesc')}</DialogDescription>
