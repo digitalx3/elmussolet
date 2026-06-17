@@ -130,6 +130,43 @@ const AdminSettings: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Branding / Logos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <ImageIcon className="h-5 w-5" />
+            Logotips
+          </CardTitle>
+          <CardDescription>
+            Logotips que es mostren a la capçalera i al peu. Si els deixes buits es fan servir els predeterminats.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid sm:grid-cols-2 gap-6">
+          <div>
+            <Label className="text-sm font-semibold">Logo de la capçalera (header)</Label>
+            <p className="text-xs text-muted-foreground mb-2">Format horitzontal recomanat. Alçada ~48 px.</p>
+            <ImageUploader
+              value={form.logo_header_url || ''}
+              onChange={v => update('logo_header_url', v)}
+              pathPrefix="branding/header"
+              label="Logo header"
+              previewClassName="h-12"
+            />
+          </div>
+          <div>
+            <Label className="text-sm font-semibold">Logo del peu (footer)</Label>
+            <p className="text-xs text-muted-foreground mb-2">Format quadrat o vertical. Alçada ~80 px.</p>
+            <ImageUploader
+              value={form.logo_footer_url || ''}
+              onChange={v => update('logo_footer_url', v)}
+              pathPrefix="branding/footer"
+              label="Logo footer"
+              previewClassName="h-20"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Payment Config */}
       <Card>
         <CardHeader>
