@@ -44,6 +44,17 @@ interface FormData {
   };
 }
 
+// Sortable wrapper for sections
+const SortableSection: React.FC<{ id: string; children: (handleProps: any, isDragging: boolean) => React.ReactNode }> = ({ id, children }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 };
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children({ ...attributes, ...listeners }, isDragging)}
+    </div>
+  );
+};
+
 const emptyForm: FormData = {
   slug: '',
   is_active: true,
@@ -297,76 +308,88 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
             {t('admin.noSectionsHint')}
           </p>
         ) : (
-          <div className="space-y-2">
-            {sections.map((s: any, idx) => {
-              const count = items.filter((i: any) => i.section_id === s.id).length;
-              const isActive = s.id === activeSectionId;
-              return (
-                <div
-                  key={s.id}
-                  className={`border rounded-lg p-3 ${isActive ? 'border-primary bg-primary/5' : 'border-border'}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setActiveSectionId(s.id)}
-                      className="text-left flex-1"
-                      title={t('admin.makeActiveSection') as string}
-                    >
-                      <span className="font-medium text-sm">{s.name_ca}</span>
-                      {s.name_es && <span className="text-xs text-muted-foreground ml-2">/ {s.name_es}</span>}
-                      <Badge variant="secondary" className="ml-2">{count}</Badge>
-                      {isActive && <Badge className="ml-2">{t('admin.activeSection')}</Badge>}
-                    </button>
-                    <Button variant="ghost" size="icon" disabled={idx === 0} onClick={() => moveSection(s.id, -1)} title="↑">↑</Button>
-                    <Button variant="ghost" size="icon" disabled={idx === sections.length - 1} onClick={() => moveSection(s.id, 1)} title="↓">↓</Button>
-                    <Button variant="ghost" size="icon" onClick={() => { if (confirm(t('admin.confirmDeleteSection') as string)) deleteSection.mutate(s.id); }}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                  <div className="grid sm:grid-cols-2 gap-2 mt-2">
-                    <Input
-                      placeholder="Nom (CA)"
-                      defaultValue={s.name_ca}
-                      onBlur={e => e.target.value !== s.name_ca && updateSection.mutate({ id: s.id, patch: { name_ca: e.target.value } })}
-                    />
-                    <Input
-                      placeholder="Nombre (ES)"
-                      defaultValue={s.name_es || ''}
-                      onBlur={e => (e.target.value || '') !== (s.name_es || '') && updateSection.mutate({ id: s.id, patch: { name_es: e.target.value || null } })}
-                    />
-                  </div>
-
-                  {/* Products in this section */}
-                  {count > 0 && (
-                    <div className="mt-3 border-t pt-3 space-y-1">
-                      {sectionItems(s.id).map((it: any) => (
-                        <div key={it.id} className="flex items-center justify-between text-sm gap-2">
-                          <span className="flex items-center gap-2 min-w-0">
-                            <img src={it.product ? imgOf(it.product) : '/placeholder.svg'} alt="" className="h-8 w-8 rounded object-cover bg-muted flex-shrink-0" />
-                            <span className="truncate">{it.product ? nameOf(it.product) : `#${it.product_id.slice(0, 6)}`}</span>
-                          </span>
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <Input
-                              type="number" min={1}
-                              className="h-7 w-16"
-                              defaultValue={it.quantity || 1}
-                              onBlur={e => updateQty.mutate({ id: it.id, quantity: parseInt(e.target.value) || 1 })}
-                            />
-                            <Button variant="ghost" size="icon" onClick={() => removeItem.mutate(it.id)}>
-                              <X className="h-4 w-4 text-destructive" />
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={sections.map((s: any) => s.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {sections.map((s: any) => {
+                  const count = items.filter((i: any) => i.section_id === s.id).length;
+                  const isActive = s.id === activeSectionId;
+                  return (
+                    <SortableSection key={s.id} id={s.id}>
+                      {(handleProps) => (
+                        <div className={`border rounded-lg p-3 ${isActive ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              {...handleProps}
+                              className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1"
+                              title={t('admin.dragToReorder') as string}
+                              aria-label="drag handle"
+                            >
+                              <GripVertical className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveSectionId(s.id)}
+                              className="text-left flex-1"
+                              title={t('admin.makeActiveSection') as string}
+                            >
+                              <span className="font-medium text-sm">{s.name_ca}</span>
+                              {s.name_es && <span className="text-xs text-muted-foreground ml-2">/ {s.name_es}</span>}
+                              <Badge variant="secondary" className="ml-2">{count}</Badge>
+                              {isActive && <Badge className="ml-2">{t('admin.activeSection')}</Badge>}
+                            </button>
+                            <Button variant="ghost" size="icon" onClick={() => { if (confirm(t('admin.confirmDeleteSection') as string)) deleteSection.mutate(s.id); }}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
+                          <div className="grid sm:grid-cols-2 gap-2 mt-2">
+                            <Input
+                              placeholder="Nom (CA)"
+                              defaultValue={s.name_ca}
+                              onBlur={e => e.target.value !== s.name_ca && updateSection.mutate({ id: s.id, patch: { name_ca: e.target.value } })}
+                            />
+                            <Input
+                              placeholder="Nombre (ES)"
+                              defaultValue={s.name_es || ''}
+                              onBlur={e => (e.target.value || '') !== (s.name_es || '') && updateSection.mutate({ id: s.id, patch: { name_es: e.target.value || null } })}
+                            />
+                          </div>
+
+                          {count > 0 && (
+                            <div className="mt-3 border-t pt-3 space-y-1">
+                              {sectionItems(s.id).map((it: any) => (
+                                <div key={it.id} className="flex items-center justify-between text-sm gap-2">
+                                  <span className="flex items-center gap-2 min-w-0">
+                                    <img src={it.product ? imgOf(it.product) : '/placeholder.svg'} alt="" className="h-8 w-8 rounded object-cover bg-muted flex-shrink-0" />
+                                    <span className="truncate">{it.product ? nameOf(it.product) : `#${it.product_id.slice(0, 6)}`}</span>
+                                  </span>
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    <Input
+                                      type="number" min={1}
+                                      className="h-7 w-16"
+                                      defaultValue={it.quantity || 1}
+                                      onBlur={e => updateQty.mutate({ id: it.id, quantity: parseInt(e.target.value) || 1 })}
+                                    />
+                                    <Button variant="ghost" size="icon" onClick={() => removeItem.mutate(it.id)}>
+                                      <X className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                      )}
+                    </SortableSection>
+                  );
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
+
 
       {/* VISUAL PRODUCT PICKER */}
       <div>
