@@ -24,6 +24,7 @@ import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import CreateBirthListPage from "@/pages/CreateBirthListPage";
 import NotFound from "@/pages/NotFound";
 import CmsPagePage from "@/pages/CmsPagePage";
+import AppearanceInjector from "@/components/AppearanceInjector";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
           <ListAccessProvider>
             <TooltipProvider>
               <Sonner />
+              <AppearanceInjector />
               <BrowserRouter>
                 <Routes>
                   {/* Public routes */}

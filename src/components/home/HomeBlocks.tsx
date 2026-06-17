@@ -22,6 +22,7 @@ interface Block {
   cta_label_ca: string | null;
   cta_label_es: string | null;
   cta_url: string | null;
+  custom_class: string | null;
 }
 
 export const HomeBlocks: React.FC = () => {
@@ -66,7 +67,7 @@ export const HomeBlocks: React.FC = () => {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.4, delay: i * 0.1 }}
-                    className="group text-center p-8 rounded-3xl bg-card border border-border shadow-soft hover:shadow-elevated hover:-translate-y-1 transition-all"
+                    className={`group text-center p-8 rounded-3xl bg-card border border-border shadow-soft hover:shadow-elevated hover:-translate-y-1 transition-all ${b.custom_class ?? ''}`}
                   >
                     <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-secondary text-primary mb-4 group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
                       <Icon className="h-6 w-6" />
@@ -89,7 +90,7 @@ export const HomeBlocks: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary to-[hsl(18_55%_28%)] text-primary-foreground p-10 md:p-16 shadow-elevated"
+              className={`relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary to-[hsl(18_55%_28%)] text-primary-foreground p-10 md:p-16 shadow-elevated ${b.custom_class ?? ''}`}
             >
               <div className="absolute -right-10 -bottom-10 opacity-15">
                 <img src={logoSquare.url} alt="" className="h-72 w-72" />

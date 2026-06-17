@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import {
   Package, LayoutDashboard, Tags, Bookmark, ListChecks,
   FileText, ShoppingCart, Users, Truck, Settings, ArrowLeft, SlidersHorizontal, Image as ImageIcon,
-  FileEdit, Home,
+  FileEdit, Home, Palette,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel,
@@ -23,6 +23,7 @@ const navItems = [
   { key: 'heros', path: '/admin/heros', icon: ImageIcon },
   { key: 'homeContent', path: '/admin/home', icon: Home, label: "Pàgina d'inici" },
   { key: 'pages', path: '/admin/pagines', icon: FileEdit, label: 'Pàgines' },
+  { key: 'appearance', path: '/admin/aparenca', icon: Palette, label: 'Aparença' },
   { key: 'orders', path: '/admin/comandes', icon: ShoppingCart },
   { key: 'lists', path: '/admin/llistes', icon: ListChecks },
   { key: 'templates', path: '/admin/plantilles', icon: FileText },

@@ -170,6 +170,7 @@ export type Database = {
           cta_label_ca: string | null
           cta_label_es: string | null
           cta_url: string | null
+          custom_class: string | null
           icon: string | null
           id: string
           is_active: boolean
@@ -189,6 +190,7 @@ export type Database = {
           cta_label_ca?: string | null
           cta_label_es?: string | null
           cta_url?: string | null
+          custom_class?: string | null
           icon?: string | null
           id?: string
           is_active?: boolean
@@ -208,6 +210,7 @@ export type Database = {
           cta_label_ca?: string | null
           cta_label_es?: string | null
           cta_url?: string | null
+          custom_class?: string | null
           icon?: string | null
           id?: string
           is_active?: boolean
