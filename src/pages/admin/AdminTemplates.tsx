@@ -400,10 +400,27 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
               {sections.find((s: any) => s.id === activeSectionId)?.name_ca || '—'}
             </span>
           </h3>
-          <div className="relative w-72 max-w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9 h-9" placeholder={t('admin.searchProductToAdd') as string}
-              value={search} onChange={e => setSearch(e.target.value)} />
+          <div className="flex items-center gap-2 flex-wrap">
+            {selectedIds.size > 0 && (
+              <>
+                <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+                  {t('admin.clearSelection')} ({selectedIds.size})
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => addBulk.mutate(Array.from(selectedIds))}
+                  disabled={!activeSectionId || addBulk.isPending}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  {t('admin.addSelected')} ({selectedIds.size})
+                </Button>
+              </>
+            )}
+            <div className="relative w-72 max-w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input className="pl-9 h-9" placeholder={t('admin.searchProductToAdd') as string}
+                value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
           </div>
         </div>
 
@@ -414,34 +431,60 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
         ) : filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground py-6 text-center">{t('common.noResults')}</p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[420px] overflow-auto p-1">
-            {filtered.map((p: any) => (
+          <>
+            <div className="flex items-center gap-3 mb-2 text-xs text-muted-foreground">
               <button
                 type="button"
-                key={p.id}
-                onClick={() => addItem.mutate(p.id)}
-                disabled={addItem.isPending}
-                className="group relative text-left border border-border rounded-lg overflow-hidden hover:border-primary hover:shadow-md transition bg-card"
-                title={nameOf(p)}
+                className="underline-offset-2 hover:underline"
+                onClick={() => setSelectedIds(new Set(filtered.map((p: any) => p.id)))}
               >
-                <div className="aspect-square bg-muted overflow-hidden">
-                  <img src={imgOf(p)} alt="" className="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" />
-                </div>
-                <div className="p-2">
-                  <p className="text-xs font-medium line-clamp-2 leading-tight">{nameOf(p)}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{p.sku} · {Number(p.base_price).toFixed(2)} €</p>
-                </div>
-                <span className="absolute top-2 right-2 h-7 w-7 rounded-full bg-primary text-primary-foreground opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                  <Plus className="h-4 w-4" />
-                </span>
+                {t('admin.selectAllVisible')} ({filtered.length})
               </button>
-            ))}
-          </div>
+              <span>·</span>
+              <span>{t('admin.bulkSelectHint')}</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[420px] overflow-auto p-1">
+              {filtered.map((p: any) => {
+                const selected = selectedIds.has(p.id);
+                return (
+                  <div
+                    key={p.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedIds(prev => {
+                      const next = new Set(prev);
+                      if (next.has(p.id)) next.delete(p.id); else next.add(p.id);
+                      return next;
+                    })}
+                    onDoubleClick={() => addItem.mutate(p.id)}
+                    title={`${nameOf(p)} — ${t('admin.bulkClickHint')}`}
+                    className={`group relative text-left border rounded-lg overflow-hidden hover:shadow-md transition bg-card cursor-pointer ${
+                      selected ? 'border-primary ring-2 ring-primary/40' : 'border-border hover:border-primary'
+                    }`}
+                  >
+                    <div className="aspect-square bg-muted overflow-hidden">
+                      <img src={imgOf(p)} alt="" className="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" />
+                    </div>
+                    <div className="p-2">
+                      <p className="text-xs font-medium line-clamp-2 leading-tight">{nameOf(p)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{p.sku} · {Number(p.base_price).toFixed(2)} €</p>
+                    </div>
+                    <span className={`absolute top-2 right-2 h-7 w-7 rounded-full flex items-center justify-center transition ${
+                      selected ? 'bg-primary text-primary-foreground' : 'bg-background/80 text-muted-foreground opacity-0 group-hover:opacity-100'
+                    }`}>
+                      {selected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>
   );
 };
+
 
 const AdminTemplates: React.FC = () => {
   const { t, i18n } = useTranslation();
