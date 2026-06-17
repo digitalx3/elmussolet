@@ -280,6 +280,7 @@ export type Database = {
           button2_variant: string | null
           canvas_heights: Json
           created_at: string
+          floating_images: Json
           id: string
           is_active: boolean
           layout: Json
@@ -306,6 +307,7 @@ export type Database = {
           button2_variant?: string | null
           canvas_heights?: Json
           created_at?: string
+          floating_images?: Json
           id?: string
           is_active?: boolean
           layout?: Json
@@ -332,6 +334,7 @@ export type Database = {
           button2_variant?: string | null
           canvas_heights?: Json
           created_at?: string
+          floating_images?: Json
           id?: string
           is_active?: boolean
           layout?: Json
