@@ -53,6 +53,7 @@ const BirthListViewPage: React.FC = () => {
   const { hasAccess, listId, babyName, owners, expectedDate, token, clearAccess } = useListAccess();
   const { addListItem } = useCart();
   const [items, setItems] = useState<ListItemWithProduct[]>([]);
+  const [sections, setSections] = useState<ListSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const lang = i18n.language === 'es' ? 'es' : 'ca';
@@ -68,21 +69,29 @@ const BirthListViewPage: React.FC = () => {
   const fetchListItems = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('list_items')
-        .select(`
-          id, product_id, variant_id, quantity_desired, quantity_purchased, priority, sort_order,
-          product:products(
-            id, slug, base_price, has_variants,
-            product_translations(language, name, short_description),
-            product_images(image_url, is_primary, alt_text),
-            tax_rates(percentage)
-          )
-        `)
-        .eq('list_id', listId!)
-        .order('sort_order', { ascending: true });
+      const [{ data, error }, { data: secData }] = await Promise.all([
+        supabase
+          .from('list_items')
+          .select(`
+            id, product_id, variant_id, section_id, quantity_desired, quantity_purchased, priority, sort_order,
+            product:products(
+              id, slug, base_price, has_variants,
+              product_translations(language, name, short_description),
+              product_images(image_url, is_primary, alt_text),
+              tax_rates(percentage)
+            )
+          `)
+          .eq('list_id', listId!)
+          .order('sort_order', { ascending: true }),
+        supabase
+          .from('list_sections')
+          .select('id, name_ca, name_es, sort_order')
+          .eq('list_id', listId!)
+          .order('sort_order', { ascending: true }),
+      ]);
 
       if (error) throw error;
+      setSections((secData as ListSection[]) || []);
 
       // Fetch variant info for items with variants
       const withVariants = await Promise.all(
@@ -107,6 +116,7 @@ const BirthListViewPage: React.FC = () => {
       setLoading(false);
     }
   };
+
 
   const getProductName = (item: ListItemWithProduct) => {
     const tr = item.product.product_translations.find(t => t.language === lang)
