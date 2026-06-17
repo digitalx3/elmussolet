@@ -217,6 +217,66 @@ const MyBirthListPage: React.FC = () => {
     }));
   };
 
+  const loadTemplate = async () => {
+    if (!selectedTemplateId) return;
+    setLoadingTemplate(true);
+    try {
+      const [{ data: secs }, { data: tplItems }] = await Promise.all([
+        supabase
+          .from('list_template_sections')
+          .select('id, name_ca, name_es, sort_order')
+          .eq('template_id', selectedTemplateId)
+          .order('sort_order', { ascending: true }),
+        supabase
+          .from('list_template_items')
+          .select(`
+            section_id, product_id, variant_id, quantity_desired, priority, sort_order,
+            product:products(id, base_price, slug, product_translations(language, name))
+          `)
+          .eq('template_id', selectedTemplateId)
+          .order('sort_order', { ascending: true }),
+      ]);
+
+      const newSections: PendingSection[] = (secs || []).map((s: any) => ({
+        temp_id: `tpl-${s.id}`,
+        name_ca: s.name_ca,
+        name_es: s.name_es,
+        sort_order: s.sort_order,
+      }));
+
+      const newItems: ListItem[] = (tplItems || []).map((it: any, idx: number) => {
+        const tr = it.product?.product_translations?.find((tt: any) => tt.language === lang)
+          || it.product?.product_translations?.[0];
+        return {
+          product_id: it.product_id,
+          variant_id: it.variant_id || null,
+          quantity_desired: it.quantity_desired || 1,
+          priority: it.priority || 'medium',
+          sort_order: idx,
+          productName: tr?.name || it.product?.slug || it.product_id,
+          price: it.product?.base_price,
+          section_temp_id: it.section_id ? `tpl-${it.section_id}` : null,
+        };
+      });
+
+      setSections(newSections);
+      setForm(prev => ({ ...prev, items: newItems }));
+      toast.success(t('list.templateLoaded'));
+    } catch (e: any) {
+      toast.error(e.message || t('errors.generic'));
+    } finally {
+      setLoadingTemplate(false);
+    }
+  };
+
+  const assignItemSection = (idx: number, sectionTempId: string | null) => {
+    setForm(prev => ({
+      ...prev,
+      items: prev.items.map((it, i) => i === idx ? { ...it, section_temp_id: sectionTempId } : it),
+    }));
+  };
+
+
   const handleSave = async () => {
     if (!user) return;
     if (!form.first_name.trim()) { toast.error(t('list.firstNameRequired')); return; }
