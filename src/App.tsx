@@ -24,6 +24,7 @@ import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import CreateBirthListPage from "@/pages/CreateBirthListPage";
 import NotFound from "@/pages/NotFound";
 import CmsPagePage from "@/pages/CmsPagePage";
+import ContactPage from "@/pages/ContactPage";
 import AppearanceInjector from "@/components/AppearanceInjector";
 import MediaConfigLoader from "@/components/MediaConfigLoader";
 
@@ -55,6 +56,8 @@ const App = () => (
                   <Route path="/recuperar-contrasenya" element={<PublicLayout><ForgotPasswordPage /></PublicLayout>} />
                   <Route path="/reset-password" element={<PublicLayout><ResetPasswordPage /></PublicLayout>} />
                   <Route path="/pagina/:slug" element={<PublicLayout><CmsPagePage /></PublicLayout>} />
+                  <Route path="/contacte" element={<PublicLayout><ContactPage /></PublicLayout>} />
+                  <Route path="/contacto" element={<PublicLayout><ContactPage /></PublicLayout>} />
 
                   {/* Protected routes */}
                   <Route path="/la-meva-llista" element={<PublicLayout><ProtectedRoute><CreateBirthListPage /></ProtectedRoute></PublicLayout>} />
