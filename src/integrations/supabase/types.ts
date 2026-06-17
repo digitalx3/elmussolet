@@ -315,6 +315,7 @@ export type Database = {
           product_id: string
           quantity_desired: number | null
           quantity_purchased: number | null
+          section_id: string | null
           sort_order: number | null
           variant_id: string | null
         }
@@ -326,6 +327,7 @@ export type Database = {
           product_id: string
           quantity_desired?: number | null
           quantity_purchased?: number | null
+          section_id?: string | null
           sort_order?: number | null
           variant_id?: string | null
         }
@@ -337,6 +339,7 @@ export type Database = {
           product_id?: string
           quantity_desired?: number | null
           quantity_purchased?: number | null
+          section_id?: string | null
           sort_order?: number | null
           variant_id?: string | null
         }
@@ -353,6 +356,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "list_items_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "list_sections"
             referencedColumns: ["id"]
           },
           {
@@ -405,6 +415,44 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      list_sections: {
+        Row: {
+          created_at: string
+          id: string
+          list_id: string
+          name_ca: string
+          name_es: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          list_id: string
+          name_ca: string
+          name_es: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          list_id?: string
+          name_ca?: string
+          name_es?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_sections_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "birth_lists"
             referencedColumns: ["id"]
           },
         ]
