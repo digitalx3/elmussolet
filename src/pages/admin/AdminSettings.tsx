@@ -4,17 +4,20 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Store, CreditCard, Truck, ClipboardList, Receipt, Server } from 'lucide-react';
+import { Store, CreditCard, Truck, ClipboardList, Receipt, Server, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import ImageUploader from '@/components/admin/ImageUploader';
 
 const SETTINGS_KEYS = [
   'store_name', 'store_email', 'store_phone', 'store_address', 'store_nif',
   'payment_bizum_phone', 'payment_transfer_iban', 'payment_transfer_beneficiary',
   'free_shipping_threshold', 'default_language',
+  // Branding
+  'logo_header_url', 'logo_footer_url',
   // Deployment / self-hosting
   'site_canonical_url', 'media_base_url', 'assets_base_url', 'api_base_url', 'storage_provider',
 ];
