@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { AppearanceConfig, ElementStyle } from '@/components/AppearanceInjector';
+import AppearancePreview from '@/components/admin/AppearancePreview';
 
 const ELEMENT_KEYS: { key: string; label: string }[] = [
   { key: 'h1', label: 'Títol H1' },
@@ -94,6 +95,9 @@ const AdminAppearance: React.FC = () => {
         </TabsList>
 
         <TabsContent value="typography" className="space-y-6 mt-4">
+          <div className="sticky top-14 z-20 -mx-2">
+            <AppearancePreview config={cfg} />
+          </div>
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Fonts globals</CardTitle>
