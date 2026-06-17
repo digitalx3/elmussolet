@@ -326,9 +326,8 @@ const BirthListViewPage: React.FC = () => {
               )}
             </div>
           );
-        })()
+        })()}
 
-      )}
 
       {/* Cart CTA */}
       <div className="mt-8 text-center">
