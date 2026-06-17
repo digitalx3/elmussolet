@@ -61,6 +61,9 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
   const [search, setSearch] = useState('');
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [newSectionName, setNewSectionName] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   // Sections of this template
   const { data: sections = [] } = useQuery({
@@ -154,18 +157,73 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
     onError: (e: any) => toast.error(e.message),
   });
 
-  const moveSection = (id: string, dir: -1 | 1) => {
-    const idx = sections.findIndex((s: any) => s.id === id);
-    const swap = sections[idx + dir];
-    if (!swap) return;
-    const a = sections[idx] as any;
-    updateSection.mutate({ id: a.id, patch: { sort_order: (swap as any).sort_order } });
-    updateSection.mutate({ id: (swap as any).id, patch: { sort_order: a.sort_order } });
+  // Persist new order after drag
+  const reorderSections = useMutation({
+    mutationFn: async (ordered: { id: string; sort_order: number }[]) => {
+      for (const s of ordered) {
+        const { error } = await supabase.from('list_template_sections')
+          .update({ sort_order: s.sort_order }).eq('id', s.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['template-sections', templateId] }),
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIdx = sections.findIndex((s: any) => s.id === active.id);
+    const newIdx = sections.findIndex((s: any) => s.id === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    const reordered = arrayMove(sections as any[], oldIdx, newIdx);
+    // Optimistic cache update
+    qc.setQueryData(['template-sections', templateId], reordered.map((s: any, i: number) => ({ ...s, sort_order: i + 1 })));
+    reorderSections.mutate(reordered.map((s: any, i: number) => ({ id: s.id, sort_order: i + 1 })));
   };
 
   // ---- Item mutations ----
   const addItem = useMutation({
     mutationFn: async (productId: string) => {
+      if (!activeSectionId) throw new Error(t('admin.pickSectionFirst') as string);
+      const sectionItems = items.filter((i: any) => i.section_id === activeSectionId);
+      const maxSort = sectionItems.reduce((m: number, i: any) => Math.max(m, i.sort_order || 0), 0);
+      const { error } = await supabase.from('list_template_items').insert({
+        template_id: templateId,
+        product_id: productId,
+        section_id: activeSectionId,
+        quantity: 1,
+        sort_order: maxSort + 1,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['template-items', templateId] }),
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const addBulk = useMutation({
+    mutationFn: async (productIds: string[]) => {
+      if (!activeSectionId) throw new Error(t('admin.pickSectionFirst') as string);
+      const sectionItems = items.filter((i: any) => i.section_id === activeSectionId);
+      let maxSort = sectionItems.reduce((m: number, i: any) => Math.max(m, i.sort_order || 0), 0);
+      const rows = productIds.map(pid => ({
+        template_id: templateId,
+        product_id: pid,
+        section_id: activeSectionId,
+        quantity: 1,
+        sort_order: ++maxSort,
+      }));
+      const { error } = await supabase.from('list_template_items').insert(rows);
+      if (error) throw error;
+      return productIds.length;
+    },
+    onSuccess: (n) => {
+      qc.invalidateQueries({ queryKey: ['template-items', templateId] });
+      setSelectedIds(new Set());
+      toast.success(`${n} ${t('admin.productsAdded')}`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
       if (!activeSectionId) throw new Error(t('admin.pickSectionFirst') as string);
       const sectionItems = items.filter((i: any) => i.section_id === activeSectionId);
       const maxSort = sectionItems.reduce((m: number, i: any) => Math.max(m, i.sort_order || 0), 0);
