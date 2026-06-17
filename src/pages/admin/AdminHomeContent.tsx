@@ -24,6 +24,7 @@ interface Block {
   cta_label_ca: string | null;
   cta_label_es: string | null;
   cta_url: string | null;
+  custom_class: string | null;
 }
 
 const ICON_OPTIONS = ['Package', 'Store', 'Heart', 'Truck', 'Gift', 'Sparkles', 'ShieldCheck', 'Clock', 'Award'];
@@ -60,6 +61,7 @@ const AdminHomeContent: React.FC = () => {
           subtitle_ca: b.subtitle_ca, subtitle_es: b.subtitle_es,
           cta_label_ca: b.cta_label_ca, cta_label_es: b.cta_label_es,
           cta_url: b.cta_url,
+          custom_class: b.custom_class,
         }).eq('id', b.id);
         if (error) throw error;
       }
@@ -130,6 +132,10 @@ const AdminHomeContent: React.FC = () => {
                     <Label>Descripció (ES)</Label>
                     <Textarea value={b.subtitle_es ?? ''} onChange={e => updateBlock(b.id, { subtitle_es: e.target.value })} rows={2} />
                   </div>
+                  <div className="sm:col-span-2">
+                    <Label>Classe CSS personalitzada</Label>
+                    <Input placeholder="bloc-enviament" value={b.custom_class ?? ''} onChange={e => updateBlock(b.id, { custom_class: e.target.value })} />
+                  </div>
                 </div>
               </div>
             ))}
@@ -175,6 +181,10 @@ const AdminHomeContent: React.FC = () => {
                   <div className="sm:col-span-2">
                     <Label>URL del botó</Label>
                     <Input value={b.cta_url ?? ''} onChange={e => updateBlock(b.id, { cta_url: e.target.value })} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>Classe CSS personalitzada</Label>
+                    <Input placeholder="bloc-llistes" value={b.custom_class ?? ''} onChange={e => updateBlock(b.id, { custom_class: e.target.value })} />
                   </div>
                 </div>
               </div>
