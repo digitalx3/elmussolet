@@ -399,6 +399,7 @@ interface LivePreviewProps {
   btn2Ca: string; btn2Es: string; btn2Url: string; btn2Variant: string;
   layout: Layout;
   canvasHeights: Record<Device, number>;
+  floatingImages: FloatingImage[];
 }
 
 const LivePreview: React.FC<LivePreviewProps> = (p) => {
@@ -416,6 +417,7 @@ const LivePreview: React.FC<LivePreviewProps> = (p) => {
     button2_url: p.btn2Url || null, button2_variant: p.btn2Variant,
     layout: p.layout,
     canvas_heights: p.canvasHeights,
+    floating_images: p.floatingImages,
   };
 
   return (
