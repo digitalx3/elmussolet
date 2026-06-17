@@ -1,1 +1,13 @@
 project_id = "dembqxfdzvwilckastuj"
+
+[functions.hash-password-util]
+verify_jwt = false
+
+[functions.verify-list-access]
+verify_jwt = false
+
+[functions.send-order-status-email]
+verify_jwt = true
+
+[functions.send-contact-email]
+verify_jwt = false
