@@ -16,8 +16,15 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2, Search, Package, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Package, X, GripVertical, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext, verticalListSortingStrategy, arrayMove, useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface TemplateRow {
   id: string;
@@ -37,6 +44,17 @@ interface FormData {
   };
 }
 
+// Sortable wrapper for sections
+const SortableSection: React.FC<{ id: string; children: (handleProps: any, isDragging: boolean) => React.ReactNode }> = ({ id, children }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 };
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children({ ...attributes, ...listeners }, isDragging)}
+    </div>
+  );
+};
+
 const emptyForm: FormData = {
   slug: '',
   is_active: true,
@@ -54,6 +72,9 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
   const [search, setSearch] = useState('');
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [newSectionName, setNewSectionName] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   // Sections of this template
   const { data: sections = [] } = useQuery({
@@ -147,13 +168,29 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
     onError: (e: any) => toast.error(e.message),
   });
 
-  const moveSection = (id: string, dir: -1 | 1) => {
-    const idx = sections.findIndex((s: any) => s.id === id);
-    const swap = sections[idx + dir];
-    if (!swap) return;
-    const a = sections[idx] as any;
-    updateSection.mutate({ id: a.id, patch: { sort_order: (swap as any).sort_order } });
-    updateSection.mutate({ id: (swap as any).id, patch: { sort_order: a.sort_order } });
+  // Persist new order after drag
+  const reorderSections = useMutation({
+    mutationFn: async (ordered: { id: string; sort_order: number }[]) => {
+      for (const s of ordered) {
+        const { error } = await supabase.from('list_template_sections')
+          .update({ sort_order: s.sort_order }).eq('id', s.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['template-sections', templateId] }),
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIdx = sections.findIndex((s: any) => s.id === active.id);
+    const newIdx = sections.findIndex((s: any) => s.id === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    const reordered = arrayMove(sections as any[], oldIdx, newIdx);
+    // Optimistic cache update
+    qc.setQueryData(['template-sections', templateId], reordered.map((s: any, i: number) => ({ ...s, sort_order: i + 1 })));
+    reorderSections.mutate(reordered.map((s: any, i: number) => ({ id: s.id, sort_order: i + 1 })));
   };
 
   // ---- Item mutations ----
@@ -174,6 +211,31 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
     onSuccess: () => qc.invalidateQueries({ queryKey: ['template-items', templateId] }),
     onError: (e: any) => toast.error(e.message),
   });
+
+  const addBulk = useMutation({
+    mutationFn: async (productIds: string[]) => {
+      if (!activeSectionId) throw new Error(t('admin.pickSectionFirst') as string);
+      const sectionItems = items.filter((i: any) => i.section_id === activeSectionId);
+      let maxSort = sectionItems.reduce((m: number, i: any) => Math.max(m, i.sort_order || 0), 0);
+      const rows = productIds.map(pid => ({
+        template_id: templateId,
+        product_id: pid,
+        section_id: activeSectionId,
+        quantity: 1,
+        sort_order: ++maxSort,
+      }));
+      const { error } = await supabase.from('list_template_items').insert(rows);
+      if (error) throw error;
+      return productIds.length;
+    },
+    onSuccess: (n) => {
+      qc.invalidateQueries({ queryKey: ['template-items', templateId] });
+      setSelectedIds(new Set());
+      toast.success(`${n} ${t('admin.productsAdded')}`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
 
   const removeItem = useMutation({
     mutationFn: async (id: string) => {
@@ -246,76 +308,88 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
             {t('admin.noSectionsHint')}
           </p>
         ) : (
-          <div className="space-y-2">
-            {sections.map((s: any, idx) => {
-              const count = items.filter((i: any) => i.section_id === s.id).length;
-              const isActive = s.id === activeSectionId;
-              return (
-                <div
-                  key={s.id}
-                  className={`border rounded-lg p-3 ${isActive ? 'border-primary bg-primary/5' : 'border-border'}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setActiveSectionId(s.id)}
-                      className="text-left flex-1"
-                      title={t('admin.makeActiveSection') as string}
-                    >
-                      <span className="font-medium text-sm">{s.name_ca}</span>
-                      {s.name_es && <span className="text-xs text-muted-foreground ml-2">/ {s.name_es}</span>}
-                      <Badge variant="secondary" className="ml-2">{count}</Badge>
-                      {isActive && <Badge className="ml-2">{t('admin.activeSection')}</Badge>}
-                    </button>
-                    <Button variant="ghost" size="icon" disabled={idx === 0} onClick={() => moveSection(s.id, -1)} title="↑">↑</Button>
-                    <Button variant="ghost" size="icon" disabled={idx === sections.length - 1} onClick={() => moveSection(s.id, 1)} title="↓">↓</Button>
-                    <Button variant="ghost" size="icon" onClick={() => { if (confirm(t('admin.confirmDeleteSection') as string)) deleteSection.mutate(s.id); }}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                  <div className="grid sm:grid-cols-2 gap-2 mt-2">
-                    <Input
-                      placeholder="Nom (CA)"
-                      defaultValue={s.name_ca}
-                      onBlur={e => e.target.value !== s.name_ca && updateSection.mutate({ id: s.id, patch: { name_ca: e.target.value } })}
-                    />
-                    <Input
-                      placeholder="Nombre (ES)"
-                      defaultValue={s.name_es || ''}
-                      onBlur={e => (e.target.value || '') !== (s.name_es || '') && updateSection.mutate({ id: s.id, patch: { name_es: e.target.value || null } })}
-                    />
-                  </div>
-
-                  {/* Products in this section */}
-                  {count > 0 && (
-                    <div className="mt-3 border-t pt-3 space-y-1">
-                      {sectionItems(s.id).map((it: any) => (
-                        <div key={it.id} className="flex items-center justify-between text-sm gap-2">
-                          <span className="flex items-center gap-2 min-w-0">
-                            <img src={it.product ? imgOf(it.product) : '/placeholder.svg'} alt="" className="h-8 w-8 rounded object-cover bg-muted flex-shrink-0" />
-                            <span className="truncate">{it.product ? nameOf(it.product) : `#${it.product_id.slice(0, 6)}`}</span>
-                          </span>
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <Input
-                              type="number" min={1}
-                              className="h-7 w-16"
-                              defaultValue={it.quantity || 1}
-                              onBlur={e => updateQty.mutate({ id: it.id, quantity: parseInt(e.target.value) || 1 })}
-                            />
-                            <Button variant="ghost" size="icon" onClick={() => removeItem.mutate(it.id)}>
-                              <X className="h-4 w-4 text-destructive" />
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={sections.map((s: any) => s.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {sections.map((s: any) => {
+                  const count = items.filter((i: any) => i.section_id === s.id).length;
+                  const isActive = s.id === activeSectionId;
+                  return (
+                    <SortableSection key={s.id} id={s.id}>
+                      {(handleProps) => (
+                        <div className={`border rounded-lg p-3 ${isActive ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              {...handleProps}
+                              className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1"
+                              title={t('admin.dragToReorder') as string}
+                              aria-label="drag handle"
+                            >
+                              <GripVertical className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveSectionId(s.id)}
+                              className="text-left flex-1"
+                              title={t('admin.makeActiveSection') as string}
+                            >
+                              <span className="font-medium text-sm">{s.name_ca}</span>
+                              {s.name_es && <span className="text-xs text-muted-foreground ml-2">/ {s.name_es}</span>}
+                              <Badge variant="secondary" className="ml-2">{count}</Badge>
+                              {isActive && <Badge className="ml-2">{t('admin.activeSection')}</Badge>}
+                            </button>
+                            <Button variant="ghost" size="icon" onClick={() => { if (confirm(t('admin.confirmDeleteSection') as string)) deleteSection.mutate(s.id); }}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
+                          <div className="grid sm:grid-cols-2 gap-2 mt-2">
+                            <Input
+                              placeholder="Nom (CA)"
+                              defaultValue={s.name_ca}
+                              onBlur={e => e.target.value !== s.name_ca && updateSection.mutate({ id: s.id, patch: { name_ca: e.target.value } })}
+                            />
+                            <Input
+                              placeholder="Nombre (ES)"
+                              defaultValue={s.name_es || ''}
+                              onBlur={e => (e.target.value || '') !== (s.name_es || '') && updateSection.mutate({ id: s.id, patch: { name_es: e.target.value || null } })}
+                            />
+                          </div>
+
+                          {count > 0 && (
+                            <div className="mt-3 border-t pt-3 space-y-1">
+                              {sectionItems(s.id).map((it: any) => (
+                                <div key={it.id} className="flex items-center justify-between text-sm gap-2">
+                                  <span className="flex items-center gap-2 min-w-0">
+                                    <img src={it.product ? imgOf(it.product) : '/placeholder.svg'} alt="" className="h-8 w-8 rounded object-cover bg-muted flex-shrink-0" />
+                                    <span className="truncate">{it.product ? nameOf(it.product) : `#${it.product_id.slice(0, 6)}`}</span>
+                                  </span>
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    <Input
+                                      type="number" min={1}
+                                      className="h-7 w-16"
+                                      defaultValue={it.quantity || 1}
+                                      onBlur={e => updateQty.mutate({ id: it.id, quantity: parseInt(e.target.value) || 1 })}
+                                    />
+                                    <Button variant="ghost" size="icon" onClick={() => removeItem.mutate(it.id)}>
+                                      <X className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                      )}
+                    </SortableSection>
+                  );
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
+
 
       {/* VISUAL PRODUCT PICKER */}
       <div>
@@ -326,10 +400,27 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
               {sections.find((s: any) => s.id === activeSectionId)?.name_ca || '—'}
             </span>
           </h3>
-          <div className="relative w-72 max-w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9 h-9" placeholder={t('admin.searchProductToAdd') as string}
-              value={search} onChange={e => setSearch(e.target.value)} />
+          <div className="flex items-center gap-2 flex-wrap">
+            {selectedIds.size > 0 && (
+              <>
+                <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+                  {t('admin.clearSelection')} ({selectedIds.size})
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => addBulk.mutate(Array.from(selectedIds))}
+                  disabled={!activeSectionId || addBulk.isPending}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  {t('admin.addSelected')} ({selectedIds.size})
+                </Button>
+              </>
+            )}
+            <div className="relative w-72 max-w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input className="pl-9 h-9" placeholder={t('admin.searchProductToAdd') as string}
+                value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
           </div>
         </div>
 
@@ -340,34 +431,60 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
         ) : filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground py-6 text-center">{t('common.noResults')}</p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[420px] overflow-auto p-1">
-            {filtered.map((p: any) => (
+          <>
+            <div className="flex items-center gap-3 mb-2 text-xs text-muted-foreground">
               <button
                 type="button"
-                key={p.id}
-                onClick={() => addItem.mutate(p.id)}
-                disabled={addItem.isPending}
-                className="group relative text-left border border-border rounded-lg overflow-hidden hover:border-primary hover:shadow-md transition bg-card"
-                title={nameOf(p)}
+                className="underline-offset-2 hover:underline"
+                onClick={() => setSelectedIds(new Set(filtered.map((p: any) => p.id)))}
               >
-                <div className="aspect-square bg-muted overflow-hidden">
-                  <img src={imgOf(p)} alt="" className="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" />
-                </div>
-                <div className="p-2">
-                  <p className="text-xs font-medium line-clamp-2 leading-tight">{nameOf(p)}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{p.sku} · {Number(p.base_price).toFixed(2)} €</p>
-                </div>
-                <span className="absolute top-2 right-2 h-7 w-7 rounded-full bg-primary text-primary-foreground opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                  <Plus className="h-4 w-4" />
-                </span>
+                {t('admin.selectAllVisible')} ({filtered.length})
               </button>
-            ))}
-          </div>
+              <span>·</span>
+              <span>{t('admin.bulkSelectHint')}</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[420px] overflow-auto p-1">
+              {filtered.map((p: any) => {
+                const selected = selectedIds.has(p.id);
+                return (
+                  <div
+                    key={p.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedIds(prev => {
+                      const next = new Set(prev);
+                      if (next.has(p.id)) next.delete(p.id); else next.add(p.id);
+                      return next;
+                    })}
+                    onDoubleClick={() => addItem.mutate(p.id)}
+                    title={`${nameOf(p)} — ${t('admin.bulkClickHint')}`}
+                    className={`group relative text-left border rounded-lg overflow-hidden hover:shadow-md transition bg-card cursor-pointer ${
+                      selected ? 'border-primary ring-2 ring-primary/40' : 'border-border hover:border-primary'
+                    }`}
+                  >
+                    <div className="aspect-square bg-muted overflow-hidden">
+                      <img src={imgOf(p)} alt="" className="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" />
+                    </div>
+                    <div className="p-2">
+                      <p className="text-xs font-medium line-clamp-2 leading-tight">{nameOf(p)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{p.sku} · {Number(p.base_price).toFixed(2)} €</p>
+                    </div>
+                    <span className={`absolute top-2 right-2 h-7 w-7 rounded-full flex items-center justify-center transition ${
+                      selected ? 'bg-primary text-primary-foreground' : 'bg-background/80 text-muted-foreground opacity-0 group-hover:opacity-100'
+                    }`}>
+                      {selected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>
   );
 };
+
 
 const AdminTemplates: React.FC = () => {
   const { t, i18n } = useTranslation();
