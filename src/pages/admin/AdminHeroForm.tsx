@@ -8,8 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Save, Upload, Monitor, Tablet, Smartphone, Eye } from 'lucide-react';
 import { toast } from 'sonner';
-import HeroCanvasEditor, { defaultLayout, Layout, Device } from '@/components/admin/HeroCanvasEditor';
+import HeroCanvasEditor, { defaultLayout, Layout, Device, FloatingImage, DEFAULT_FLOATING_BOX } from '@/components/admin/HeroCanvasEditor';
 import HeroSlideView, { Slide } from '@/components/home/HeroSlideView';
+import ImageUploader from '@/components/admin/ImageUploader';
+import { Plus, Trash2 } from 'lucide-react';
 
 const PREVIEW_WIDTHS: Record<Device, number> = { desktop: 1200, tablet: 768, mobile: 375 };
 
