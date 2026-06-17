@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import logoHorizontal from '@/assets/mussolet-logo-horizontal.png.asset.json';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,9 @@ const Header: React.FC = () => {
   const { totalItemsCount } = useCart();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: settings } = useSiteSettings(['logo_header_url', 'store_name']);
+  const logoUrl = settings?.logo_header_url || logoHorizontal.url;
+  const storeName = settings?.store_name || 'El Mussolet';
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
@@ -35,7 +39,7 @@ const Header: React.FC = () => {
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <img src={logoHorizontal.url} alt="El Mussolet" className="h-10 md:h-12 w-auto" />
+          <img src={logoUrl} alt={storeName} className="h-10 md:h-12 w-auto" />
         </Link>
 
         {/* Desktop Nav */}

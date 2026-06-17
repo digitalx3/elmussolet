@@ -2,13 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Loader2 } from 'lucide-react';
+import {
+  Save, Loader2, Package, Store, Heart, Truck, Gift, Sparkles, ShieldCheck, Clock, Award,
+  Baby, Star, ThumbsUp, Tag, MapPin, Phone, Mail, Camera, Home, Smile,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 interface Block {
   id: string;
@@ -27,7 +31,36 @@ interface Block {
   custom_class: string | null;
 }
 
-const ICON_OPTIONS = ['Package', 'Store', 'Heart', 'Truck', 'Gift', 'Sparkles', 'ShieldCheck', 'Clock', 'Award'];
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Package, Store, Heart, Truck, Gift, Sparkles, ShieldCheck, Clock, Award,
+  Baby, Star, ThumbsUp, Tag, MapPin, Phone, Mail, Camera, Home, Smile,
+};
+const ICON_OPTIONS = Object.keys(ICON_MAP);
+
+const IconPicker: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
+  <div className="grid grid-cols-6 sm:grid-cols-10 gap-2 p-3 rounded-md border border-input bg-background">
+    {ICON_OPTIONS.map(name => {
+      const Icon = ICON_MAP[name];
+      const active = value === name;
+      return (
+        <button
+          key={name}
+          type="button"
+          onClick={() => onChange(name)}
+          title={name}
+          className={cn(
+            'h-10 w-10 rounded-md flex items-center justify-center border transition-colors',
+            active
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-muted/40 text-foreground hover:bg-muted'
+          )}
+        >
+          <Icon className="h-5 w-5" />
+        </button>
+      );
+    })}
+  </div>
+);
 
 const AdminHomeContent: React.FC = () => {
   const qc = useQueryClient();
@@ -99,18 +132,12 @@ const AdminHomeContent: React.FC = () => {
                     </Label>
                   </div>
                 </div>
-                <div className="grid sm:grid-cols-2 gap-3">
+                <div className="grid sm:grid-cols-[1fr_auto] gap-3 items-start">
                   <div>
                     <Label>Icona</Label>
-                    <select
-                      className="w-full border border-input rounded-md h-10 px-3 bg-background text-sm"
-                      value={b.icon ?? ''}
-                      onChange={e => updateBlock(b.id, { icon: e.target.value })}
-                    >
-                      {ICON_OPTIONS.map(i => <option key={i} value={i}>{i}</option>)}
-                    </select>
+                    <IconPicker value={b.icon ?? ''} onChange={v => updateBlock(b.id, { icon: v })} />
                   </div>
-                  <div>
+                  <div className="w-32">
                     <Label>Ordre</Label>
                     <Input type="number" value={b.sort_order} onChange={e => updateBlock(b.id, { sort_order: Number(e.target.value) })} />
                   </div>

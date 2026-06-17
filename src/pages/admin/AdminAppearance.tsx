@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Loader2, Type, Code2, Palette } from 'lucide-react';
+import { Save, Loader2, Type, Code2, Palette, Paintbrush } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { AppearanceConfig, ElementStyle } from '@/components/AppearanceInjector';
+import type { AppearanceConfig, ColorConfig, ElementStyle } from '@/components/AppearanceInjector';
 import AppearancePreview from '@/components/admin/AppearancePreview';
 
 const ELEMENT_KEYS: { key: string; label: string }[] = [
@@ -23,14 +23,117 @@ const ELEMENT_KEYS: { key: string; label: string }[] = [
 
 const FONT_WEIGHTS = ['', '300', '400', '500', '600', '700', '800'];
 
+// Popular Google Fonts grouped by usage. Each entry is { name, weights }.
+const POPULAR_FONTS = [
+  // Sans
+  { name: 'Inter', weights: '300;400;500;600;700' },
+  { name: 'Roboto', weights: '300;400;500;700' },
+  { name: 'Open Sans', weights: '300;400;600;700' },
+  { name: 'Lato', weights: '300;400;700;900' },
+  { name: 'Montserrat', weights: '300;400;500;600;700;800' },
+  { name: 'Poppins', weights: '300;400;500;600;700;800' },
+  { name: 'Nunito', weights: '300;400;600;700;800' },
+  { name: 'DM Sans', weights: '400;500;700' },
+  { name: 'Work Sans', weights: '300;400;500;600;700' },
+  { name: 'Quicksand', weights: '400;500;600;700' },
+  { name: 'Manrope', weights: '300;400;500;600;700' },
+  { name: 'Outfit', weights: '300;400;500;600;700' },
+  // Serif
+  { name: 'Playfair Display', weights: '400;500;600;700;800' },
+  { name: 'Merriweather', weights: '300;400;700;900' },
+  { name: 'Lora', weights: '400;500;600;700' },
+  { name: 'Cormorant Garamond', weights: '400;500;600;700' },
+  { name: 'PT Serif', weights: '400;700' },
+  { name: 'EB Garamond', weights: '400;500;600;700' },
+  { name: 'DM Serif Display', weights: '400' },
+  // Display / handwritten
+  { name: 'Caveat', weights: '400;500;600;700' },
+  { name: 'Dancing Script', weights: '400;500;600;700' },
+  { name: 'Pacifico', weights: '400' },
+  { name: 'Sacramento', weights: '400' },
+  { name: 'Great Vibes', weights: '400' },
+];
+
+const COLOR_FIELDS: { key: keyof ColorConfig; label: string; description: string }[] = [
+  { key: 'primary', label: 'Primari', description: 'Color principal de marca (botons, links).' },
+  { key: 'primaryForeground', label: 'Text sobre primari', description: 'Color del text dins de botons primaris.' },
+  { key: 'secondary', label: 'Secundari', description: 'Color complementari (botons secundaris, fons suaus).' },
+  { key: 'secondaryForeground', label: 'Text sobre secundari', description: '' },
+  { key: 'accent', label: 'Accent', description: 'Color d\'èmfasi (badges, destacats).' },
+  { key: 'accentForeground', label: 'Text sobre accent', description: '' },
+  { key: 'background', label: 'Fons general', description: 'Color de fons de la pàgina.' },
+  { key: 'foreground', label: 'Text general', description: 'Color del text del cos.' },
+  { key: 'border', label: 'Vores', description: 'Color de les vores i separadors.' },
+];
+
 const DEFAULT: AppearanceConfig = {
   bodyFont: '',
   headingFont: '',
   loadGoogleFonts: '',
+  colors: {},
   elements: Object.fromEntries(ELEMENT_KEYS.map(e => [e.key, {} as ElementStyle])),
   customCss: '',
   customJsHead: '',
   customJsFooter: '',
+};
+
+// Build a Google Fonts query for the selected body/heading fonts
+function buildGoogleFontsString(body?: string, heading?: string, extra?: string): string {
+  const items: string[] = [];
+  const used = new Set<string>();
+  for (const fontName of [body, heading]) {
+    if (!fontName) continue;
+    const f = POPULAR_FONTS.find(p => p.name.toLowerCase() === fontName.toLowerCase());
+    if (!f) continue;
+    if (used.has(f.name)) continue;
+    used.add(f.name);
+    items.push(`${f.name.replace(/\s+/g, '+')}:wght@${f.weights}`);
+  }
+  if (extra?.trim()) items.push(extra.trim());
+  return items.join('|');
+}
+
+// Inline preview using the font itself
+const FontSelect: React.FC<{ value: string; onChange: (v: string) => void; placeholder?: string }> = ({ value, onChange, placeholder }) => {
+  // Load fonts for the dropdown preview
+  useEffect(() => {
+    const id = 'admin-font-picker-preview';
+    let link = document.getElementById(id) as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement('link');
+      link.id = id;
+      link.rel = 'stylesheet';
+      const families = POPULAR_FONTS.map(f => `family=${f.name.replace(/\s+/g, '+')}:wght@400;600`).join('&');
+      link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+      document.head.appendChild(link);
+    }
+  }, []);
+
+  return (
+    <div className="space-y-2">
+      <select
+        className="w-full border border-input rounded-md h-10 px-3 bg-background text-sm"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={value ? { fontFamily: `'${value}', system-ui, sans-serif` } : undefined}
+      >
+        <option value="">{placeholder ?? '— per defecte —'}</option>
+        {POPULAR_FONTS.map(f => (
+          <option key={f.name} value={f.name} style={{ fontFamily: `'${f.name}', system-ui` }}>
+            {f.name}
+          </option>
+        ))}
+      </select>
+      {value && (
+        <div className="border border-border rounded-md px-3 py-2 bg-muted/30">
+          <div className="text-xs text-muted-foreground mb-0.5">Vista prèvia:</div>
+          <div style={{ fontFamily: `'${value}', system-ui, sans-serif` }} className="text-base">
+            The quick brown fox jumps · ¡Hola món!
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 const AdminAppearance: React.FC = () => {
@@ -52,9 +155,14 @@ const AdminAppearance: React.FC = () => {
 
   const save = useMutation({
     mutationFn: async () => {
+      // Auto-generate Google Fonts string from selected fonts + any extra
+      const toSave: AppearanceConfig = {
+        ...cfg,
+        loadGoogleFonts: buildGoogleFontsString(cfg.bodyFont, cfg.headingFont, cfg.loadGoogleFonts),
+      };
       const { error } = await supabase
         .from('site_settings')
-        .upsert({ key: 'appearance_config', value: JSON.stringify(cfg) }, { onConflict: 'key' });
+        .upsert({ key: 'appearance_config', value: JSON.stringify(toSave) }, { onConflict: 'key' });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -72,6 +180,10 @@ const AdminAppearance: React.FC = () => {
     }));
   };
 
+  const updateColor = (key: keyof ColorConfig, value: string) => {
+    setCfg(prev => ({ ...prev, colors: { ...(prev.colors ?? {}), [key]: value } }));
+  };
+
   if (isLoading) return <Loader2 className="h-6 w-6 animate-spin" />;
 
   return (
@@ -87,13 +199,58 @@ const AdminAppearance: React.FC = () => {
         </Button>
       </div>
 
-      <Tabs defaultValue="typography">
+      <Tabs defaultValue="colors">
         <TabsList>
+          <TabsTrigger value="colors"><Paintbrush className="h-4 w-4 mr-1" />Colors</TabsTrigger>
           <TabsTrigger value="typography"><Type className="h-4 w-4 mr-1" />Tipografia</TabsTrigger>
           <TabsTrigger value="code"><Code2 className="h-4 w-4 mr-1" />Codi personalitzat</TabsTrigger>
           <TabsTrigger value="classes"><Palette className="h-4 w-4 mr-1" />Classes &amp; ajuda</TabsTrigger>
         </TabsList>
 
+        {/* COLORS */}
+        <TabsContent value="colors" className="space-y-6 mt-4">
+          <div className="sticky top-14 z-20 -mx-2">
+            <AppearancePreview config={cfg} />
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Paleta de colors</CardTitle>
+              <CardDescription>
+                Deixa un camp buit per mantenir el color per defecte del tema. Pots fer servir HEX (#aabbcc) o HSL.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid sm:grid-cols-2 gap-4">
+              {COLOR_FIELDS.map(({ key, label, description }) => {
+                const val = cfg.colors?.[key] ?? '';
+                const hexForPicker = /^#?[0-9a-f]{6}$/i.test(val.replace('#', '')) ? (val.startsWith('#') ? val : `#${val}`) : '#888888';
+                return (
+                  <div key={key} className="border border-border rounded-lg p-3">
+                    <Label className="text-sm font-semibold">{label}</Label>
+                    {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        type="color"
+                        className="w-14 p-1 h-10 cursor-pointer"
+                        value={hexForPicker}
+                        onChange={e => updateColor(key, e.target.value)}
+                      />
+                      <Input
+                        placeholder="#rrggbb o hsl(h s% l%)"
+                        value={val}
+                        onChange={e => updateColor(key, e.target.value)}
+                      />
+                      {val && (
+                        <Button type="button" variant="ghost" size="sm" onClick={() => updateColor(key, '')}>×</Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TYPOGRAPHY */}
         <TabsContent value="typography" className="space-y-6 mt-4">
           <div className="sticky top-14 z-20 -mx-2">
             <AppearancePreview config={cfg} />
@@ -102,31 +259,29 @@ const AdminAppearance: React.FC = () => {
             <CardHeader>
               <CardTitle className="text-lg">Fonts globals</CardTitle>
               <CardDescription>
-                Indica el nom exacte de la font. Si és una Google Font, afegeix-la a sota perquè es carregui.
+                Tria una font del llistat (es carrega automàticament des de Google Fonts).
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Font del cos (body)</Label>
-                  <Input placeholder="Ex: Inter" value={cfg.bodyFont ?? ''}
-                    onChange={e => setCfg({ ...cfg, bodyFont: e.target.value })} />
+                  <FontSelect value={cfg.bodyFont ?? ''} onChange={v => setCfg({ ...cfg, bodyFont: v })} />
                 </div>
                 <div>
                   <Label>Font dels títols (h1–h6)</Label>
-                  <Input placeholder="Ex: Playfair Display" value={cfg.headingFont ?? ''}
-                    onChange={e => setCfg({ ...cfg, headingFont: e.target.value })} />
+                  <FontSelect value={cfg.headingFont ?? ''} onChange={v => setCfg({ ...cfg, headingFont: v })} />
                 </div>
               </div>
               <div>
-                <Label>Carregar Google Fonts</Label>
+                <Label>Fonts addicionals (avançat)</Label>
                 <Input
-                  placeholder="Ex: Inter:wght@400;600|Playfair+Display:wght@700"
+                  placeholder="Ex: Bebas+Neue:wght@400|Source+Code+Pro:wght@500"
                   value={cfg.loadGoogleFonts ?? ''}
                   onChange={e => setCfg({ ...cfg, loadGoogleFonts: e.target.value })}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Separa diverses famílies amb "|". Exemple: <code>Inter:wght@400;600|Lora:wght@500</code>
+                  Només cal si vols carregar fonts que no estan al desplegable. Separa amb "|".
                 </p>
               </div>
             </CardContent>
@@ -143,10 +298,10 @@ const AdminAppearance: React.FC = () => {
                 return (
                   <div key={key} className="border border-border rounded-lg p-4">
                     <div className="font-semibold mb-3">{label} <span className="text-xs font-mono text-muted-foreground">{key}</span></div>
-                    <div className="grid sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                      <div>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                      <div className="lg:col-span-2">
                         <Label className="text-xs">Font</Label>
-                        <Input placeholder="Hereta" value={el.fontFamily ?? ''} onChange={e => updateEl(key, { fontFamily: e.target.value })} />
+                        <FontSelect value={el.fontFamily ?? ''} onChange={v => updateEl(key, { fontFamily: v })} placeholder="Hereta del tema" />
                       </div>
                       <div>
                         <Label className="text-xs">Mida</Label>
@@ -166,10 +321,10 @@ const AdminAppearance: React.FC = () => {
                         <Label className="text-xs">Color</Label>
                         <div className="flex gap-2">
                           <Input type="color" className="w-12 p-1 h-10" value={el.color || '#000000'} onChange={e => updateEl(key, { color: e.target.value })} />
-                          <Input placeholder="#222 o hsl(...)" value={el.color ?? ''} onChange={e => updateEl(key, { color: e.target.value })} />
+                          <Input placeholder="#222" value={el.color ?? ''} onChange={e => updateEl(key, { color: e.target.value })} />
                         </div>
                       </div>
-                      <div>
+                      <div className="sm:col-span-2 lg:col-span-1">
                         <Label className="text-xs">Espaiat lletres</Label>
                         <Input placeholder="Ex: 0.02em" value={el.letterSpacing ?? ''} onChange={e => updateEl(key, { letterSpacing: e.target.value })} />
                       </div>
@@ -181,6 +336,7 @@ const AdminAppearance: React.FC = () => {
           </Card>
         </TabsContent>
 
+        {/* CODE */}
         <TabsContent value="code" className="space-y-6 mt-4">
           <Card>
             <CardHeader>
@@ -207,7 +363,7 @@ const AdminAppearance: React.FC = () => {
             <CardContent>
               <Textarea
                 className="font-mono text-xs min-h-[180px]"
-                placeholder={`<!-- Exemple Google Analytics -->\n<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXX"></script>\n<script>\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);} \n  gtag('js', new Date()); gtag('config', 'G-XXXX');\n</script>`}
+                placeholder={`<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXX"></script>`}
                 value={cfg.customJsHead ?? ''}
                 onChange={e => setCfg({ ...cfg, customJsHead: e.target.value })}
               />
@@ -238,15 +394,9 @@ const AdminAppearance: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <p>
-                Ves a <strong>Pàgina d'inici</strong> i, a cada targeta (Enviament segur, Recollida botiga, Atenció…)
-                trobaràs el camp <em>Classe CSS personalitzada</em>.
+                Ves a <strong>Pàgina d'inici</strong> i, a cada targeta trobaràs el camp <em>Classe CSS personalitzada</em>.
               </p>
-              <p>Després pots fer servir-la al CSS personalitzat. Per exemple:</p>
               <pre className="bg-muted rounded p-3 text-xs overflow-x-auto">{`.bloc-enviament {\n  background: hsl(var(--accent));\n  border-radius: 1.5rem;\n}`}</pre>
-              <p className="text-muted-foreground">
-                Classes globals disponibles a tota la web: <code>body</code>, <code>h1</code>–<code>h6</code>,
-                <code> .font-display</code>, <code>.container</code>, i les classes utilitàries de Tailwind.
-              </p>
             </CardContent>
           </Card>
         </TabsContent>

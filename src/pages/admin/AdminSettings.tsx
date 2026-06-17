@@ -4,17 +4,20 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Store, CreditCard, Truck, ClipboardList, Receipt, Server } from 'lucide-react';
+import { Store, CreditCard, Truck, ClipboardList, Receipt, Server, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import ImageUploader from '@/components/admin/ImageUploader';
 
 const SETTINGS_KEYS = [
   'store_name', 'store_email', 'store_phone', 'store_address', 'store_nif',
   'payment_bizum_phone', 'payment_transfer_iban', 'payment_transfer_beneficiary',
   'free_shipping_threshold', 'default_language',
+  // Branding
+  'logo_header_url', 'logo_footer_url',
   // Deployment / self-hosting
   'site_canonical_url', 'media_base_url', 'assets_base_url', 'api_base_url', 'storage_provider',
 ];
@@ -123,6 +126,43 @@ const AdminSettings: React.FC = () => {
           <div>
             <Label>{t('admin.storeAddress')}</Label>
             <Input value={form.store_address || ''} onChange={e => update('store_address', e.target.value)} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Branding / Logos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <ImageIcon className="h-5 w-5" />
+            Logotips
+          </CardTitle>
+          <CardDescription>
+            Logotips que es mostren a la capçalera i al peu. Si els deixes buits es fan servir els predeterminats.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid sm:grid-cols-2 gap-6">
+          <div>
+            <Label className="text-sm font-semibold">Logo de la capçalera (header)</Label>
+            <p className="text-xs text-muted-foreground mb-2">Format horitzontal recomanat. Alçada ~48 px.</p>
+            <ImageUploader
+              value={form.logo_header_url || ''}
+              onChange={v => update('logo_header_url', v)}
+              pathPrefix="branding/header"
+              label="Logo header"
+              previewClassName="h-12"
+            />
+          </div>
+          <div>
+            <Label className="text-sm font-semibold">Logo del peu (footer)</Label>
+            <p className="text-xs text-muted-foreground mb-2">Format quadrat o vertical. Alçada ~80 px.</p>
+            <ImageUploader
+              value={form.logo_footer_url || ''}
+              onChange={v => update('logo_footer_url', v)}
+              pathPrefix="branding/footer"
+              label="Logo footer"
+              previewClassName="h-20"
+            />
           </div>
         </CardContent>
       </Card>
