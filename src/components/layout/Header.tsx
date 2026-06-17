@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import logoHorizontal from '@/assets/mussolet-logo-horizontal.png.asset.json';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 import {
   DropdownMenu,
   DropdownMenuContent,
