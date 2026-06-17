@@ -39,7 +39,7 @@ const Header: React.FC = () => {
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <img src={logoHorizontal.url} alt="El Mussolet" className="h-10 md:h-12 w-auto" />
+          <img src={logoUrl} alt={storeName} className="h-10 md:h-12 w-auto" />
         </Link>
 
         {/* Desktop Nav */}
