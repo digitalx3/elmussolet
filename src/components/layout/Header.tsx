@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { ShoppingBag, Menu, X, User, Globe, ChevronDown } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
@@ -28,9 +30,30 @@ const Header: React.FC = () => {
     i18n.changeLanguage(lng);
   };
 
+  const lang = i18n.language === 'es' ? 'es' : 'ca';
+
+  const { data: cmsPages = [] } = useQuery({
+    queryKey: ['cms-pages-menu', 'header'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('cms_blocks')
+        .select('slug,title_ca,title_es,menu_order')
+        .eq('kind', 'page')
+        .eq('is_active', true)
+        .eq('menu_location', 'header')
+        .order('menu_order', { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const navLinks = [
     { to: '/cataleg', label: t('nav.catalog') },
     { to: '/llista-naixement', label: t('nav.birthList') },
+    ...cmsPages.map((p: any) => ({
+      to: `/pagina/${p.slug}`,
+      label: (lang === 'es' ? p.title_es : p.title_ca) || p.slug,
+    })),
     ...(user ? [{ to: '/la-meva-llista', label: t('home.createList') }] : []),
   ];
 
