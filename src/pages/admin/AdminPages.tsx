@@ -145,6 +145,33 @@ const AdminPages: React.FC = () => {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Ubicació al menú</Label>
+                  <select
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    value={editing.menu_location ?? 'none'}
+                    onChange={e => setEditing(p => ({ ...p, menu_location: e.target.value as Page['menu_location'] }))}
+                  >
+                    <option value="none">No mostrar al menú</option>
+                    <option value="header">Menú superior (capçalera)</option>
+                    <option value="footer">Peu de pàgina</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    On apareixerà l'enllaç a la pàgina al frontend.
+                  </p>
+                </div>
+                <div>
+                  <Label>Ordre al menú</Label>
+                  <Input
+                    type="number"
+                    value={editing.menu_order ?? 0}
+                    onChange={e => setEditing(p => ({ ...p, menu_order: Number(e.target.value) }))}
+                  />
+                </div>
+              </div>
+
+
               <Tabs value={tab} onValueChange={(v) => setTab(v as 'ca' | 'es')}>
                 <TabsList>
                   <TabsTrigger value="ca">Català</TabsTrigger>
