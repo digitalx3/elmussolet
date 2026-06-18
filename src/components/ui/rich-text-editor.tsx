@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { Button } from '@/components/ui/button';
+import { Code2, Eye } from 'lucide-react';
 
 interface Props {
   value: string;
@@ -26,15 +28,48 @@ const modules = {
 };
 
 export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, className }) => {
+  const [mode, setMode] = useState<'visual' | 'code'>('visual');
+
   return (
     <div className={`bg-background rounded-md border border-input ${className ?? ''}`}>
-      <ReactQuill
-        theme="snow"
-        value={value}
-        onChange={onChange}
-        modules={modules}
-        placeholder={placeholder}
-      />
+      <div className="flex items-center justify-end gap-1 border-b border-border px-2 py-1 bg-muted/30">
+        <Button
+          type="button"
+          size="sm"
+          variant={mode === 'visual' ? 'secondary' : 'ghost'}
+          className="h-7 gap-1 text-xs"
+          onClick={() => setMode('visual')}
+        >
+          <Eye className="h-3.5 w-3.5" /> Visual
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={mode === 'code' ? 'secondary' : 'ghost'}
+          className="h-7 gap-1 text-xs"
+          onClick={() => setMode('code')}
+        >
+          <Code2 className="h-3.5 w-3.5" /> HTML
+        </Button>
+      </div>
+
+      {mode === 'visual' ? (
+        <ReactQuill
+          theme="snow"
+          value={value}
+          onChange={onChange}
+          modules={modules}
+          placeholder={placeholder}
+        />
+      ) : (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder || '<p>HTML cru…</p>'}
+          spellCheck={false}
+          className="w-full min-h-[320px] font-mono text-xs p-3 bg-background rounded-b-md focus:outline-none focus:ring-0 resize-y"
+        />
+      )}
     </div>
   );
 };
