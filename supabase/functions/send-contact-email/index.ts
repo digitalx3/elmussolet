@@ -61,11 +61,9 @@ Deno.serve(async (req) => {
       .maybeSingle();
     const storeEmail = setting?.value;
 
-    // 3) Try sending via Resend if available; otherwise log only
-    const resendKey = Deno.env.get('RESEND_API_KEY');
-    if (resendKey && storeEmail) {
+    // 3) Send via own SMTP server (configured in admin)
+    if (storeEmail) {
       try {
-        const fromAddress = Deno.env.get('RESEND_FROM') || 'onboarding@resend.dev';
         const html = `
           <h2>Nou missatge del formulari de contacte</h2>
           <p><strong>Nom:</strong> ${escapeHtml(name)}</p>
@@ -75,27 +73,27 @@ Deno.serve(async (req) => {
           <p><strong>Missatge:</strong></p>
           <p style="white-space:pre-wrap">${escapeHtml(message)}</p>
         `;
-        const r = await fetch('https://api.resend.com/emails', {
+        const r = await fetch(`${supabaseUrl}/functions/v1/send-smtp-email`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${resendKey}`,
+            'Authorization': `Bearer ${serviceKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: fromAddress,
-            to: [storeEmail],
-            reply_to: email,
+            to: storeEmail,
+            replyTo: email,
             subject: `[Contacte] ${subject || name}`,
             html,
           }),
         });
-        if (!r.ok) console.error('Resend error', r.status, await r.text());
+        if (!r.ok) console.error('SMTP send error', r.status, await r.text());
       } catch (e) {
         console.error('Email send failed:', e);
       }
     } else {
-      console.log(`[CONTACT] New message saved (id=${inserted.id}) — no email sent (RESEND_API_KEY or store_email missing)`);
+      console.log(`[CONTACT] Message saved (id=${inserted.id}) — no store_email configured`);
     }
+
 
     return new Response(JSON.stringify({ success: true, id: inserted.id }), {
       status: 200,
