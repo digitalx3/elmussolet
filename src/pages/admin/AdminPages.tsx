@@ -20,6 +20,8 @@ interface Page {
   content_es: string | null;
   is_active: boolean;
   sort_order: number;
+  menu_location: 'none' | 'header' | 'footer';
+  menu_order: number;
 }
 
 const AdminPages: React.FC = () => {
@@ -48,6 +50,7 @@ const AdminPages: React.FC = () => {
     setEditing({
       slug: '', title_ca: '', title_es: '', content_ca: '', content_es: '',
       is_active: true, sort_order: pages.length + 1,
+      menu_location: 'footer', menu_order: pages.length + 1,
     });
   };
 
@@ -63,6 +66,8 @@ const AdminPages: React.FC = () => {
         content_es: editing.content_es ?? null,
         is_active: editing.is_active ?? true,
         sort_order: editing.sort_order ?? 0,
+        menu_location: editing.menu_location ?? 'none',
+        menu_order: editing.menu_order ?? 0,
       };
       if (selectedId) {
         const { error } = await supabase.from('cms_blocks').update(payload).eq('id', selectedId);
