@@ -20,6 +20,8 @@ interface Page {
   content_es: string | null;
   is_active: boolean;
   sort_order: number;
+  menu_location: 'none' | 'header' | 'footer';
+  menu_order: number;
 }
 
 const AdminPages: React.FC = () => {
@@ -48,6 +50,7 @@ const AdminPages: React.FC = () => {
     setEditing({
       slug: '', title_ca: '', title_es: '', content_ca: '', content_es: '',
       is_active: true, sort_order: pages.length + 1,
+      menu_location: 'footer', menu_order: pages.length + 1,
     });
   };
 
@@ -63,6 +66,8 @@ const AdminPages: React.FC = () => {
         content_es: editing.content_es ?? null,
         is_active: editing.is_active ?? true,
         sort_order: editing.sort_order ?? 0,
+        menu_location: editing.menu_location ?? 'none',
+        menu_order: editing.menu_order ?? 0,
       };
       if (selectedId) {
         const { error } = await supabase.from('cms_blocks').update(payload).eq('id', selectedId);
@@ -139,6 +144,33 @@ const AdminPages: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Ubicació al menú</Label>
+                  <select
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    value={editing.menu_location ?? 'none'}
+                    onChange={e => setEditing(p => ({ ...p, menu_location: e.target.value as Page['menu_location'] }))}
+                  >
+                    <option value="none">No mostrar al menú</option>
+                    <option value="header">Menú superior (capçalera)</option>
+                    <option value="footer">Peu de pàgina</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    On apareixerà l'enllaç a la pàgina al frontend.
+                  </p>
+                </div>
+                <div>
+                  <Label>Ordre al menú</Label>
+                  <Input
+                    type="number"
+                    value={editing.menu_order ?? 0}
+                    onChange={e => setEditing(p => ({ ...p, menu_order: Number(e.target.value) }))}
+                  />
+                </div>
+              </div>
+
 
               <Tabs value={tab} onValueChange={(v) => setTab(v as 'ca' | 'es')}>
                 <TabsList>

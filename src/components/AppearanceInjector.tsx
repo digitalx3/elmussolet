@@ -102,20 +102,20 @@ function buildCss(cfg: AppearanceConfig): string {
   if (colorDecls.length) lines.push(`:root { ${colorDecls.join('; ')}; }`);
 
   if (cfg.bodyFont) {
-    lines.push(`body { font-family: '${cfg.bodyFont}', system-ui, sans-serif; }`);
+    lines.push(`body, body p, body span, body li, body td, body input, body button, body textarea { font-family: '${cfg.bodyFont}', system-ui, sans-serif; }`);
   }
   if (cfg.headingFont) {
-    lines.push(`h1,h2,h3,h4,h5,h6,.font-display { font-family: '${cfg.headingFont}', serif; }`);
+    lines.push(`h1, h2, h3, h4, h5, h6, .font-display { font-family: '${cfg.headingFont}', serif !important; }`);
   }
   const els = cfg.elements ?? {};
   for (const [sel, s] of Object.entries(els)) {
     const decls: string[] = [];
-    if (s.fontFamily) decls.push(`font-family: '${s.fontFamily}', inherit`);
-    if (s.fontSize) decls.push(`font-size: ${s.fontSize}`);
-    if (s.fontWeight) decls.push(`font-weight: ${s.fontWeight}`);
-    if (s.color) decls.push(`color: ${s.color}`);
-    if (s.letterSpacing) decls.push(`letter-spacing: ${s.letterSpacing}`);
-    if (decls.length) lines.push(`${sel} { ${decls.join('; ')}; }`);
+    if (s.fontFamily) decls.push(`font-family: '${s.fontFamily}', inherit !important`);
+    if (s.fontSize) decls.push(`font-size: ${s.fontSize} !important`);
+    if (s.fontWeight) decls.push(`font-weight: ${s.fontWeight} !important`);
+    if (s.color) decls.push(`color: ${s.color} !important`);
+    if (s.letterSpacing) decls.push(`letter-spacing: ${s.letterSpacing} !important`);
+    if (decls.length) lines.push(`${sel}, .${sel}-style { ${decls.join('; ')}; }`);
   }
   if (cfg.customCss) lines.push(cfg.customCss);
   return lines.join('\n');

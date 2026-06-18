@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { Mail, Phone, MapPin, Instagram, Facebook, Youtube } from 'lucide-react';
 import logoSquare from '@/assets/mussolet-logo-square.png.asset.json';
+import { supabase } from '@/integrations/supabase/client';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 // Inline TikTok (lucide-react has no TikTok icon)
@@ -31,6 +33,22 @@ const Footer: React.FC = () => {
     'footer_bottom_ca', 'footer_bottom_es',
     ...SOCIALS.map(s => s.key),
   ]);
+
+  const { data: footerPages = [] } = useQuery({
+    queryKey: ['cms-pages-menu', 'footer'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('cms_blocks')
+        .select('slug,title_ca,title_es,menu_order')
+        .eq('kind', 'page')
+        .eq('is_active', true)
+        .eq('menu_location', 'footer')
+        .order('menu_order', { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
 
   const logoUrl = settings?.logo_footer_url || logoSquare.url;
   const storeName = settings?.store_name || 'El Mussolet';
@@ -70,17 +88,21 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Legal links */}
+          {/* Information / CMS pages */}
           <div>
-            <h4 className="font-display text-sm font-semibold mb-3 text-foreground">{t('footer.contact')}</h4>
+            <h4 className="font-display text-sm font-semibold mb-3 text-foreground">{t('footer.info', 'Informació')}</h4>
             <ul className="space-y-2 text-sm">
               <li><Link to="/contacte" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.contact')}</Link></li>
-              <li><Link to="/pagina/avis-legal" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.legal')}</Link></li>
-              <li><Link to="/pagina/privacitat" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.privacy')}</Link></li>
-              <li><Link to="/pagina/cookies" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.cookies')}</Link></li>
-              <li><Link to="/pagina/condicions" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.terms')}</Link></li>
+              {footerPages.map((p: any) => (
+                <li key={p.slug}>
+                  <Link to={`/pagina/${p.slug}`} className="text-muted-foreground hover:text-primary transition-colors">
+                    {(lang === 'es' ? p.title_es : p.title_ca) || p.slug}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
+
 
           {/* Catalog + Social */}
           <div>
