@@ -768,6 +768,8 @@ const MyBirthListPage: React.FC = () => {
         </CardContent>
 
       </Card>
+      )}
+
 
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={saving} size="lg" className="gap-2">
