@@ -36,7 +36,9 @@ const ContactPage: React.FC = () => {
   const intro = settings?.[`contact_intro_${lang}`] || (lang === 'es'
     ? '¿Tienes alguna pregunta? Escríbenos y te responderemos lo antes posible.'
     : 'Tens alguna pregunta? Escriu-nos i et respondrem el més aviat possible.');
-  const mapUrl = settings?.contact_map_iframe_url;
+  const mapRaw = settings?.contact_map_iframe_url?.trim();
+  const mapIsIframe = !!mapRaw && /<iframe[\s>]/i.test(mapRaw);
+  const mapUrl = !mapIsIframe ? mapRaw : undefined;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,6 +153,12 @@ const ContactPage: React.FC = () => {
             </CardContent>
           </Card>
 
+          {mapIsIframe && mapRaw && (
+            <div
+              className="rounded-lg overflow-hidden border border-border aspect-[4/3] bg-muted [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:block [&_iframe]:border-0"
+              dangerouslySetInnerHTML={{ __html: mapRaw }}
+            />
+          )}
           {mapUrl && (
             <div className="rounded-lg overflow-hidden border border-border aspect-[4/3] bg-muted">
               <iframe
