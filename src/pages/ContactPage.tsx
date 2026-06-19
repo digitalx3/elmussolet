@@ -36,7 +36,9 @@ const ContactPage: React.FC = () => {
   const intro = settings?.[`contact_intro_${lang}`] || (lang === 'es'
     ? '¿Tienes alguna pregunta? Escríbenos y te responderemos lo antes posible.'
     : 'Tens alguna pregunta? Escriu-nos i et respondrem el més aviat possible.');
-  const mapUrl = settings?.contact_map_iframe_url;
+  const mapRaw = settings?.contact_map_iframe_url?.trim();
+  const mapIsIframe = !!mapRaw && /<iframe[\s>]/i.test(mapRaw);
+  const mapUrl = !mapIsIframe ? mapRaw : undefined;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
