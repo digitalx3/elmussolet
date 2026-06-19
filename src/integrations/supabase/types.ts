@@ -164,6 +164,8 @@ export type Database = {
       }
       cms_blocks: {
         Row: {
+          background_color: string | null
+          background_gradient: string | null
           content_ca: string | null
           content_es: string | null
           created_at: string
@@ -173,6 +175,8 @@ export type Database = {
           custom_class: string | null
           icon: string | null
           id: string
+          image_url: string | null
+          image_url_2: string | null
           is_active: boolean
           kind: string
           menu_location: string
@@ -186,6 +190,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          background_color?: string | null
+          background_gradient?: string | null
           content_ca?: string | null
           content_es?: string | null
           created_at?: string
@@ -195,6 +201,8 @@ export type Database = {
           custom_class?: string | null
           icon?: string | null
           id?: string
+          image_url?: string | null
+          image_url_2?: string | null
           is_active?: boolean
           kind: string
           menu_location?: string
@@ -208,6 +216,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          background_color?: string | null
+          background_gradient?: string | null
           content_ca?: string | null
           content_es?: string | null
           created_at?: string
@@ -217,6 +227,8 @@ export type Database = {
           custom_class?: string | null
           icon?: string | null
           id?: string
+          image_url?: string | null
+          image_url_2?: string | null
           is_active?: boolean
           kind?: string
           menu_location?: string
