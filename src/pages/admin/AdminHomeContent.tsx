@@ -100,6 +100,8 @@ const AdminHomeContent: React.FC = () => {
           cta_label_ca: b.cta_label_ca, cta_label_es: b.cta_label_es,
           cta_url: b.cta_url,
           custom_class: b.custom_class,
+          image_url: b.image_url, image_url_2: b.image_url_2,
+          background_color: b.background_color, background_gradient: b.background_gradient,
         }).eq('id', b.id);
         if (error) throw error;
       }
