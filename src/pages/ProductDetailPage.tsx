@@ -54,7 +54,7 @@ const ProductDetailPage: React.FC = () => {
       toast.error('Selecciona una variant');
       return;
     }
-    addStandardItem({
+    const payload = {
       productId: product.id,
       variantId: selectedVariantId ?? undefined,
       name: product.name + (selectedVariant ? ` - ${selectedVariant.value}` : ''),
@@ -64,7 +64,14 @@ const ProductDetailPage: React.FC = () => {
       taxPercentage: taxPct,
       quantity,
       variantLabel: selectedVariant?.value,
-    });
+    };
+    if (isGiftMode && giftListId) {
+      addListItem(payload, giftListId);
+      toast.success(t('list.giftAdded') || 'Regal afegit a la cistella');
+      navigate('/cistella');
+      return;
+    }
+    addStandardItem(payload);
     toast.success(t('products.addToCart'));
   };
 
