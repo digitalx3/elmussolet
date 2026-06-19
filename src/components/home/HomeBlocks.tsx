@@ -23,6 +23,10 @@ interface Block {
   cta_label_es: string | null;
   cta_url: string | null;
   custom_class: string | null;
+  image_url: string | null;
+  image_url_2: string | null;
+  background_color: string | null;
+  background_gradient: string | null;
 }
 
 export const HomeBlocks: React.FC = () => {
