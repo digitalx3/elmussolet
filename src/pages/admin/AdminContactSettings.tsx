@@ -148,7 +148,7 @@ const AdminContactSettings: React.FC = () => {
           </CardTitle>
           <CardDescription>
             Text introductori i mapa de Google Maps. Per al mapa, ves a Google Maps → Compartir → Insereix un mapa,
-            copia l'URL del <code>src=&quot;...&quot;</code>.
+            copia <b>tot el codi <code>&lt;iframe …&gt;&lt;/iframe&gt;</code></b> i enganxa'l al camp següent.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -163,16 +163,19 @@ const AdminContactSettings: React.FC = () => {
             </div>
           </div>
           <div>
-            <Label>URL embed del mapa (Google Maps)</Label>
-            <Input
+            <Label>Codi iframe del mapa (Google Maps)</Label>
+            <Textarea
+              rows={4}
               value={form.contact_map_iframe_url}
               onChange={e => update('contact_map_iframe_url', e.target.value)}
-              placeholder="https://www.google.com/maps/embed?pb=..."
+              placeholder='<iframe src="https://www.google.com/maps/embed?pb=..." width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
+              className="font-mono text-xs"
             />
             {form.contact_map_iframe_url && (
-              <div className="mt-3 aspect-[4/3] max-w-md border border-border rounded overflow-hidden">
-                <iframe src={form.contact_map_iframe_url} className="w-full h-full" loading="lazy" />
-              </div>
+              <div
+                className="mt-3 max-w-md border border-border rounded overflow-hidden [&_iframe]:w-full [&_iframe]:h-[300px] [&_iframe]:block"
+                dangerouslySetInnerHTML={{ __html: form.contact_map_iframe_url }}
+              />
             )}
           </div>
         </CardContent>
