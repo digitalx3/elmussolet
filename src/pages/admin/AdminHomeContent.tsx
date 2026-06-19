@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import ImageUploader from '@/components/admin/ImageUploader';
 
 interface Block {
   id: string;
@@ -29,6 +30,10 @@ interface Block {
   cta_label_es: string | null;
   cta_url: string | null;
   custom_class: string | null;
+  image_url: string | null;
+  image_url_2: string | null;
+  background_color: string | null;
+  background_gradient: string | null;
 }
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
