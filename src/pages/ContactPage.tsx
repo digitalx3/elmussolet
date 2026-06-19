@@ -153,6 +153,12 @@ const ContactPage: React.FC = () => {
             </CardContent>
           </Card>
 
+          {mapIsIframe && mapRaw && (
+            <div
+              className="rounded-lg overflow-hidden border border-border aspect-[4/3] bg-muted [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:block [&_iframe]:border-0"
+              dangerouslySetInnerHTML={{ __html: mapRaw }}
+            />
+          )}
           {mapUrl && (
             <div className="rounded-lg overflow-hidden border border-border aspect-[4/3] bg-muted">
               <iframe
