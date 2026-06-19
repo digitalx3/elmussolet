@@ -617,7 +617,7 @@ const MyBirthListPage: React.FC = () => {
           )}
 
           {/* Sections manager */}
-          {(sections.length > 0 || form.items.length > 0) && (
+          {true && (
             <div className="rounded-md border border-border p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-sm">{t('list.sections')}</Label>
