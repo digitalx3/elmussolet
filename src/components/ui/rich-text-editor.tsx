@@ -25,6 +25,10 @@ const modules = {
     ['link', 'image'],
     ['clean'],
   ],
+  clipboard: {
+    // Avoid Quill inserting &nbsp; and extra <p><br></p> to mimic visual spacing
+    matchVisual: false,
+  },
 };
 
 export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, className }) => {
