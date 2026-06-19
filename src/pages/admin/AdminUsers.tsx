@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -13,11 +14,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import { Search, Eye, ShieldCheck, User, ShoppingBag, Baby } from 'lucide-react';
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Search, Eye, ShieldCheck, User, ShoppingBag, Baby, Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Profile {
   id: string;
@@ -30,13 +34,38 @@ interface Profile {
   created_at: string;
 }
 
+interface UserFormState {
+  id?: string;
+  email: string;
+  password: string;
+  full_name: string;
+  phone: string;
+  role: string;
+  preferred_language: string;
+  send_welcome_email: boolean;
+}
+
+const emptyForm: UserFormState = {
+  email: '',
+  password: '',
+  full_name: '',
+  phone: '',
+  role: 'customer',
+  preferred_language: 'ca',
+  send_welcome_email: true,
+};
+
 const AdminUsers: React.FC = () => {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const { user: currentUser } = useAuth();
   const [search, setSearch] = useState('');
   const [detailUser, setDetailUser] = useState<Profile | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [form, setForm] = useState<UserFormState>(emptyForm);
+  const [editMode, setEditMode] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Fetch all profiles
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
@@ -49,7 +78,6 @@ const AdminUsers: React.FC = () => {
     },
   });
 
-  // Fetch orders for selected user
   const { data: userOrders = [] } = useQuery({
     queryKey: ['admin-user-orders', detailUser?.id],
     queryFn: async () => {
@@ -66,7 +94,6 @@ const AdminUsers: React.FC = () => {
     enabled: !!detailUser,
   });
 
-  // Fetch birth lists for selected user
   const { data: userLists = [] } = useQuery({
     queryKey: ['admin-user-lists', detailUser?.id],
     queryFn: async () => {
@@ -81,21 +108,87 @@ const AdminUsers: React.FC = () => {
     enabled: !!detailUser,
   });
 
-  // Update role mutation
   const updateRole = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role })
-        .eq('id', userId);
+      const { error } = await supabase.functions.invoke('admin-manage-users', {
+        body: { action: 'update', user_id: userId, role },
+      });
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success(t('admin.userRoleUpdated'));
+      toast.success('Rol actualitzat');
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const saveUser = useMutation({
+    mutationFn: async () => {
+      const action = editMode ? 'update' : 'create';
+      const body: any = {
+        action,
+        full_name: form.full_name,
+        phone: form.phone,
+        role: form.role,
+        preferred_language: form.preferred_language,
+      };
+      if (editMode) {
+        body.user_id = form.id;
+        if (form.password) body.password = form.password;
+      } else {
+        body.email = form.email;
+        body.password = form.password;
+        body.send_welcome_email = form.send_welcome_email;
+      }
+      const { data, error } = await supabase.functions.invoke('admin-manage-users', { body });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-users'] });
+      toast.success(editMode ? 'Usuari actualitzat' : 'Usuari creat');
+      setFormOpen(false);
+      setForm(emptyForm);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.functions.invoke('admin-manage-users', {
+        body: { action: 'delete', user_id: id },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-users'] });
+      toast.success('Usuari eliminat');
+      setDeleteId(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const openCreate = () => {
+    setEditMode(false);
+    setForm(emptyForm);
+    setFormOpen(true);
+  };
+
+  const openEdit = (u: Profile) => {
+    setEditMode(true);
+    setForm({
+      id: u.id,
+      email: '',
+      password: '',
+      full_name: u.full_name || '',
+      phone: u.phone || '',
+      role: u.role,
+      preferred_language: u.preferred_language,
+      send_welcome_email: false,
+    });
+    setFormOpen(true);
+  };
 
   const filtered = users.filter(u => {
     if (!search) return true;
@@ -112,12 +205,16 @@ const AdminUsers: React.FC = () => {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-2xl font-bold">{t('admin.users')}</h1>
-        <Badge variant="outline" className="text-sm">
-          {users.length} {t('admin.usersTotal')}
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className="text-sm">
+            {users.length} {t('admin.usersTotal')}
+          </Badge>
+          <Button onClick={openCreate} size="sm">
+            <Plus className="h-4 w-4 mr-1" /> Nou usuari
+          </Button>
+        </div>
       </div>
 
-      {/* Search */}
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
@@ -158,26 +255,35 @@ const AdminUsers: React.FC = () => {
                 <TableCell className="text-sm text-muted-foreground">{user.city || '—'}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{user.phone || '—'}</TableCell>
                 <TableCell>
-                  <Select
+                  <select
                     value={user.role}
-                    onValueChange={role => updateRole.mutate({ userId: user.id, role })}
+                    onChange={e => updateRole.mutate({ userId: user.id, role: e.target.value })}
+                    className="h-8 rounded-md border border-input bg-background px-2 text-sm"
                   >
-                    <SelectTrigger className="w-32 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="customer">Customer</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <option value="customer">Customer</option>
+                    <option value="admin">Admin</option>
+                  </select>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {format(new Date(user.created_at), 'dd/MM/yyyy')}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => setDetailUser(user)}>
-                    <Eye className="h-4 w-4" />
-                  </Button>
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => setDetailUser(user)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(user)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setDeleteId(user.id)}
+                      disabled={user.id === currentUser?.id}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -191,6 +297,118 @@ const AdminUsers: React.FC = () => {
           </TableBody>
         </Table>
       )}
+
+      {/* Create / Edit dialog */}
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editMode ? 'Editar usuari' : 'Crear nou usuari'}</DialogTitle>
+            <DialogDescription>
+              {editMode
+                ? 'Modifica les dades de l\'usuari. Deixa la contrasenya en blanc per mantenir-la.'
+                : 'Es crearà un compte amb les credencials indicades.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {!editMode && (
+              <div>
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={form.email}
+                  onChange={e => setForm({ ...form, email: e.target.value })}
+                />
+              </div>
+            )}
+            <div>
+              <Label>Contrasenya {editMode && <span className="text-muted-foreground text-xs">(opcional)</span>}</Label>
+              <Input
+                type="text"
+                value={form.password}
+                onChange={e => setForm({ ...form, password: e.target.value })}
+                placeholder={editMode ? 'Deixa buit per no canviar' : ''}
+              />
+            </div>
+            <div>
+              <Label>Nom complet</Label>
+              <Input
+                value={form.full_name}
+                onChange={e => setForm({ ...form, full_name: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Telèfon</Label>
+              <Input
+                value={form.phone}
+                onChange={e => setForm({ ...form, phone: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Rol</Label>
+                <select
+                  value={form.role}
+                  onChange={e => setForm({ ...form, role: e.target.value })}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="customer">Customer</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div>
+                <Label>Idioma</Label>
+                <select
+                  value={form.preferred_language}
+                  onChange={e => setForm({ ...form, preferred_language: e.target.value })}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="ca">Català</option>
+                  <option value="es">Español</option>
+                </select>
+              </div>
+            </div>
+            {!editMode && (
+              <div className="flex items-center gap-2 pt-2">
+                <Checkbox
+                  id="send-welcome"
+                  checked={form.send_welcome_email}
+                  onCheckedChange={v => setForm({ ...form, send_welcome_email: !!v })}
+                />
+                <Label htmlFor="send-welcome" className="font-normal cursor-pointer">
+                  Enviar correu de benvinguda amb les credencials (via SMTP)
+                </Label>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFormOpen(false)}>Cancel·lar</Button>
+            <Button onClick={() => saveUser.mutate()} disabled={saveUser.isPending}>
+              {saveUser.isPending ? 'Desant...' : 'Desar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={o => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar usuari</AlertDialogTitle>
+            <AlertDialogDescription>
+              Aquesta acció eliminarà l'usuari de forma permanent. No es pot desfer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteId && deleteUser.mutate(deleteId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* User Detail Dialog */}
       <Dialog open={!!detailUser} onOpenChange={() => setDetailUser(null)}>
@@ -211,7 +429,6 @@ const AdminUsers: React.FC = () => {
 
           {detailUser && (
             <div className="space-y-6">
-              {/* Profile info */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium">{t('account.profile')}</CardTitle>
@@ -246,7 +463,6 @@ const AdminUsers: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Orders */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -288,7 +504,6 @@ const AdminUsers: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Birth Lists */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
