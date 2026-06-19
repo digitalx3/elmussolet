@@ -570,14 +570,23 @@ const MyBirthListPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Products */}
+      {/* Products — only after list is created (step 2) */}
+      {!listId ? (
+        <Card className="border-dashed">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground space-y-2">
+            <Heart className="h-8 w-8 mx-auto text-muted-foreground/60" />
+            <p className="font-medium text-foreground">Desa primer les dades de la llista</p>
+            <p>Un cop creada la llista, podràs triar una plantilla i afegir-hi productes.</p>
+          </CardContent>
+        </Card>
+      ) : (
       <Card>
         <CardHeader>
           <CardTitle className="text-base">{t('admin.listProducts')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Template loader (only when creating a new list) */}
-          {!listId && templates.length > 0 && (
+          {/* Template loader (only when list has no items/sections yet) */}
+          {templates.length > 0 && sections.length === 0 && form.items.length === 0 && (
             <div className="rounded-md border border-dashed border-primary/40 bg-primary/5 p-3 space-y-2">
               <Label className="text-sm">{t('list.useTemplate')}</Label>
               <div className="flex gap-2">
