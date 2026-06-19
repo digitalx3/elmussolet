@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import ImageUploader from '@/components/admin/ImageUploader';
 
 interface Block {
   id: string;
@@ -29,6 +30,10 @@ interface Block {
   cta_label_es: string | null;
   cta_url: string | null;
   custom_class: string | null;
+  image_url: string | null;
+  image_url_2: string | null;
+  background_color: string | null;
+  background_gradient: string | null;
 }
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -95,6 +100,8 @@ const AdminHomeContent: React.FC = () => {
           cta_label_ca: b.cta_label_ca, cta_label_es: b.cta_label_es,
           cta_url: b.cta_url,
           custom_class: b.custom_class,
+          image_url: b.image_url, image_url_2: b.image_url_2,
+          background_color: b.background_color, background_gradient: b.background_gradient,
         }).eq('id', b.id);
         if (error) throw error;
       }
@@ -208,6 +215,37 @@ const AdminHomeContent: React.FC = () => {
                   <div className="sm:col-span-2">
                     <Label>URL del botó</Label>
                     <Input value={b.cta_url ?? ''} onChange={e => updateBlock(b.id, { cta_url: e.target.value })} />
+                  </div>
+                  <div className="sm:col-span-2 grid sm:grid-cols-2 gap-4 pt-2 border-t border-border">
+                    <div>
+                      <Label>Imatge principal (fons dreta)</Label>
+                      <ImageUploader
+                        value={b.image_url ?? ''}
+                        onChange={v => updateBlock(b.id, { image_url: v })}
+                        pathPrefix="home-cta"
+                        previewClassName="h-24"
+                      />
+                    </div>
+                    <div>
+                      <Label>Imatge secundària (lateral)</Label>
+                      <ImageUploader
+                        value={b.image_url_2 ?? ''}
+                        onChange={v => updateBlock(b.id, { image_url_2: v })}
+                        pathPrefix="home-cta"
+                        previewClassName="h-24"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Color de fons</Label>
+                    <div className="flex gap-2 items-center">
+                      <Input type="color" value={b.background_color || '#7a3b1f'} onChange={e => updateBlock(b.id, { background_color: e.target.value })} className="w-16 h-10 p-1" />
+                      <Input placeholder="#7a3b1f o hsl(...)" value={b.background_color ?? ''} onChange={e => updateBlock(b.id, { background_color: e.target.value })} />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Gradient de fons (CSS, prioritari)</Label>
+                    <Input placeholder="linear-gradient(135deg, #7a3b1f, #c0744a)" value={b.background_gradient ?? ''} onChange={e => updateBlock(b.id, { background_gradient: e.target.value })} />
                   </div>
                   <div className="sm:col-span-2">
                     <Label>Classe CSS personalitzada</Label>
