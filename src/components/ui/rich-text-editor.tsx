@@ -36,25 +36,35 @@ export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, 
 
   return (
     <div className={`bg-background rounded-md border border-input ${className ?? ''}`}>
-      <div className="flex items-center justify-end gap-1 border-b border-border px-2 py-1 bg-muted/30">
-        <Button
-          type="button"
-          size="sm"
-          variant={mode === 'visual' ? 'secondary' : 'ghost'}
-          className="h-7 gap-1 text-xs"
-          onClick={() => setMode('visual')}
-        >
-          <Eye className="h-3.5 w-3.5" /> Visual
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={mode === 'code' ? 'secondary' : 'ghost'}
-          className="h-7 gap-1 text-xs"
-          onClick={() => setMode('code')}
-        >
-          <Code2 className="h-3.5 w-3.5" /> HTML
-        </Button>
+      <div className="flex items-center justify-between gap-1 border-b border-border px-2 py-1 bg-muted/30">
+        <span className="text-[11px] text-muted-foreground pl-1">
+          {mode === 'code'
+            ? 'Mode HTML: el codi es desa tal qual, sense modificar.'
+            : 'Mode visual: en editar, el codi HTML pot ser reformatat.'}
+        </span>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            size="sm"
+            variant={mode === 'visual' ? 'secondary' : 'ghost'}
+            className="h-7 gap-1 text-xs"
+            onClick={() => {
+              if (mode === 'code' && !confirm('Canviar a visual pot reformatar el codi HTML. Continuar?')) return;
+              setMode('visual');
+            }}
+          >
+            <Eye className="h-3.5 w-3.5" /> Visual
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={mode === 'code' ? 'secondary' : 'ghost'}
+            className="h-7 gap-1 text-xs"
+            onClick={() => setMode('code')}
+          >
+            <Code2 className="h-3.5 w-3.5" /> HTML
+          </Button>
+        </div>
       </div>
 
       {mode === 'visual' ? (
