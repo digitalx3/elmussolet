@@ -86,7 +86,14 @@ export const HomeBlocks: React.FC = () => {
         </section>
       )}
 
-      {ctas.map(b => (
+      {ctas.map(b => {
+        const bgStyle: React.CSSProperties = {};
+        if (b.background_gradient) bgStyle.background = b.background_gradient;
+        else if (b.background_color) bgStyle.background = b.background_color;
+        const useDefaultBg = !b.background_gradient && !b.background_color;
+        const mainImg = b.image_url || logoSquare.url;
+        const sideImg = b.image_url_2;
+        return (
         <section key={b.id} className="py-16 md:py-20">
           <div className="container">
             <motion.div
@@ -94,11 +101,17 @@ export const HomeBlocks: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className={`relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary to-[hsl(18_55%_28%)] text-primary-foreground p-10 md:p-16 shadow-elevated ${b.custom_class ?? ''}`}
+              style={bgStyle}
+              className={`relative overflow-hidden rounded-[2rem] text-primary-foreground p-10 md:p-16 shadow-elevated ${useDefaultBg ? 'bg-gradient-to-br from-primary to-[hsl(18_55%_28%)]' : ''} ${b.custom_class ?? ''}`}
             >
-              <div className="absolute -right-10 -bottom-10 opacity-15">
-                <img src={logoSquare.url} alt="" className="h-72 w-72" />
+              <div className="absolute -right-10 -bottom-10 opacity-15 pointer-events-none">
+                <img src={mainImg} alt="" className="h-72 w-72 object-contain" />
               </div>
+              {sideImg && (
+                <div className="absolute right-6 top-6 hidden md:block pointer-events-none">
+                  <img src={sideImg} alt="" className="h-48 w-auto object-contain drop-shadow-xl" />
+                </div>
+              )}
               <div className="relative max-w-2xl">
                 <LucideIcons.Heart className="h-10 w-10 mb-5 text-accent" />
                 <h2 className="font-display text-4xl md:text-5xl mb-4 leading-tight">{title(b)}</h2>
@@ -128,7 +141,8 @@ export const HomeBlocks: React.FC = () => {
             </motion.div>
           </div>
         </section>
-      ))}
+        );
+      })}
     </>
   );
 };
