@@ -18,7 +18,11 @@ const ProductDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { addStandardItem } = useCart();
+  const [searchParams] = useSearchParams();
+  const giftItemId = searchParams.get('gift');
+  const giftListId = searchParams.get('listId');
+  const isGiftMode = !!(giftItemId && giftListId);
+  const { addStandardItem, addListItem } = useCart();
   const { data: product, isLoading, error } = useProductBySlug(slug);
 
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
