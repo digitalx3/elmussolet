@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ShoppingBag, Heart, Share2, Minus, Plus } from 'lucide-react';
