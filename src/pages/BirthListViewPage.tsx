@@ -148,6 +148,14 @@ const BirthListViewPage: React.FC = () => {
     const qty = remaining(item);
     if (qty <= 0) return;
 
+    // If the product has selectable attributes/variants and the list owner
+    // did not lock a specific variant, redirect the buyer to the product page
+    // so they can choose the attributes before adding to the cart.
+    if (item.product.has_variants && !item.variant_id) {
+      navigate(`/producte/${item.product.slug}?gift=${item.id}&listId=${listId}`);
+      return;
+    }
+
     const base = item.variant?.price_override != null ? item.variant.price_override : item.product.base_price;
     const taxPct = (item.product as any).tax_rates?.percentage ?? 0;
     addListItem({
