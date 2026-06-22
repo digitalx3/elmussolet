@@ -89,6 +89,7 @@ const MyBirthListPage: React.FC = () => {
   const resetEditor = () => {
     setListId(null);
     setSections([]);
+    setSelectedTemplateId('');
     setForm({
       list_code: generateCode(),
       password: '',
@@ -107,11 +108,12 @@ const MyBirthListPage: React.FC = () => {
   const { data: templates = [] } = useQuery({
     queryKey: ['list-templates-options'],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('list_templates')
-        .select('id, name, is_active, list_template_translations(language, name)')
+        .select('id, slug, is_active, list_template_translations(language, name, description)')
         .eq('is_active', true)
-        .order('name');
+        .order('slug');
+      if (error) throw error;
       return data || [];
     },
   });
@@ -327,7 +329,7 @@ const MyBirthListPage: React.FC = () => {
         supabase
           .from('list_template_items')
           .select(`
-            section_id, product_id, variant_id, quantity_desired, priority, sort_order,
+            section_id, product_id, variant_id, quantity, sort_order,
             product:products(id, base_price, slug, product_translations(language, name))
           `)
           .eq('template_id', tplId)
@@ -347,8 +349,8 @@ const MyBirthListPage: React.FC = () => {
         return {
           product_id: it.product_id,
           variant_id: it.variant_id || null,
-          quantity_desired: it.quantity_desired || 1,
-          priority: it.priority || 'medium',
+          quantity_desired: it.quantity || 1,
+          priority: 'medium',
           sort_order: idx,
           productName: tr?.name || it.product?.slug || it.product_id,
           price: it.product?.base_price,
@@ -858,60 +860,45 @@ const MyBirthListPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Templates picker — its own card, shown before the products card when empty */}
-      {listId && templates.length > 0 && sections.length === 0 && form.items.length === 0 && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              {t('list.useTemplate')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-xs text-muted-foreground">{t('list.useTemplateHint')}</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {templates.map((tpl: any) => {
-                const tr = tpl.list_template_translations?.find((tt: any) => tt.language === lang)
-                  || tpl.list_template_translations?.[0];
-                const label = tr?.name || tpl.name;
-                const isSel = selectedTemplateId === tpl.id;
-                return (
-                  <button
-                    key={tpl.id}
-                    type="button"
-                    disabled={loadingTemplate}
-                    onClick={() => loadTemplate(tpl.id)}
-                    className={`group relative flex flex-col items-center justify-center gap-2 p-3 rounded-md border-2 bg-background hover:border-primary hover:bg-primary/5 transition-colors text-center min-h-[88px] ${isSel ? 'border-primary' : 'border-border'}`}
-                  >
-                    {loadingTemplate && isSel ? (
-                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                    ) : (
-                      <Heart className="h-6 w-6 text-primary" />
-                    )}
-                    <span className="text-xs font-medium line-clamp-2">{label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Products — only after list is created (step 2) */}
-      {!listId ? (
-        <Card className="border-dashed">
-          <CardContent className="py-8 text-center text-sm text-muted-foreground space-y-2">
-            <Heart className="h-8 w-8 mx-auto text-muted-foreground/60" />
-            <p className="font-medium text-foreground">Desa primer les dades de la llista</p>
-            <p>Un cop creada la llista, podràs triar una plantilla i afegir-hi productes.</p>
-          </CardContent>
-        </Card>
-      ) : (
+      {/* Products */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">{t('admin.listProducts')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
+          {templates.length > 0 && sections.length === 0 && form.items.length === 0 && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <Sparkles className="h-4 w-4 text-primary" />
+                {t('list.useTemplate')}
+              </div>
+              <p className="text-xs text-muted-foreground">{t('list.useTemplateHint')}</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {templates.map((tpl: any) => {
+                  const tr = tpl.list_template_translations?.find((tt: any) => tt.language === lang)
+                    || tpl.list_template_translations?.[0];
+                  const label = tr?.name || tpl.slug;
+                  const isSel = selectedTemplateId === tpl.id;
+                  return (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      disabled={loadingTemplate}
+                      onClick={() => loadTemplate(tpl.id)}
+                      className={`group relative flex flex-col items-center justify-center gap-2 p-3 rounded-md border-2 bg-background hover:border-primary hover:bg-primary/5 transition-colors text-center min-h-[88px] ${isSel ? 'border-primary' : 'border-border'}`}
+                    >
+                      {loadingTemplate && isSel ? (
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      ) : (
+                        <Heart className="h-6 w-6 text-primary" />
+                      )}
+                      <span className="text-xs font-medium line-clamp-2">{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {/* Sections composer + draggable bars */}
           <div className="rounded-md border border-border p-3 space-y-3">
             <Label className="text-sm font-semibold">{t('list.sections')}</Label>
@@ -1259,7 +1246,6 @@ const MyBirthListPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
-      )}
 
 
 
