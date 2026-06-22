@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 interface Body {
-  action: "create" | "update" | "delete";
+  action: "create" | "update" | "delete" | "restore";
   user_id?: string;
   email?: string;
   password?: string;
@@ -18,6 +18,7 @@ interface Body {
   role?: string;
   preferred_language?: string;
   send_welcome_email?: boolean;
+  delete_mode?: "soft" | "hard";
 }
 
 Deno.serve(async (req: Request) => {
@@ -34,7 +35,6 @@ Deno.serve(async (req: Request) => {
     const token = authHeader.replace("Bearer ", "");
     if (!token) return json({ error: "Missing auth" }, 401);
 
-    // Verify caller
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: `Bearer ${token}` } },
     });
@@ -56,6 +56,17 @@ Deno.serve(async (req: Request) => {
       if (!body.email || !body.password) {
         return json({ error: "email and password required" }, 400);
       }
+      // Block re-registration with an email that belongs to a soft-deleted user
+      const { data: blocked } = await admin
+        .from("profiles")
+        .select("id")
+        .eq("deleted_email", body.email.toLowerCase())
+        .not("deleted_at", "is", null)
+        .maybeSingle();
+      if (blocked) {
+        return json({ error: "EMAIL_BLOCKED_DELETED_USER" }, 409);
+      }
+
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email: body.email,
         password: body.password,
@@ -64,7 +75,6 @@ Deno.serve(async (req: Request) => {
       });
       if (createErr) throw createErr;
 
-      // Update profile fields
       await admin.from("profiles").update({
         full_name: body.full_name || null,
         phone: body.phone || null,
@@ -72,7 +82,6 @@ Deno.serve(async (req: Request) => {
         preferred_language: body.preferred_language || "ca",
       }).eq("id", created.user.id);
 
-      // Send welcome email
       if (body.send_welcome_email) {
         try {
           const html = `
@@ -124,8 +133,85 @@ Deno.serve(async (req: Request) => {
       if (body.user_id === userData.user.id) {
         return json({ error: "Cannot delete yourself" }, 400);
       }
+      const mode = body.delete_mode || "soft";
+
+      // Get the user's email (for blocking re-registration in soft mode)
+      const { data: targetUser, error: getErr } = await admin.auth.admin.getUserById(body.user_id);
+      if (getErr) throw getErr;
+      const targetEmail = targetUser?.user?.email?.toLowerCase() || null;
+
+      if (mode === "soft") {
+        // Mark profile deleted (keep email reserved) and disable auth login by banning.
+        await admin.from("profiles").update({
+          deleted_at: new Date().toISOString(),
+          deleted_email: targetEmail,
+        }).eq("id", body.user_id);
+
+        // Ban the auth user so they can't log in. The email remains taken in auth.users
+        // so the same address cannot be used to register again.
+        try {
+          await admin.auth.admin.updateUserById(body.user_id, {
+            ban_duration: "876000h", // ~100 years
+          } as any);
+        } catch (e) {
+          console.error("ban user failed", e);
+        }
+        return json({ ok: true, mode: "soft" });
+      }
+
+      // HARD delete: wipe related data first, then the auth user.
+      // 1) Orders + order_items
+      const { data: ordersToDelete } = await admin
+        .from("orders").select("id").eq("user_id", body.user_id);
+      const orderIds = (ordersToDelete || []).map((o: any) => o.id);
+      if (orderIds.length > 0) {
+        await admin.from("order_items").delete().in("order_id", orderIds);
+        await admin.from("orders").delete().in("id", orderIds);
+      }
+
+      // 2) Birth lists owned by this user (list_owners + list_items + list_sections + birth_lists)
+      const { data: ownerRows } = await admin
+        .from("list_owners").select("list_id").eq("user_id", body.user_id);
+      const ownedListIds = Array.from(new Set((ownerRows || []).map((r: any) => r.list_id)));
+
+      // Remove this user's ownership rows
+      await admin.from("list_owners").delete().eq("user_id", body.user_id);
+
+      // For lists with no remaining owners, fully wipe them
+      if (ownedListIds.length > 0) {
+        const { data: remaining } = await admin
+          .from("list_owners").select("list_id").in("list_id", ownedListIds);
+        const stillOwned = new Set((remaining || []).map((r: any) => r.list_id));
+        const orphanLists = ownedListIds.filter(id => !stillOwned.has(id));
+        if (orphanLists.length > 0) {
+          await admin.from("list_items").delete().in("list_id", orphanLists);
+          await admin.from("list_sections").delete().in("list_id", orphanLists);
+          await admin.from("birth_lists").delete().in("id", orphanLists);
+        }
+      }
+
+      // 3) Birth lists created by admin on behalf of this user (created_by)
+      await admin.from("birth_lists").update({ created_by: null }).eq("created_by", body.user_id);
+
+      // 4) Finally delete the auth user (profile cascades via FK)
       const { error } = await admin.auth.admin.deleteUser(body.user_id);
       if (error) throw error;
+      return json({ ok: true, mode: "hard" });
+    }
+
+    if (body.action === "restore") {
+      if (!body.user_id) return json({ error: "user_id required" }, 400);
+      await admin.from("profiles").update({
+        deleted_at: null,
+        deleted_email: null,
+      }).eq("id", body.user_id);
+      try {
+        await admin.auth.admin.updateUserById(body.user_id, {
+          ban_duration: "none",
+        } as any);
+      } catch (e) {
+        console.error("unban failed", e);
+      }
       return json({ ok: true });
     }
 

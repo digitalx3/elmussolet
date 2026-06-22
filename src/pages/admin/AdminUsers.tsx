@@ -32,6 +32,8 @@ interface Profile {
   city: string | null;
   postal_code: string | null;
   created_at: string;
+  deleted_at: string | null;
+  deleted_email: string | null;
 }
 
 interface UserFormState {
@@ -65,6 +67,7 @@ const AdminUsers: React.FC = () => {
   const [form, setForm] = useState<UserFormState>(emptyForm);
   const [editMode, setEditMode] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'soft' | 'hard' | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-users'],
@@ -154,17 +157,34 @@ const AdminUsers: React.FC = () => {
   });
 
   const deleteUser = useMutation({
+    mutationFn: async ({ id, mode }: { id: string; mode: 'soft' | 'hard' }) => {
+      const { data, error } = await supabase.functions.invoke('admin-manage-users', {
+        body: { action: 'delete', user_id: id, delete_mode: mode },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return mode;
+    },
+    onSuccess: (mode) => {
+      qc.invalidateQueries({ queryKey: ['admin-users'] });
+      toast.success(mode === 'hard' ? 'Usuari eliminat permanentment' : 'Usuari marcat com eliminat');
+      setDeleteId(null);
+      setDeleteMode(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const restoreUser = useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await supabase.functions.invoke('admin-manage-users', {
-        body: { action: 'delete', user_id: id },
+        body: { action: 'restore', user_id: id },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('Usuari eliminat');
-      setDeleteId(null);
+      toast.success('Usuari restaurat');
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -241,7 +261,7 @@ const AdminUsers: React.FC = () => {
           </TableHeader>
           <TableBody>
             {filtered.map(user => (
-              <TableRow key={user.id}>
+              <TableRow key={user.id} className={user.deleted_at ? 'opacity-60' : ''}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
                     {user.role === 'admin' ? (
@@ -250,6 +270,9 @@ const AdminUsers: React.FC = () => {
                       <User className="h-4 w-4 text-muted-foreground" />
                     )}
                     {user.full_name || '—'}
+                    {user.deleted_at && (
+                      <Badge variant="destructive" className="text-[10px]">Eliminat</Badge>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{user.city || '—'}</TableCell>
@@ -259,6 +282,7 @@ const AdminUsers: React.FC = () => {
                     value={user.role}
                     onChange={e => updateRole.mutate({ userId: user.id, role: e.target.value })}
                     className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                    disabled={!!user.deleted_at}
                   >
                     <option value="customer">Customer</option>
                     <option value="admin">Admin</option>
@@ -272,17 +296,27 @@ const AdminUsers: React.FC = () => {
                     <Button variant="ghost" size="icon" onClick={() => setDetailUser(user)}>
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(user)}>
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(user)} disabled={!!user.deleted_at}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDeleteId(user.id)}
-                      disabled={user.id === currentUser?.id}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    {user.deleted_at ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => restoreUser.mutate(user.id)}
+                      >
+                        Restaurar
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => { setDeleteId(user.id); setDeleteMode(null); }}
+                        disabled={user.id === currentUser?.id}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -389,26 +423,90 @@ const AdminUsers: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={o => !o && setDeleteId(null)}>
+      {/* Delete options dialog */}
+      <Dialog open={!!deleteId && deleteMode === null} onOpenChange={o => { if (!o) { setDeleteId(null); setDeleteMode(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar usuari</DialogTitle>
+            <DialogDescription>
+              Tria com vols eliminar aquest usuari. Aquesta decisió és important.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <button
+              type="button"
+              onClick={() => setDeleteMode('soft')}
+              className="w-full text-left rounded-lg border border-border p-4 hover:border-primary hover:bg-muted/30 transition-colors"
+            >
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                  <Trash2 className="h-4 w-4 text-amber-700" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-sm">Marcar com eliminat (recomanat)</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    L'usuari deixa de poder iniciar sessió i queda ocult.
+                    Es conserven els seus pedidos, llistes i historial.
+                    L'email queda reservat i ningú el podrà reutilitzar per registrar-se.
+                  </p>
+                </div>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDeleteMode('hard')}
+              className="w-full text-left rounded-lg border border-border p-4 hover:border-destructive hover:bg-destructive/5 transition-colors"
+            >
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 h-8 w-8 rounded-full bg-destructive/15 flex items-center justify-center shrink-0">
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-sm text-destructive">Eliminació permanent</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    S'esborren l'usuari i totes les seves dades relacionades:
+                    pedidos, articles de pedido, llistes de naixement on és l'únic propietari, etc.
+                    Aquesta acció no es pot desfer.
+                  </p>
+                </div>
+              </div>
+            </button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDeleteId(null); setDeleteMode(null); }}>
+              Cancel·lar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Final confirmation for the chosen mode */}
+      <AlertDialog open={!!deleteId && deleteMode !== null} onOpenChange={o => { if (!o) setDeleteMode(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar usuari</AlertDialogTitle>
+            <AlertDialogTitle>
+              {deleteMode === 'hard' ? 'Confirmar eliminació permanent' : 'Confirmar marcar com eliminat'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Aquesta acció eliminarà l'usuari de forma permanent. No es pot desfer.
+              {deleteMode === 'hard'
+                ? "S'eliminaran l'usuari i totes les seves dades (pedidos, articles, llistes pròpies). Aquesta acció no es pot desfer."
+                : "L'usuari quedarà inactiu i el seu email no es podrà tornar a registrar. Podràs restaurar-lo més endavant."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setDeleteMode(null)}>Tornar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteId && deleteUser.mutate(deleteId)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteId && deleteMode && deleteUser.mutate({ id: deleteId, mode: deleteMode })}
+              className={deleteMode === 'hard'
+                ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                : ''}
             >
-              Eliminar
+              {deleteMode === 'hard' ? 'Eliminar permanentment' : 'Marcar com eliminat'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
 
       {/* User Detail Dialog */}
       <Dialog open={!!detailUser} onOpenChange={() => setDetailUser(null)}>

@@ -1096,6 +1096,8 @@ export type Database = {
           city: string | null
           company_name: string | null
           created_at: string
+          deleted_at: string | null
+          deleted_email: string | null
           full_name: string | null
           id: string
           nif: string | null
@@ -1112,6 +1114,8 @@ export type Database = {
           city?: string | null
           company_name?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_email?: string | null
           full_name?: string | null
           id: string
           nif?: string | null
@@ -1128,6 +1132,8 @@ export type Database = {
           city?: string | null
           company_name?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_email?: string | null
           full_name?: string | null
           id?: string
           nif?: string | null
