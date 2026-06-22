@@ -261,7 +261,7 @@ const MyBirthListPage: React.FC = () => {
         supabase
           .from('list_template_sections')
           .select('id, name_ca, name_es, sort_order')
-          .eq('template_id', selectedTemplateId)
+          .eq('template_id', tplId)
           .order('sort_order', { ascending: true }),
         supabase
           .from('list_template_items')
@@ -269,7 +269,7 @@ const MyBirthListPage: React.FC = () => {
             section_id, product_id, variant_id, quantity_desired, priority, sort_order,
             product:products(id, base_price, slug, product_translations(language, name))
           `)
-          .eq('template_id', selectedTemplateId)
+          .eq('template_id', tplId)
           .order('sort_order', { ascending: true }),
       ]);
 
