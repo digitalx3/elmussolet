@@ -215,7 +215,7 @@ const MyBirthListPage: React.FC = () => {
     queryKey: ['my-birth-list-purchases', editingListId],
     enabled: !!editingListId,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_list_purchases', { _list_id: editingListId! });
+      const { data, error } = await (supabase as any).rpc('get_list_purchases', { _list_id: editingListId! });
       if (error) throw error;
       return data || [];
     },
