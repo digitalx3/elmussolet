@@ -107,11 +107,12 @@ const MyBirthListPage: React.FC = () => {
   const { data: templates = [] } = useQuery({
     queryKey: ['list-templates-options'],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('list_templates')
-        .select('id, name, is_active, list_template_translations(language, name)')
+        .select('id, slug, is_active, list_template_translations(language, name, description)')
         .eq('is_active', true)
-        .order('name');
+        .order('slug');
+      if (error) throw error;
       return data || [];
     },
   });
@@ -327,7 +328,7 @@ const MyBirthListPage: React.FC = () => {
         supabase
           .from('list_template_items')
           .select(`
-            section_id, product_id, variant_id, quantity_desired, priority, sort_order,
+            section_id, product_id, variant_id, quantity, sort_order,
             product:products(id, base_price, slug, product_translations(language, name))
           `)
           .eq('template_id', tplId)
@@ -347,8 +348,8 @@ const MyBirthListPage: React.FC = () => {
         return {
           product_id: it.product_id,
           variant_id: it.variant_id || null,
-          quantity_desired: it.quantity_desired || 1,
-          priority: it.priority || 'medium',
+          quantity_desired: it.quantity || 1,
+          priority: 'medium',
           sort_order: idx,
           productName: tr?.name || it.product?.slug || it.product_id,
           price: it.product?.base_price,
