@@ -32,6 +32,8 @@ interface Profile {
   city: string | null;
   postal_code: string | null;
   created_at: string;
+  deleted_at: string | null;
+  deleted_email: string | null;
 }
 
 interface UserFormState {
