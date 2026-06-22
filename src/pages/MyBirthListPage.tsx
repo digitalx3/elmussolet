@@ -71,6 +71,29 @@ const MyBirthListPage: React.FC = () => {
   const [loadingTemplate, setLoadingTemplate] = useState(false);
   const [browseOpen, setBrowseOpen] = useState(false);
   const [browseCategory, setBrowseCategory] = useState<string>('all');
+  const [view, setView] = useState<'list' | 'editor'>('list');
+  const [editingListId, setEditingListId] = useState<string | null>(null);
+  const [initialViewSet, setInitialViewSet] = useState(false);
+
+  const MAX_LISTS = 10;
+  const isAdmin = profile?.role === 'admin';
+
+  const resetEditor = () => {
+    setListId(null);
+    setSections([]);
+    setForm({
+      list_code: generateCode(),
+      password: '',
+      baby_name: '',
+      expected_date: '',
+      status: 'draft',
+      notes: '',
+      first_name: profile?.full_name?.trim().split(' ')[0] || '',
+      last_name: profile?.full_name?.trim().split(' ').slice(1).join(' ') || '',
+      items: [],
+    });
+  };
+
 
   // Templates available to copy from (only relevant while creating)
   const { data: templates = [] } = useQuery({
@@ -118,21 +141,47 @@ const MyBirthListPage: React.FC = () => {
 
 
 
-  // Load existing list owned by this user
-  const { data: existing, isLoading } = useQuery({
-    queryKey: ['my-birth-list', user?.id],
+  // All lists owned by this user (for the selector)
+  const { data: myLists = [], isLoading: listsLoading } = useQuery({
+    queryKey: ['my-birth-lists', user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
       const { data: ownerships } = await supabase
         .from('list_owners')
-        .select('list_id, first_name, last_name')
+        .select('list_id, first_name, last_name, birth_lists(id, list_code, baby_name, expected_date, status, created_at)')
         .eq('user_id', user!.id)
-        .limit(1);
-      if (!ownerships || ownerships.length === 0) return null;
+        .order('created_at', { ascending: false });
+      const rows = (ownerships || [])
+        .filter((o: any) => o.birth_lists)
+        .map((o: any) => ({
+          ...o.birth_lists,
+          first_name: o.first_name,
+          last_name: o.last_name,
+        }));
+      // Item counts
+      if (rows.length > 0) {
+        const ids = rows.map((r: any) => r.id);
+        const { data: items } = await supabase
+          .from('list_items')
+          .select('list_id')
+          .in('list_id', ids);
+        const counts: Record<string, number> = {};
+        (items || []).forEach((i: any) => { counts[i.list_id] = (counts[i.list_id] || 0) + 1; });
+        rows.forEach((r: any) => { r.item_count = counts[r.id] || 0; });
+      }
+      return rows;
+    },
+  });
 
-      const listIdLocal = ownerships[0].list_id;
-      const [{ data: list }, { data: items }, { data: secs }] = await Promise.all([
+  // Detail for the list currently being edited
+  const { data: existing, isLoading } = useQuery({
+    queryKey: ['my-birth-list-detail', editingListId],
+    enabled: !!editingListId,
+    queryFn: async () => {
+      const listIdLocal = editingListId!;
+      const [{ data: list }, { data: owner }, { data: items }, { data: secs }] = await Promise.all([
         supabase.from('birth_lists').select('*').eq('id', listIdLocal).single(),
+        supabase.from('list_owners').select('first_name, last_name').eq('list_id', listIdLocal).eq('user_id', user!.id).maybeSingle(),
         supabase
           .from('list_items')
           .select(`
@@ -147,10 +196,22 @@ const MyBirthListPage: React.FC = () => {
           .eq('list_id', listIdLocal)
           .order('sort_order', { ascending: true }),
       ]);
-      return { list, items: items || [], owner: ownerships[0], sections: secs || [] };
+      return { list, items: items || [], owner: owner || { first_name: '', last_name: '' }, sections: secs || [] };
     },
   });
 
+  // Decide initial view once lists are loaded
+  useEffect(() => {
+    if (initialViewSet || listsLoading) return;
+    if (myLists.length === 0) {
+      setView('editor');
+      setEditingListId(null);
+      resetEditor();
+    } else {
+      setView('list');
+    }
+    setInitialViewSet(true);
+  }, [listsLoading, myLists.length, initialViewSet]);
 
   useEffect(() => {
     if (existing?.list) {
@@ -163,8 +224,8 @@ const MyBirthListPage: React.FC = () => {
         expected_date: existing.list.expected_date || '',
         status: existing.list.status || 'draft',
         notes: existing.list.notes || '',
-        first_name: existing.owner.first_name || '',
-        last_name: existing.owner.last_name || '',
+        first_name: existing.owner?.first_name || '',
+        last_name: existing.owner?.last_name || '',
         items: (existing.items || []).map((item: any) => {
           const tr = item.product?.product_translations?.find((t: any) => t.language === lang)
             || item.product?.product_translations?.[0];
@@ -189,17 +250,9 @@ const MyBirthListPage: React.FC = () => {
         name_es: s.name_es,
         sort_order: s.sort_order,
       })));
-
-    } else if (existing === null && profile) {
-      // Pre-fill name from profile
-      const parts = (profile.full_name || '').trim().split(' ');
-      setForm(prev => ({
-        ...prev,
-        first_name: parts[0] || '',
-        last_name: parts.slice(1).join(' ') || '',
-      }));
     }
-  }, [existing, lang, profile]);
+  }, [existing, lang]);
+
 
   const handleProductSearch = async (query: string) => {
     setProductSearch(query);
@@ -348,9 +401,15 @@ const MyBirthListPage: React.FC = () => {
           })
           .select('id')
           .single();
-        if (error) throw error;
+        if (error) {
+          if ((error as any).message?.includes('BIRTH_LIST_LIMIT_REACHED')) {
+            throw new Error(t('list.limitReached'));
+          }
+          throw error;
+        }
         currentId = data.id;
         setListId(currentId);
+        setEditingListId(currentId);
 
         // Insert owner linked to this user
         const { error: ownerErr } = await supabase.from('list_owners').insert({
@@ -423,7 +482,8 @@ const MyBirthListPage: React.FC = () => {
       }
 
 
-      queryClient.invalidateQueries({ queryKey: ['my-birth-list', user.id] });
+      queryClient.invalidateQueries({ queryKey: ['my-birth-lists', user.id] });
+      queryClient.invalidateQueries({ queryKey: ['my-birth-list-detail', currentId] });
       toast.success(t('common.success'));
       setForm(prev => ({ ...prev, password: '' }));
     } catch (err: any) {
@@ -447,10 +507,106 @@ const MyBirthListPage: React.FC = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  if (isLoading) {
+  if (listsLoading || (view === 'editor' && editingListId && isLoading)) {
     return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   }
 
+  const atLimit = !isAdmin && myLists.length >= MAX_LISTS;
+
+  // ---------- LIST VIEW ----------
+  if (view === 'list') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <Heart className="h-6 w-6 text-primary" />
+            <div>
+              <h2 className="font-display text-2xl font-bold">{t('list.myLists')}</h2>
+              <p className="text-sm text-muted-foreground">
+                {t('list.listsCount', { count: myLists.length, max: MAX_LISTS })}
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={() => {
+              if (atLimit) return;
+              resetEditor();
+              setEditingListId(null);
+              setView('editor');
+            }}
+            disabled={atLimit}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" /> {t('list.createNew')}
+          </Button>
+        </div>
+
+        {atLimit && (
+          <Card className="border-destructive/40 bg-destructive/5">
+            <CardContent className="py-4 text-sm space-y-2">
+              <p className="font-medium text-destructive">{t('list.limitReached')}</p>
+              <p className="text-muted-foreground">{t('list.contactAdmin')}</p>
+              <a href="/contacte" className="inline-block text-primary underline text-sm">{t('nav.contact') || 'Contacte'}</a>
+            </CardContent>
+          </Card>
+        )}
+
+        {myLists.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">
+              <Heart className="h-8 w-8 mx-auto text-muted-foreground/60 mb-2" />
+              <p>{t('list.emptyList')}</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {myLists.map((l: any) => (
+              <Card key={l.id} className="hover:border-primary transition-colors">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">{l.baby_name || l.list_code}</p>
+                      <p className="font-mono text-xs text-muted-foreground truncate">{l.list_code}</p>
+                    </div>
+                    <Badge variant={l.status === 'active' ? 'default' : l.status === 'closed' ? 'secondary' : 'outline'}>
+                      {l.status === 'active' ? t('admin.statusActive') : l.status === 'closed' ? t('admin.statusClosed') : t('admin.statusDraft')}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    {l.expected_date && <p>{t('list.expectedDate')}: {l.expected_date}</p>}
+                    <p>{l.item_count || 0} {(l.item_count || 0) === 1 ? (lang === 'es' ? 'producto' : 'producte') : (lang === 'es' ? 'productos' : 'productes')}</p>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="flex-1"
+                      onClick={() => {
+                        setEditingListId(l.id);
+                        setListId(l.id);
+                        setView('editor');
+                      }}
+                    >
+                      {t('list.editList')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open(`/llista-naixement`, '_blank')}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ---------- EDITOR VIEW ----------
   // Determine current step: 1=create, 2=edit, 3=share
   const currentStep = !listId ? 1 : (form.status === 'active' || form.status === 'closed' ? 3 : 2);
   const steps = [
@@ -461,6 +617,16 @@ const MyBirthListPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {myLists.length > 0 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => { setView('list'); setEditingListId(null); }}
+          className="gap-2 -ml-2"
+        >
+          ← {t('list.backToLists')}
+        </Button>
+      )}
       {/* Breadcrumbs / Steps */}
       <nav aria-label="Progress">
         <ol className="flex items-center gap-2 sm:gap-3 text-sm">
