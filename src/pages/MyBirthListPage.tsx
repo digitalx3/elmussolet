@@ -69,6 +69,8 @@ const MyBirthListPage: React.FC = () => {
   const [sections, setSections] = useState<PendingSection[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [loadingTemplate, setLoadingTemplate] = useState(false);
+  const [browseOpen, setBrowseOpen] = useState(false);
+  const [browseCategory, setBrowseCategory] = useState<string>('all');
 
   // Templates available to copy from (only relevant while creating)
   const { data: templates = [] } = useQuery({
