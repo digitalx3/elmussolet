@@ -1344,6 +1344,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_list_purchases: {
+        Args: { _list_id: string }
+        Returns: {
+          buyer_full_name: string
+          created_at: string
+          list_item_id: string
+          order_id: string
+          order_number: string
+          order_status: string
+          payment_status: string
+          quantity: number
+        }[]
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       user_owns_list: {
         Args: { _list_id: string; _user_id: string }
