@@ -756,6 +756,101 @@ const MyBirthListPage: React.FC = () => {
             )}
           </div>
 
+          {/* Browse products with thumbnails */}
+          <div className="rounded-md border border-border">
+            <button
+              type="button"
+              onClick={() => setBrowseOpen(v => !v)}
+              className="w-full flex items-center justify-between gap-2 p-3 text-sm font-medium hover:bg-muted/50"
+            >
+              <span className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-primary" />
+                {lang === 'es' ? 'Explorar productos del catálogo' : 'Explorar productes del catàleg'}
+              </span>
+              {browseOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+            {browseOpen && (
+              <div className="border-t border-border p-3 space-y-3">
+                {/* Category filter */}
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setBrowseCategory('all')}
+                    className={`px-2.5 py-1 rounded-full text-xs border ${browseCategory === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:bg-muted'}`}
+                  >
+                    {lang === 'es' ? 'Todas' : 'Totes'}
+                  </button>
+                  {browseCategories.map((c: any) => {
+                    const tr = c.category_translations?.find((tt: any) => tt.language === lang) || c.category_translations?.[0];
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setBrowseCategory(c.id)}
+                        className={`px-2.5 py-1 rounded-full text-xs border ${browseCategory === c.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:bg-muted'}`}
+                      >
+                        {tr?.name || c.slug}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Optional section assignment for newly added items */}
+                {sections.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {lang === 'es'
+                      ? 'Los productos añadidos se podrán asignar a una sección abajo.'
+                      : 'Els productes afegits es podran assignar a una secció a sota.'}
+                  </p>
+                )}
+
+                {browseLoading ? (
+                  <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                ) : browseProducts.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">
+                    {lang === 'es' ? 'No hay productos en esta categoría.' : 'No hi ha productes en aquesta categoria.'}
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-[480px] overflow-y-auto pr-1">
+                    {browseProducts.map((p: any) => {
+                      const tr = p.product_translations?.find((tt: any) => tt.language === lang) || p.product_translations?.[0];
+                      const imgs = (p.product_images || []).slice().sort((a: any, b: any) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order || 0) - (b.sort_order || 0));
+                      const img = imgs[0]?.image_url;
+                      const added = form.items.some(it => it.product_id === p.id);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => addProduct(p)}
+                          disabled={added}
+                          className={`group relative flex flex-col items-stretch gap-1 p-2 rounded-md border-2 bg-background transition-colors text-left ${added ? 'border-primary/40 opacity-70 cursor-not-allowed' : 'border-border hover:border-primary hover:bg-primary/5'}`}
+                        >
+                          <div className="aspect-square w-full bg-muted rounded overflow-hidden flex items-center justify-center">
+                            {img ? (
+                              <img src={img} alt={tr?.name || p.slug} className="w-full h-full object-cover" loading="lazy" />
+                            ) : (
+                              <Package className="h-6 w-6 text-muted-foreground" />
+                            )}
+                          </div>
+                          <span className="text-xs font-medium line-clamp-2">{tr?.name || p.slug}</span>
+                          <span className="text-[11px] text-muted-foreground">{formatPrice(p.base_price)}</span>
+                          {added ? (
+                            <span className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                              <Check className="h-3 w-3" />
+                            </span>
+                          ) : (
+                            <span className="absolute top-1 right-1 bg-background/90 border border-border rounded-full p-0.5 opacity-0 group-hover:opacity-100">
+                              <Plus className="h-3 w-3" />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
           {form.items.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">{t('list.emptyList')}</p>
           ) : (
