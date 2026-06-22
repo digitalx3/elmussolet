@@ -482,7 +482,8 @@ const MyBirthListPage: React.FC = () => {
       }
 
 
-      queryClient.invalidateQueries({ queryKey: ['my-birth-list', user.id] });
+      queryClient.invalidateQueries({ queryKey: ['my-birth-lists', user.id] });
+      queryClient.invalidateQueries({ queryKey: ['my-birth-list-detail', currentId] });
       toast.success(t('common.success'));
       setForm(prev => ({ ...prev, password: '' }));
     } catch (err: any) {
