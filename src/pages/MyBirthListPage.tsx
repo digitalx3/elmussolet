@@ -401,9 +401,15 @@ const MyBirthListPage: React.FC = () => {
           })
           .select('id')
           .single();
-        if (error) throw error;
+        if (error) {
+          if ((error as any).message?.includes('BIRTH_LIST_LIMIT_REACHED')) {
+            throw new Error(t('list.limitReached'));
+          }
+          throw error;
+        }
         currentId = data.id;
         setListId(currentId);
+        setEditingListId(currentId);
 
         // Insert owner linked to this user
         const { error: ownerErr } = await supabase.from('list_owners').insert({
