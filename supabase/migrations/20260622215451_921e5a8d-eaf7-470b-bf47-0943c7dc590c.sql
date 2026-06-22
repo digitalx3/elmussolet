@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.get_list_purchases(uuid) FROM PUBLIC, anon;
