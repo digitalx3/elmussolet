@@ -423,26 +423,90 @@ const AdminUsers: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={o => !o && setDeleteId(null)}>
+      {/* Delete options dialog */}
+      <Dialog open={!!deleteId && deleteMode === null} onOpenChange={o => { if (!o) { setDeleteId(null); setDeleteMode(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar usuari</DialogTitle>
+            <DialogDescription>
+              Tria com vols eliminar aquest usuari. Aquesta decisió és important.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <button
+              type="button"
+              onClick={() => setDeleteMode('soft')}
+              className="w-full text-left rounded-lg border border-border p-4 hover:border-primary hover:bg-muted/30 transition-colors"
+            >
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                  <Trash2 className="h-4 w-4 text-amber-700" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-sm">Marcar com eliminat (recomanat)</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    L'usuari deixa de poder iniciar sessió i queda ocult.
+                    Es conserven els seus pedidos, llistes i historial.
+                    L'email queda reservat i ningú el podrà reutilitzar per registrar-se.
+                  </p>
+                </div>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDeleteMode('hard')}
+              className="w-full text-left rounded-lg border border-border p-4 hover:border-destructive hover:bg-destructive/5 transition-colors"
+            >
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 h-8 w-8 rounded-full bg-destructive/15 flex items-center justify-center shrink-0">
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-sm text-destructive">Eliminació permanent</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    S'esborren l'usuari i totes les seves dades relacionades:
+                    pedidos, articles de pedido, llistes de naixement on és l'únic propietari, etc.
+                    Aquesta acció no es pot desfer.
+                  </p>
+                </div>
+              </div>
+            </button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDeleteId(null); setDeleteMode(null); }}>
+              Cancel·lar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Final confirmation for the chosen mode */}
+      <AlertDialog open={!!deleteId && deleteMode !== null} onOpenChange={o => { if (!o) setDeleteMode(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar usuari</AlertDialogTitle>
+            <AlertDialogTitle>
+              {deleteMode === 'hard' ? 'Confirmar eliminació permanent' : 'Confirmar marcar com eliminat'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Aquesta acció eliminarà l'usuari de forma permanent. No es pot desfer.
+              {deleteMode === 'hard'
+                ? "S'eliminaran l'usuari i totes les seves dades (pedidos, articles, llistes pròpies). Aquesta acció no es pot desfer."
+                : "L'usuari quedarà inactiu i el seu email no es podrà tornar a registrar. Podràs restaurar-lo més endavant."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setDeleteMode(null)}>Tornar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteId && deleteUser.mutate(deleteId)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteId && deleteMode && deleteUser.mutate({ id: deleteId, mode: deleteMode })}
+              className={deleteMode === 'hard'
+                ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                : ''}
             >
-              Eliminar
+              {deleteMode === 'hard' ? 'Eliminar permanentment' : 'Marcar com eliminat'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
 
       {/* User Detail Dialog */}
       <Dialog open={!!detailUser} onOpenChange={() => setDetailUser(null)}>
