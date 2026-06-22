@@ -617,6 +617,16 @@ const MyBirthListPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {myLists.length > 0 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => { setView('list'); setEditingListId(null); }}
+          className="gap-2 -ml-2"
+        >
+          ← {t('list.backToLists')}
+        </Button>
+      )}
       {/* Breadcrumbs / Steps */}
       <nav aria-label="Progress">
         <ol className="flex items-center gap-2 sm:gap-3 text-sm">
