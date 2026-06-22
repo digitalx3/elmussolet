@@ -89,6 +89,7 @@ const MyBirthListPage: React.FC = () => {
   const resetEditor = () => {
     setListId(null);
     setSections([]);
+    setSelectedTemplateId('');
     setForm({
       list_code: generateCode(),
       password: '',
