@@ -411,6 +411,19 @@ const MyBirthListPage: React.FC = () => {
     });
   };
 
+  const reorderItem = (fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx) return;
+    setForm(prev => {
+      if (fromIdx < 0 || toIdx < 0 || fromIdx >= prev.items.length || toIdx >= prev.items.length) return prev;
+      const next = [...prev.items];
+      const [moved] = next.splice(fromIdx, 1);
+      // Ensure dropped item keeps the target's section
+      moved.section_temp_id = next[toIdx]?.section_temp_id ?? moved.section_temp_id;
+      next.splice(toIdx, 0, moved);
+      return { ...prev, items: next.map((it, i) => ({ ...it, sort_order: i })) };
+    });
+  };
+
   const addProductToSection = (product: any, sectionTempId: string | null) => {
     if (form.items.some(i => i.product_id === product.id)) {
       // Already in the list — just reassign its section
