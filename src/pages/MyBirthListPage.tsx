@@ -1243,7 +1243,13 @@ const MyBirthListPage: React.FC = () => {
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
-                        ))}
+                            {showInsertBelow && (
+                              <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full shadow-[0_0_0_2px_hsl(var(--primary)/0.25)] z-10 pointer-events-none" />
+                            )}
+                          </div>
+                          );
+                        })}
+
                       </div>
                     )}
                   </div>
