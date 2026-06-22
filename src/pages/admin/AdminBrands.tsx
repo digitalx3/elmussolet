@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, Pencil, Trash2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { optimizeImage } from '@/lib/optimizeImage';
 
 interface BrandRow {
   id: string;

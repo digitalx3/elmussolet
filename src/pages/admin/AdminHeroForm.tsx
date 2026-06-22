@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Save, Upload, Monitor, Tablet, Smartphone, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import { optimizeImage } from '@/lib/optimizeImage';
 import HeroCanvasEditor, { defaultLayout, Layout, Device, FloatingImage, DEFAULT_FLOATING_BOX } from '@/components/admin/HeroCanvasEditor';
 import HeroSlideView, { Slide } from '@/components/home/HeroSlideView';
 import ImageUploader from '@/components/admin/ImageUploader';
