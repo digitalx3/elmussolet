@@ -1256,6 +1256,43 @@ const MyBirthListPage: React.FC = () => {
                               {item.price !== undefined && (
                                 <p className="text-xs text-muted-foreground">{formatPrice(item.price)}</p>
                               )}
+                              {(() => {
+                                const itemPurchases = item.id ? (purchasesByItem[item.id] || []) : [];
+                                if (itemPurchases.length === 0) {
+                                  return (
+                                    <p className="text-[11px] text-muted-foreground italic mt-1">
+                                      {lang === 'es' ? 'Sin compras todavía' : 'Sense compres encara'}
+                                    </p>
+                                  );
+                                }
+                                const totalQty = itemPurchases.reduce((s: number, p: any) => s + (p.quantity || 0), 0);
+                                return (
+                                  <div className="mt-1.5 space-y-1">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <Badge variant="default" className="text-[10px] bg-emerald-600 hover:bg-emerald-600">
+                                        <Check className="h-3 w-3 mr-0.5" />
+                                        {lang === 'es' ? `Comprado: ${totalQty}/${item.quantity_desired}` : `Comprat: ${totalQty}/${item.quantity_desired}`}
+                                      </Badge>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5">
+                                      {itemPurchases.map((p: any, i: number) => (
+                                        <div key={i} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                          <User className="h-3 w-3 shrink-0" />
+                                          <span className="font-medium text-foreground truncate">
+                                            {p.buyer_full_name || (lang === 'es' ? '(sin nombre)' : '(sense nom)')}
+                                          </span>
+                                          <span>×{p.quantity}</span>
+                                          <span className={`px-1 rounded ${p.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                            {p.payment_status === 'paid'
+                                              ? (lang === 'es' ? 'pagado' : 'pagat')
+                                              : (lang === 'es' ? 'pendiente' : 'pendent')}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
                             {sections.length > 0 && (
                               <select
