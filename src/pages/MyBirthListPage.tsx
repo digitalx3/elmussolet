@@ -210,6 +210,27 @@ const MyBirthListPage: React.FC = () => {
     },
   });
 
+  // Purchases for the list currently being edited (who bought which item)
+  const { data: purchases = [] } = useQuery({
+    queryKey: ['my-birth-list-purchases', editingListId],
+    enabled: !!editingListId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_list_purchases', { _list_id: editingListId! });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Group purchases by list_item_id
+  const purchasesByItem = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    (purchases as any[]).forEach((p: any) => {
+      if (!p.list_item_id) return;
+      (map[p.list_item_id] ||= []).push(p);
+    });
+    return map;
+  }, [purchases]);
+
   // Decide initial view once lists are loaded
   useEffect(() => {
     if (initialViewSet || listsLoading) return;
