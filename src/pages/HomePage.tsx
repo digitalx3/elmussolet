@@ -65,8 +65,8 @@ const HomePage: React.FC = () => {
             <div className="absolute -bottom-6 -left-6 hidden md:flex items-center gap-3 bg-card rounded-2xl px-5 py-3 shadow-elevated border border-border">
               <img src={logoSquare.url} alt="" className="h-12 w-12" />
               <div>
-                <div className="font-display text-xl leading-none text-primary">Berga</div>
-                <div className="text-xs text-muted-foreground">Catalunya · Berguedà</div>
+                <div className="font-display text-xl leading-none text-primary">Solsona</div>
+                <div className="text-xs text-muted-foreground">Lleida · Catalunya</div>
               </div>
             </div>
           </motion.div>
