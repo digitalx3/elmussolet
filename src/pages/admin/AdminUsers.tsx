@@ -67,6 +67,7 @@ const AdminUsers: React.FC = () => {
   const [form, setForm] = useState<UserFormState>(emptyForm);
   const [editMode, setEditMode] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'soft' | 'hard' | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-users'],
