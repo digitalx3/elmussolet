@@ -303,9 +303,9 @@ const AdminUsers: React.FC = () => {
                     </Button>
                     {user.deleted_at ? (
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        onClick={() => restoreUser.mutate(user.id)}
+                        onClick={() => setRestoreId(user.id)}
                       >
                         Restaurar
                       </Button>
