@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Heart, Plus, Trash2, Search, Copy, Eye, EyeOff, Share2, Loader2, Sparkles, Package, ChevronDown, ChevronUp, Check, GripVertical, FolderOpen } from 'lucide-react';
+import { Heart, Plus, Trash2, Search, Copy, Eye, EyeOff, Share2, Loader2, Sparkles, Package, ChevronDown, ChevronUp, Check, GripVertical, FolderOpen, ShoppingBag, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -209,6 +209,27 @@ const MyBirthListPage: React.FC = () => {
       return { list, items: items || [], owner: owner || { first_name: '', last_name: '' }, sections: secs || [] };
     },
   });
+
+  // Purchases for the list currently being edited (who bought which item)
+  const { data: purchases = [] } = useQuery({
+    queryKey: ['my-birth-list-purchases', editingListId],
+    enabled: !!editingListId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc('get_list_purchases', { _list_id: editingListId! });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Group purchases by list_item_id
+  const purchasesByItem = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    (purchases as any[]).forEach((p: any) => {
+      if (!p.list_item_id) return;
+      (map[p.list_item_id] ||= []).push(p);
+    });
+    return map;
+  }, [purchases]);
 
   // Decide initial view once lists are loaded
   useEffect(() => {
@@ -786,6 +807,47 @@ const MyBirthListPage: React.FC = () => {
         </Card>
       )}
 
+      {/* Purchases summary */}
+      {listId && (purchases as any[]).length > 0 && (
+        <Card className="border-emerald-500/30 bg-emerald-500/5">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4 text-emerald-600" />
+              {lang === 'es' ? 'Compras de tu lista' : 'Compres de la teva llista'}
+              <Badge variant="secondary" className="ml-2">{(purchases as any[]).length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {lang === 'es'
+                ? 'Estas personas han comprado productos de tu lista. Encuentra el detalle de cada producto más abajo.'
+                : 'Aquestes persones han comprat productes de la teva llista. Trobaràs el detall de cada producte més avall.'}
+            </p>
+            <div className="space-y-1.5">
+              {(purchases as any[]).map((p: any, i: number) => (
+                <div key={i} className="flex items-center justify-between gap-2 p-2 bg-background border rounded-md text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="font-medium truncate">{p.buyer_full_name || (lang === 'es' ? '(sin nombre)' : '(sense nom)')}</span>
+                    <span className="text-muted-foreground font-mono shrink-0">#{p.order_number}</span>
+                  </div>
+                  <Badge
+                    variant={p.payment_status === 'paid' ? 'default' : p.payment_status === 'pending' ? 'secondary' : 'outline'}
+                    className="shrink-0 text-[10px]"
+                  >
+                    {p.payment_status === 'paid'
+                      ? (lang === 'es' ? 'Pagado' : 'Pagat')
+                      : p.payment_status === 'pending'
+                        ? (lang === 'es' ? 'Pendiente' : 'Pendent')
+                        : p.payment_status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Basic info */}
       <Card>
         <CardHeader><CardTitle className="text-base">{t('admin.listInfo')}</CardTitle></CardHeader>
@@ -1194,6 +1256,43 @@ const MyBirthListPage: React.FC = () => {
                               {item.price !== undefined && (
                                 <p className="text-xs text-muted-foreground">{formatPrice(item.price)}</p>
                               )}
+                              {(() => {
+                                const itemPurchases = item.id ? (purchasesByItem[item.id] || []) : [];
+                                if (itemPurchases.length === 0) {
+                                  return (
+                                    <p className="text-[11px] text-muted-foreground italic mt-1">
+                                      {lang === 'es' ? 'Sin compras todavía' : 'Sense compres encara'}
+                                    </p>
+                                  );
+                                }
+                                const totalQty = itemPurchases.reduce((s: number, p: any) => s + (p.quantity || 0), 0);
+                                return (
+                                  <div className="mt-1.5 space-y-1">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <Badge variant="default" className="text-[10px] bg-emerald-600 hover:bg-emerald-600">
+                                        <Check className="h-3 w-3 mr-0.5" />
+                                        {lang === 'es' ? `Comprado: ${totalQty}/${item.quantity_desired}` : `Comprat: ${totalQty}/${item.quantity_desired}`}
+                                      </Badge>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5">
+                                      {itemPurchases.map((p: any, i: number) => (
+                                        <div key={i} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                          <User className="h-3 w-3 shrink-0" />
+                                          <span className="font-medium text-foreground truncate">
+                                            {p.buyer_full_name || (lang === 'es' ? '(sin nombre)' : '(sense nom)')}
+                                          </span>
+                                          <span>×{p.quantity}</span>
+                                          <span className={`px-1 rounded ${p.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                            {p.payment_status === 'paid'
+                                              ? (lang === 'es' ? 'pagado' : 'pagat')
+                                              : (lang === 'es' ? 'pendiente' : 'pendent')}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
                             {sections.length > 0 && (
                               <select
