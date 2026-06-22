@@ -95,15 +95,18 @@ const AdminProductForm: React.FC = () => {
     }
   };
 
-  // Image upload
+  // Image upload (with automatic resize + WebP optimization)
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    for (const file of Array.from(files)) {
-      const ext = file.name.split('.').pop();
+    for (const original of Array.from(files)) {
+      const file = await optimizeImage(original, { maxDimension: 1600, quality: 0.85 });
+      const ext = file.name.split('.').pop() || 'webp';
       const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from('product-images').upload(path, file);
+      const { error } = await supabase.storage
+        .from('product-images')
+        .upload(path, file, { contentType: file.type });
       if (error) { toast.error('Error pujant imatge'); continue; }
       const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path);
       setForm(prev => ({
