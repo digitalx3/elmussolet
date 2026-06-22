@@ -614,10 +614,6 @@ const MyBirthListPage: React.FC = () => {
     { n: 2, label: t('list.stepEdit') },
     { n: 3, label: t('list.stepShare') },
   ];
-    { n: 1, label: t('list.stepCreate') },
-    { n: 2, label: t('list.stepEdit') },
-    { n: 3, label: t('list.stepShare') },
-  ];
 
   return (
     <div className="space-y-6">
