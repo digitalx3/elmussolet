@@ -251,8 +251,10 @@ const MyBirthListPage: React.FC = () => {
     }));
   };
 
-  const loadTemplate = async () => {
-    if (!selectedTemplateId) return;
+  const loadTemplate = async (templateIdArg?: string) => {
+    const tplId = templateIdArg || selectedTemplateId;
+    if (!tplId) return;
+    setSelectedTemplateId(tplId);
     setLoadingTemplate(true);
     try {
       const [{ data: secs }, { data: tplItems }] = await Promise.all([
