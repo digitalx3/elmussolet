@@ -371,6 +371,71 @@ const MyBirthListPage: React.FC = () => {
     }));
   };
 
+  const handleAddSection = () => {
+    const ca = newSectionCa.trim();
+    const es = newSectionEs.trim();
+    if (!ca && !es) {
+      toast.error(lang === 'es' ? 'Indica un nombre para la sección' : 'Indica un nom per a la secció');
+      return;
+    }
+    setSections(prev => [...prev, {
+      temp_id: `new-${Date.now()}-${prev.length}`,
+      name_ca: ca || es,
+      name_es: es || ca,
+      sort_order: prev.length,
+    }]);
+    setNewSectionCa('');
+    setNewSectionEs('');
+  };
+
+  const removeSection = (tempId: string) => {
+    setSections(prev => prev.filter(s => s.temp_id !== tempId).map((x, i) => ({ ...x, sort_order: i })));
+    setForm(prev => ({
+      ...prev,
+      items: prev.items.map(it => it.section_temp_id === tempId ? { ...it, section_temp_id: null } : it),
+    }));
+  };
+
+  const reorderSections = (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    setSections(prev => {
+      const from = prev.findIndex(s => s.temp_id === fromId);
+      const to = prev.findIndex(s => s.temp_id === toId);
+      if (from < 0 || to < 0) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next.map((x, i) => ({ ...x, sort_order: i }));
+    });
+  };
+
+  const addProductToSection = (product: any, sectionTempId: string | null) => {
+    if (form.items.some(i => i.product_id === product.id)) {
+      // Already in the list — just reassign its section
+      setForm(prev => ({
+        ...prev,
+        items: prev.items.map(it => it.product_id === product.id ? { ...it, section_temp_id: sectionTempId } : it),
+      }));
+      return;
+    }
+    const tr = product.product_translations?.find((tt: any) => tt.language === lang)
+      || product.product_translations?.[0];
+    setForm(prev => ({
+      ...prev,
+      items: [...prev.items, {
+        product_id: product.id,
+        variant_id: null,
+        quantity_desired: 1,
+        priority: 'medium',
+        sort_order: prev.items.length,
+        productName: tr?.name || product.slug,
+        price: product.base_price,
+        section_temp_id: sectionTempId,
+      }],
+    }));
+  };
+
+
 
   const handleSave = async () => {
     if (!user) return;
