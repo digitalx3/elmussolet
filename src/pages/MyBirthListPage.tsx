@@ -850,6 +850,9 @@ const MyBirthListPage: React.FC = () => {
                 )}
               </div>
             )}
+          </div>
+
+
 
           {form.items.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">{t('list.emptyList')}</p>
