@@ -261,7 +261,7 @@ const AdminUsers: React.FC = () => {
           </TableHeader>
           <TableBody>
             {filtered.map(user => (
-              <TableRow key={user.id}>
+              <TableRow key={user.id} className={user.deleted_at ? 'opacity-60' : ''}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
                     {user.role === 'admin' ? (
@@ -270,6 +270,9 @@ const AdminUsers: React.FC = () => {
                       <User className="h-4 w-4 text-muted-foreground" />
                     )}
                     {user.full_name || '—'}
+                    {user.deleted_at && (
+                      <Badge variant="destructive" className="text-[10px]">Eliminat</Badge>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{user.city || '—'}</TableCell>
@@ -279,6 +282,7 @@ const AdminUsers: React.FC = () => {
                     value={user.role}
                     onChange={e => updateRole.mutate({ userId: user.id, role: e.target.value })}
                     className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                    disabled={!!user.deleted_at}
                   >
                     <option value="customer">Customer</option>
                     <option value="admin">Admin</option>
@@ -292,17 +296,27 @@ const AdminUsers: React.FC = () => {
                     <Button variant="ghost" size="icon" onClick={() => setDetailUser(user)}>
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(user)}>
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(user)} disabled={!!user.deleted_at}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDeleteId(user.id)}
-                      disabled={user.id === currentUser?.id}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    {user.deleted_at ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => restoreUser.mutate(user.id)}
+                      >
+                        Restaurar
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => { setDeleteId(user.id); setDeleteMode(null); }}
+                        disabled={user.id === currentUser?.id}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
