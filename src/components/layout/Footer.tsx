@@ -52,7 +52,7 @@ const Footer: React.FC = () => {
 
   const logoUrl = settings?.logo_footer_url || logoSquare.url;
   const storeName = settings?.store_name || 'El Mussolet';
-  const about = settings?.[`footer_about_${lang}`] || '🍼Puericultura<br/>🌱Roba de cotó orgànic i bambú<br/>🧸Llistes de naixement';
+  const about = settings?.[`footer_about_${lang}`] || 'La teva botiga de puericultura online, roba de cotó orgànic i bambú.<br/>Llistes de naixement personalitzades.';
   const bottom = settings?.[`footer_bottom_${lang}`] || `© ${year} ${storeName}. ${t('footer.rights')}.`;
 
   return (
