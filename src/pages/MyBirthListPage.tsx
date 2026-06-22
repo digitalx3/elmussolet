@@ -71,6 +71,12 @@ const MyBirthListPage: React.FC = () => {
   const [loadingTemplate, setLoadingTemplate] = useState(false);
   const [browseOpen, setBrowseOpen] = useState(false);
   const [browseCategory, setBrowseCategory] = useState<string>('all');
+  const [newSectionCa, setNewSectionCa] = useState('');
+  const [newSectionEs, setNewSectionEs] = useState('');
+  const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
+  const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
+  // Drag payload for products: either { itemIdx } (move existing) or { product } (add new)
+  const productDragRef = React.useRef<{ kind: 'move'; itemIdx: number } | { kind: 'add'; product: any } | null>(null);
   const [view, setView] = useState<'list' | 'editor'>('list');
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [initialViewSet, setInitialViewSet] = useState(false);
