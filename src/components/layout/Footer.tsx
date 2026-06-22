@@ -61,11 +61,13 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-2">
-            <img src={logoUrl} alt={storeName} className="h-20 w-auto mb-3" />
-            <div
-              className="text-sm text-muted-foreground leading-relaxed prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: about }}
-            />
+            <div className="flex items-center gap-4">
+              <img src={logoUrl} alt={storeName} className="h-20 w-auto shrink-0" />
+              <div
+                className="text-sm text-muted-foreground leading-relaxed prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: about }}
+              />
+            </div>
             <div className="mt-4 space-y-2 text-sm text-muted-foreground">
               {settings?.store_email && (
                 <div className="flex items-center gap-2">
