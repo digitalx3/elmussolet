@@ -623,34 +623,39 @@ const MyBirthListPage: React.FC = () => {
         <CardContent className="space-y-4">
           {/* Template loader (only when list has no items/sections yet) */}
           {templates.length > 0 && sections.length === 0 && form.items.length === 0 && (
-            <div className="rounded-md border border-dashed border-primary/40 bg-primary/5 p-3 space-y-2">
-              <Label className="text-sm">{t('list.useTemplate')}</Label>
-              <div className="flex gap-2">
-                <select
-                  value={selectedTemplateId}
-                  onChange={e => setSelectedTemplateId(e.target.value)}
-                  className="flex-1 h-9 rounded-md border border-input bg-background px-2 text-sm"
-                >
-                  <option value="">— {t('common.select') || '...'} —</option>
-                  {templates.map((tpl: any) => {
-                    const tr = tpl.list_template_translations?.find((tt: any) => tt.language === lang)
-                      || tpl.list_template_translations?.[0];
-                    return <option key={tpl.id} value={tpl.id}>{tr?.name || tpl.name}</option>;
-                  })}
-                </select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!selectedTemplateId || loadingTemplate}
-                  onClick={loadTemplate}
-                >
-                  {loadingTemplate && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-                  {t('list.loadTemplate')}
-                </Button>
+            <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <Label className="text-sm font-semibold">{t('list.useTemplate')}</Label>
               </div>
               <p className="text-xs text-muted-foreground">{t('list.useTemplateHint')}</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {templates.map((tpl: any) => {
+                  const tr = tpl.list_template_translations?.find((tt: any) => tt.language === lang)
+                    || tpl.list_template_translations?.[0];
+                  const label = tr?.name || tpl.name;
+                  const isSel = selectedTemplateId === tpl.id;
+                  return (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      disabled={loadingTemplate}
+                      onClick={() => loadTemplate(tpl.id)}
+                      className={`group relative flex flex-col items-center justify-center gap-2 p-3 rounded-md border-2 bg-background hover:border-primary hover:bg-primary/5 transition-colors text-center min-h-[88px] ${isSel ? 'border-primary' : 'border-border'}`}
+                    >
+                      {loadingTemplate && isSel ? (
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      ) : (
+                        <Heart className="h-6 w-6 text-primary" />
+                      )}
+                      <span className="text-xs font-medium line-clamp-2">{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
+
 
           {/* Sections manager */}
           {true && (
