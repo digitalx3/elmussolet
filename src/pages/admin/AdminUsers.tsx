@@ -157,17 +157,34 @@ const AdminUsers: React.FC = () => {
   });
 
   const deleteUser = useMutation({
+    mutationFn: async ({ id, mode }: { id: string; mode: 'soft' | 'hard' }) => {
+      const { data, error } = await supabase.functions.invoke('admin-manage-users', {
+        body: { action: 'delete', user_id: id, delete_mode: mode },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return mode;
+    },
+    onSuccess: (mode) => {
+      qc.invalidateQueries({ queryKey: ['admin-users'] });
+      toast.success(mode === 'hard' ? 'Usuari eliminat permanentment' : 'Usuari marcat com eliminat');
+      setDeleteId(null);
+      setDeleteMode(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const restoreUser = useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await supabase.functions.invoke('admin-manage-users', {
-        body: { action: 'delete', user_id: id },
+        body: { action: 'restore', user_id: id },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('Usuari eliminat');
-      setDeleteId(null);
+      toast.success('Usuari restaurat');
     },
     onError: (e: any) => toast.error(e.message),
   });
