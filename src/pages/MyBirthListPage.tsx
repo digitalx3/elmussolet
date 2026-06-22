@@ -85,6 +85,38 @@ const MyBirthListPage: React.FC = () => {
     },
   });
 
+  // Categories for browse filter
+  const { data: browseCategories = [] } = useQuery({
+    queryKey: ['birthlist-browse-cats'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('categories')
+        .select('id, slug, category_translations(language, name)')
+        .eq('is_active', true)
+        .order('sort_order');
+      return data || [];
+    },
+  });
+
+  // Browse products (loaded only when browseOpen)
+  const { data: browseProducts = [], isFetching: browseLoading } = useQuery({
+    queryKey: ['birthlist-browse-products', browseCategory],
+    enabled: browseOpen,
+    queryFn: async () => {
+      let q = supabase
+        .from('products')
+        .select(`id, base_price, slug, category_id, product_translations(language, name), product_images(image_url, is_primary, sort_order)`)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(60);
+      if (browseCategory !== 'all') q = q.eq('category_id', browseCategory);
+      const { data } = await q;
+      return data || [];
+    },
+  });
+
+
+
 
   // Load existing list owned by this user
   const { data: existing, isLoading } = useQuery({
