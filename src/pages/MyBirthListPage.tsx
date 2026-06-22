@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Heart, Plus, Trash2, Search, Copy, Eye, EyeOff, Share2, Loader2, Sparkles, Package, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Heart, Plus, Trash2, Search, Copy, Eye, EyeOff, Share2, Loader2, Sparkles, Package, ChevronDown, ChevronUp, Check, GripVertical, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -71,6 +71,12 @@ const MyBirthListPage: React.FC = () => {
   const [loadingTemplate, setLoadingTemplate] = useState(false);
   const [browseOpen, setBrowseOpen] = useState(false);
   const [browseCategory, setBrowseCategory] = useState<string>('all');
+  const [newSectionCa, setNewSectionCa] = useState('');
+  const [newSectionEs, setNewSectionEs] = useState('');
+  const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
+  const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
+  // Drag payload for products: either { itemIdx } (move existing) or { product } (add new)
+  const productDragRef = React.useRef<{ kind: 'move'; itemIdx: number } | { kind: 'add'; product: any } | null>(null);
   const [view, setView] = useState<'list' | 'editor'>('list');
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [initialViewSet, setInitialViewSet] = useState(false);
@@ -364,6 +370,71 @@ const MyBirthListPage: React.FC = () => {
       items: prev.items.map((it, i) => i === idx ? { ...it, section_temp_id: sectionTempId } : it),
     }));
   };
+
+  const handleAddSection = () => {
+    const ca = newSectionCa.trim();
+    const es = newSectionEs.trim();
+    if (!ca && !es) {
+      toast.error(lang === 'es' ? 'Indica un nombre para la sección' : 'Indica un nom per a la secció');
+      return;
+    }
+    setSections(prev => [...prev, {
+      temp_id: `new-${Date.now()}-${prev.length}`,
+      name_ca: ca || es,
+      name_es: es || ca,
+      sort_order: prev.length,
+    }]);
+    setNewSectionCa('');
+    setNewSectionEs('');
+  };
+
+  const removeSection = (tempId: string) => {
+    setSections(prev => prev.filter(s => s.temp_id !== tempId).map((x, i) => ({ ...x, sort_order: i })));
+    setForm(prev => ({
+      ...prev,
+      items: prev.items.map(it => it.section_temp_id === tempId ? { ...it, section_temp_id: null } : it),
+    }));
+  };
+
+  const reorderSections = (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    setSections(prev => {
+      const from = prev.findIndex(s => s.temp_id === fromId);
+      const to = prev.findIndex(s => s.temp_id === toId);
+      if (from < 0 || to < 0) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next.map((x, i) => ({ ...x, sort_order: i }));
+    });
+  };
+
+  const addProductToSection = (product: any, sectionTempId: string | null) => {
+    if (form.items.some(i => i.product_id === product.id)) {
+      // Already in the list — just reassign its section
+      setForm(prev => ({
+        ...prev,
+        items: prev.items.map(it => it.product_id === product.id ? { ...it, section_temp_id: sectionTempId } : it),
+      }));
+      return;
+    }
+    const tr = product.product_translations?.find((tt: any) => tt.language === lang)
+      || product.product_translations?.[0];
+    setForm(prev => ({
+      ...prev,
+      items: [...prev.items, {
+        product_id: product.id,
+        variant_id: null,
+        quantity_desired: 1,
+        priority: 'medium',
+        sort_order: prev.items.length,
+        productName: tr?.name || product.slug,
+        price: product.base_price,
+        section_temp_id: sectionTempId,
+      }],
+    }));
+  };
+
 
 
   const handleSave = async () => {
@@ -772,6 +843,45 @@ const MyBirthListPage: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Templates picker — its own card, shown before the products card when empty */}
+      {listId && templates.length > 0 && sections.length === 0 && form.items.length === 0 && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              {t('list.useTemplate')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground">{t('list.useTemplateHint')}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              {templates.map((tpl: any) => {
+                const tr = tpl.list_template_translations?.find((tt: any) => tt.language === lang)
+                  || tpl.list_template_translations?.[0];
+                const label = tr?.name || tpl.name;
+                const isSel = selectedTemplateId === tpl.id;
+                return (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    disabled={loadingTemplate}
+                    onClick={() => loadTemplate(tpl.id)}
+                    className={`group relative flex flex-col items-center justify-center gap-2 p-3 rounded-md border-2 bg-background hover:border-primary hover:bg-primary/5 transition-colors text-center min-h-[88px] ${isSel ? 'border-primary' : 'border-border'}`}
+                  >
+                    {loadingTemplate && isSel ? (
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    ) : (
+                      <Heart className="h-6 w-6 text-primary" />
+                    )}
+                    <span className="text-xs font-medium line-clamp-2">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Products — only after list is created (step 2) */}
       {!listId ? (
         <Card className="border-dashed">
@@ -786,112 +896,95 @@ const MyBirthListPage: React.FC = () => {
         <CardHeader>
           <CardTitle className="text-base">{t('admin.listProducts')}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Template loader (only when list has no items/sections yet) */}
-          {templates.length > 0 && sections.length === 0 && form.items.length === 0 && (
-            <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <Label className="text-sm font-semibold">{t('list.useTemplate')}</Label>
-              </div>
-              <p className="text-xs text-muted-foreground">{t('list.useTemplateHint')}</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                {templates.map((tpl: any) => {
-                  const tr = tpl.list_template_translations?.find((tt: any) => tt.language === lang)
-                    || tpl.list_template_translations?.[0];
-                  const label = tr?.name || tpl.name;
-                  const isSel = selectedTemplateId === tpl.id;
-                  return (
-                    <button
-                      key={tpl.id}
-                      type="button"
-                      disabled={loadingTemplate}
-                      onClick={() => loadTemplate(tpl.id)}
-                      className={`group relative flex flex-col items-center justify-center gap-2 p-3 rounded-md border-2 bg-background hover:border-primary hover:bg-primary/5 transition-colors text-center min-h-[88px] ${isSel ? 'border-primary' : 'border-border'}`}
-                    >
-                      {loadingTemplate && isSel ? (
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      ) : (
-                        <Heart className="h-6 w-6 text-primary" />
-                      )}
-                      <span className="text-xs font-medium line-clamp-2">{label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+        <CardContent className="space-y-5">
+          {/* Sections composer + draggable bars */}
+          <div className="rounded-md border border-border p-3 space-y-3">
+            <Label className="text-sm font-semibold">{t('list.sections')}</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2">
+              <Input
+                value={newSectionCa}
+                placeholder={lang === 'es' ? 'Nombre sección (CA)' : 'Nom secció (CA)'}
+                onChange={e => setNewSectionCa(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSection(); } }}
+                className="h-9 text-sm"
+              />
+              <Input
+                value={newSectionEs}
+                placeholder={lang === 'es' ? 'Nombre sección (ES)' : 'Nom secció (ES)'}
+                onChange={e => setNewSectionEs(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSection(); } }}
+                className="h-9 text-sm"
+              />
+              <Button type="button" onClick={handleAddSection} className="gap-1">
+                <Plus className="h-4 w-4" /> {t('list.addSection')}
+              </Button>
             </div>
-          )}
 
-
-          {/* Sections manager */}
-          {true && (
-            <div className="rounded-md border border-border p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">{t('list.sections')}</Label>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setSections(prev => [...prev, {
-                    temp_id: `new-${Date.now()}-${prev.length}`,
-                    name_ca: '',
-                    name_es: '',
-                    sort_order: prev.length,
-                  }])}
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" /> {t('list.addSection')}
-                </Button>
-              </div>
-              {sections.length === 0 ? (
-                <p className="text-xs text-muted-foreground">{t('list.noSections')}</p>
-              ) : (
-                <div className="space-y-2">
-                  {sections.map((s, sIdx) => (
-                    <div key={s.temp_id} className="flex items-center gap-2">
-                      <Input
-                        value={s.name_ca}
-                        placeholder="Nom (CA)"
-                        onChange={e => setSections(prev => prev.map((x, i) => i === sIdx ? { ...x, name_ca: e.target.value } : x))}
-                        className="h-8 text-sm"
-                      />
-                      <Input
-                        value={s.name_es}
-                        placeholder="Nombre (ES)"
-                        onChange={e => setSections(prev => prev.map((x, i) => i === sIdx ? { ...x, name_es: e.target.value } : x))}
-                        className="h-8 text-sm"
-                      />
-                      <Button type="button" variant="ghost" size="icon"
-                        disabled={sIdx === 0}
-                        onClick={() => setSections(prev => {
-                          const next = [...prev];
-                          [next[sIdx - 1], next[sIdx]] = [next[sIdx], next[sIdx - 1]];
-                          return next.map((x, i) => ({ ...x, sort_order: i }));
-                        })}
-                      >↑</Button>
-                      <Button type="button" variant="ghost" size="icon"
-                        disabled={sIdx === sections.length - 1}
-                        onClick={() => setSections(prev => {
-                          const next = [...prev];
-                          [next[sIdx + 1], next[sIdx]] = [next[sIdx], next[sIdx + 1]];
-                          return next.map((x, i) => ({ ...x, sort_order: i }));
-                        })}
-                      >↓</Button>
-                      <Button type="button" variant="ghost" size="icon" onClick={() => {
-                        const removedId = sections[sIdx].temp_id;
-                        setSections(prev => prev.filter((_, i) => i !== sIdx));
-                        setForm(prev => ({
-                          ...prev,
-                          items: prev.items.map(it => it.section_temp_id === removedId ? { ...it, section_temp_id: null } : it),
-                        }));
-                      }}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
+            {sections.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t('list.noSections')}</p>
+            ) : (
+              <div className="space-y-1.5">
+                {sections.map(s => {
+                  const itemCount = form.items.filter(it => it.section_temp_id === s.temp_id).length;
+                  const isDragOver = dragOverSectionId === s.temp_id;
+                  const isDragging = draggedSectionId === s.temp_id;
+                  return (
+                    <div
+                      key={s.temp_id}
+                      draggable
+                      onDragStart={() => setDraggedSectionId(s.temp_id)}
+                      onDragEnd={() => { setDraggedSectionId(null); setDragOverSectionId(null); }}
+                      onDragOver={e => { e.preventDefault(); setDragOverSectionId(s.temp_id); }}
+                      onDragLeave={() => setDragOverSectionId(prev => prev === s.temp_id ? null : prev)}
+                      onDrop={e => {
+                        e.preventDefault();
+                        if (draggedSectionId && draggedSectionId !== s.temp_id) {
+                          reorderSections(draggedSectionId, s.temp_id);
+                        } else {
+                          const payload = productDragRef.current;
+                          if (payload?.kind === 'move') {
+                            assignItemSection(payload.itemIdx, s.temp_id);
+                          } else if (payload?.kind === 'add') {
+                            addProductToSection(payload.product, s.temp_id);
+                          }
+                        }
+                        productDragRef.current = null;
+                        setDragOverSectionId(null);
+                      }}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-md border-2 transition-colors ${
+                        isDragOver ? 'border-primary bg-primary/15' : 'border-primary/20 bg-primary/5'
+                      } ${isDragging ? 'opacity-50' : ''}`}
+                    >
+                      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab shrink-0" />
+                      <span className="text-sm font-medium flex-1 truncate">
+                        {(lang === 'es' ? s.name_es : s.name_ca) || '(?)'}
+                        {s.name_ca && s.name_es && s.name_ca !== s.name_es && (
+                          <span className="text-xs text-muted-foreground font-normal ml-2">
+                            / {lang === 'es' ? s.name_ca : s.name_es}
+                          </span>
+                        )}
+                      </span>
+                      <Badge variant="outline" className="text-[10px] shrink-0">{itemCount}</Badge>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => removeSection(s.temp_id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                  );
+                })}
+                <p className="text-[11px] text-muted-foreground pt-1">
+                  {lang === 'es'
+                    ? 'Arrastra una sección para reordenarla. Arrastra un producto sobre una sección para asignarlo.'
+                    : 'Arrossega una secció per reordenar-la. Arrossega un producte sobre una secció per assignar-lo.'}
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Product search */}
           <div className="relative">
@@ -937,7 +1030,6 @@ const MyBirthListPage: React.FC = () => {
             </button>
             {browseOpen && (
               <div className="border-t border-border p-3 space-y-3">
-                {/* Category filter */}
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     type="button"
@@ -961,12 +1053,11 @@ const MyBirthListPage: React.FC = () => {
                   })}
                 </div>
 
-                {/* Optional section assignment for newly added items */}
                 {sections.length > 0 && (
                   <p className="text-xs text-muted-foreground">
                     {lang === 'es'
-                      ? 'Los productos añadidos se podrán asignar a una sección abajo.'
-                      : 'Els productes afegits es podran assignar a una secció a sota.'}
+                      ? 'Haz clic para añadirlo o arrástralo sobre una sección de arriba.'
+                      : 'Fes clic per afegir-lo o arrossega’l sobre una secció de dalt.'}
                   </p>
                 )}
 
@@ -984,16 +1075,17 @@ const MyBirthListPage: React.FC = () => {
                       const img = imgs[0]?.image_url;
                       const added = form.items.some(it => it.product_id === p.id);
                       return (
-                        <button
+                        <div
                           key={p.id}
-                          type="button"
-                          onClick={() => addProduct(p)}
-                          disabled={added}
-                          className={`group relative flex flex-col items-stretch gap-1 p-2 rounded-md border-2 bg-background transition-colors text-left ${added ? 'border-primary/40 opacity-70 cursor-not-allowed' : 'border-border hover:border-primary hover:bg-primary/5'}`}
+                          draggable
+                          onDragStart={() => { productDragRef.current = { kind: 'add', product: p }; }}
+                          onDragEnd={() => { productDragRef.current = null; }}
+                          onClick={() => !added && addProduct(p)}
+                          className={`group relative flex flex-col items-stretch gap-1 p-2 rounded-md border-2 bg-background transition-colors text-left cursor-grab ${added ? 'border-primary/40 opacity-70 cursor-not-allowed' : 'border-border hover:border-primary hover:bg-primary/5'}`}
                         >
                           <div className="aspect-square w-full bg-muted rounded overflow-hidden flex items-center justify-center">
                             {img ? (
-                              <img src={img} alt={tr?.name || p.slug} className="w-full h-full object-cover" loading="lazy" />
+                              <img src={img} alt={tr?.name || p.slug} className="w-full h-full object-cover pointer-events-none" loading="lazy" />
                             ) : (
                               <Package className="h-6 w-6 text-muted-foreground" />
                             )}
@@ -1009,7 +1101,7 @@ const MyBirthListPage: React.FC = () => {
                               <Plus className="h-3 w-3" />
                             </span>
                           )}
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -1018,62 +1110,105 @@ const MyBirthListPage: React.FC = () => {
             )}
           </div>
 
-
-
+          {/* Items grouped by section */}
           {form.items.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">{t('list.emptyList')}</p>
           ) : (
-            <div className="space-y-2">
-              {form.items.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-3 p-3 border border-border rounded-md">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.productName}</p>
-                    {item.price !== undefined && (
-                      <p className="text-xs text-muted-foreground">{formatPrice(item.price)}</p>
+            <div className="space-y-4">
+              {[
+                ...sections.map(s => ({ temp_id: s.temp_id, label: (lang === 'es' ? s.name_es : s.name_ca) || '(?)' })),
+                { temp_id: '__none__', label: t('list.noSection') },
+              ].map(sec => {
+                const sectionItems = form.items
+                  .map((it, idx) => ({ it, idx }))
+                  .filter(({ it }) => sec.temp_id === '__none__' ? !it.section_temp_id : it.section_temp_id === sec.temp_id);
+                if (sec.temp_id === '__none__' && sectionItems.length === 0) return null;
+                return (
+                  <div key={sec.temp_id} className="space-y-2">
+                    <div
+                      onDragOver={sec.temp_id !== '__none__' ? undefined : (e => { e.preventDefault(); })}
+                      onDrop={sec.temp_id !== '__none__' ? undefined : (e => {
+                        e.preventDefault();
+                        const payload = productDragRef.current;
+                        if (payload?.kind === 'move') assignItemSection(payload.itemIdx, null);
+                        else if (payload?.kind === 'add') addProductToSection(payload.product, null);
+                        productDragRef.current = null;
+                      })}
+                      className="flex items-center gap-2 px-2 py-1.5 border-l-4 border-primary bg-muted/40 rounded"
+                    >
+                      <FolderOpen className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold flex-1 truncate">{sec.label}</span>
+                      <span className="text-xs text-muted-foreground">({sectionItems.length})</span>
+                    </div>
+                    {sectionItems.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic pl-3">
+                        {lang === 'es' ? 'Sin productos. Arrastra uno aquí.' : "Sense productes. Arrossega'n un aquí."}
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {sectionItems.map(({ it: item, idx }) => (
+                          <div
+                            key={idx}
+                            draggable
+                            onDragStart={() => { productDragRef.current = { kind: 'move', itemIdx: idx }; }}
+                            onDragEnd={() => { productDragRef.current = null; }}
+                            className="flex items-center gap-3 p-3 border border-border rounded-md bg-background"
+                          >
+                            <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{item.productName}</p>
+                              {item.price !== undefined && (
+                                <p className="text-xs text-muted-foreground">{formatPrice(item.price)}</p>
+                              )}
+                            </div>
+                            {sections.length > 0 && (
+                              <select
+                                value={item.section_temp_id || ''}
+                                onChange={e => assignItemSection(idx, e.target.value || null)}
+                                className="h-8 rounded-md border border-input bg-background px-2 text-xs max-w-[140px]"
+                              >
+                                <option value="">— {t('list.noSection')} —</option>
+                                {sections.map(s => (
+                                  <option key={s.temp_id} value={s.temp_id}>
+                                    {(lang === 'es' ? s.name_es : s.name_ca) || '(?)'}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                            <div className="w-20">
+                              <Input
+                                type="number"
+                                min={1}
+                                value={item.quantity_desired}
+                                onChange={e => updateItem(idx, 'quantity_desired', parseInt(e.target.value) || 1)}
+                                className="h-8"
+                              />
+                            </div>
+                            <Select value={item.priority} onValueChange={v => updateItem(idx, 'priority', v)}>
+                              <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="high">{t('list.priorityHigh')}</SelectItem>
+                                <SelectItem value="medium">{t('list.priorityMedium')}</SelectItem>
+                                <SelectItem value="low">{t('list.priorityLow')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button variant="ghost" size="icon" onClick={() => removeItem(idx)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  {sections.length > 0 && (
-                    <select
-                      value={item.section_temp_id || ''}
-                      onChange={e => assignItemSection(idx, e.target.value || null)}
-                      className="h-8 rounded-md border border-input bg-background px-2 text-xs max-w-[140px]"
-                    >
-                      <option value="">— {t('list.noSection')} —</option>
-                      {sections.map(s => (
-                        <option key={s.temp_id} value={s.temp_id}>
-                          {(lang === 'es' ? s.name_es : s.name_ca) || '(?)'}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                  <div className="w-20">
-                    <Input
-                      type="number"
-                      min={1}
-                      value={item.quantity_desired}
-                      onChange={e => updateItem(idx, 'quantity_desired', parseInt(e.target.value) || 1)}
-                      className="h-8"
-                    />
-                  </div>
-                  <Select value={item.priority} onValueChange={v => updateItem(idx, 'priority', v)}>
-                    <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="high">{t('list.priorityHigh')}</SelectItem>
-                      <SelectItem value="medium">{t('list.priorityMedium')}</SelectItem>
-                      <SelectItem value="low">{t('list.priorityLow')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button variant="ghost" size="icon" onClick={() => removeItem(idx)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
-
       </Card>
       )}
+
+
 
 
       <div className="flex justify-end">
