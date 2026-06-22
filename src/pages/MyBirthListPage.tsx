@@ -141,21 +141,47 @@ const MyBirthListPage: React.FC = () => {
 
 
 
-  // Load existing list owned by this user
-  const { data: existing, isLoading } = useQuery({
-    queryKey: ['my-birth-list', user?.id],
+  // All lists owned by this user (for the selector)
+  const { data: myLists = [], isLoading: listsLoading } = useQuery({
+    queryKey: ['my-birth-lists', user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
       const { data: ownerships } = await supabase
         .from('list_owners')
-        .select('list_id, first_name, last_name')
+        .select('list_id, first_name, last_name, birth_lists(id, list_code, baby_name, expected_date, status, created_at)')
         .eq('user_id', user!.id)
-        .limit(1);
-      if (!ownerships || ownerships.length === 0) return null;
+        .order('created_at', { ascending: false });
+      const rows = (ownerships || [])
+        .filter((o: any) => o.birth_lists)
+        .map((o: any) => ({
+          ...o.birth_lists,
+          first_name: o.first_name,
+          last_name: o.last_name,
+        }));
+      // Item counts
+      if (rows.length > 0) {
+        const ids = rows.map((r: any) => r.id);
+        const { data: items } = await supabase
+          .from('list_items')
+          .select('list_id')
+          .in('list_id', ids);
+        const counts: Record<string, number> = {};
+        (items || []).forEach((i: any) => { counts[i.list_id] = (counts[i.list_id] || 0) + 1; });
+        rows.forEach((r: any) => { r.item_count = counts[r.id] || 0; });
+      }
+      return rows;
+    },
+  });
 
-      const listIdLocal = ownerships[0].list_id;
-      const [{ data: list }, { data: items }, { data: secs }] = await Promise.all([
+  // Detail for the list currently being edited
+  const { data: existing, isLoading } = useQuery({
+    queryKey: ['my-birth-list-detail', editingListId],
+    enabled: !!editingListId,
+    queryFn: async () => {
+      const listIdLocal = editingListId!;
+      const [{ data: list }, { data: owner }, { data: items }, { data: secs }] = await Promise.all([
         supabase.from('birth_lists').select('*').eq('id', listIdLocal).single(),
+        supabase.from('list_owners').select('first_name, last_name').eq('list_id', listIdLocal).eq('user_id', user!.id).maybeSingle(),
         supabase
           .from('list_items')
           .select(`
@@ -170,10 +196,22 @@ const MyBirthListPage: React.FC = () => {
           .eq('list_id', listIdLocal)
           .order('sort_order', { ascending: true }),
       ]);
-      return { list, items: items || [], owner: ownerships[0], sections: secs || [] };
+      return { list, items: items || [], owner: owner || { first_name: '', last_name: '' }, sections: secs || [] };
     },
   });
 
+  // Decide initial view once lists are loaded
+  useEffect(() => {
+    if (initialViewSet || listsLoading) return;
+    if (myLists.length === 0) {
+      setView('editor');
+      setEditingListId(null);
+      resetEditor();
+    } else {
+      setView('list');
+    }
+    setInitialViewSet(true);
+  }, [listsLoading, myLists.length, initialViewSet]);
 
   useEffect(() => {
     if (existing?.list) {
@@ -186,8 +224,8 @@ const MyBirthListPage: React.FC = () => {
         expected_date: existing.list.expected_date || '',
         status: existing.list.status || 'draft',
         notes: existing.list.notes || '',
-        first_name: existing.owner.first_name || '',
-        last_name: existing.owner.last_name || '',
+        first_name: existing.owner?.first_name || '',
+        last_name: existing.owner?.last_name || '',
         items: (existing.items || []).map((item: any) => {
           const tr = item.product?.product_translations?.find((t: any) => t.language === lang)
             || item.product?.product_translations?.[0];
@@ -212,17 +250,9 @@ const MyBirthListPage: React.FC = () => {
         name_es: s.name_es,
         sort_order: s.sort_order,
       })));
-
-    } else if (existing === null && profile) {
-      // Pre-fill name from profile
-      const parts = (profile.full_name || '').trim().split(' ');
-      setForm(prev => ({
-        ...prev,
-        first_name: parts[0] || '',
-        last_name: parts.slice(1).join(' ') || '',
-      }));
     }
-  }, [existing, lang, profile]);
+  }, [existing, lang]);
+
 
   const handleProductSearch = async (query: string) => {
     setProductSearch(query);
