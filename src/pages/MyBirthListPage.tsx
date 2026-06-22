@@ -511,9 +511,113 @@ const MyBirthListPage: React.FC = () => {
     return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   }
 
+  if (listsLoading || (view === 'editor' && editingListId && isLoading)) {
+    return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  }
+
+  const atLimit = !isAdmin && myLists.length >= MAX_LISTS;
+
+  // ---------- LIST VIEW ----------
+  if (view === 'list') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <Heart className="h-6 w-6 text-primary" />
+            <div>
+              <h2 className="font-display text-2xl font-bold">{t('list.myLists')}</h2>
+              <p className="text-sm text-muted-foreground">
+                {t('list.listsCount', { count: myLists.length, max: MAX_LISTS })}
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={() => {
+              if (atLimit) return;
+              resetEditor();
+              setEditingListId(null);
+              setView('editor');
+            }}
+            disabled={atLimit}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" /> {t('list.createNew')}
+          </Button>
+        </div>
+
+        {atLimit && (
+          <Card className="border-destructive/40 bg-destructive/5">
+            <CardContent className="py-4 text-sm space-y-2">
+              <p className="font-medium text-destructive">{t('list.limitReached')}</p>
+              <p className="text-muted-foreground">{t('list.contactAdmin')}</p>
+              <a href="/contacte" className="inline-block text-primary underline text-sm">{t('nav.contact') || 'Contacte'}</a>
+            </CardContent>
+          </Card>
+        )}
+
+        {myLists.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">
+              <Heart className="h-8 w-8 mx-auto text-muted-foreground/60 mb-2" />
+              <p>{t('list.emptyList')}</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {myLists.map((l: any) => (
+              <Card key={l.id} className="hover:border-primary transition-colors">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">{l.baby_name || l.list_code}</p>
+                      <p className="font-mono text-xs text-muted-foreground truncate">{l.list_code}</p>
+                    </div>
+                    <Badge variant={l.status === 'active' ? 'default' : l.status === 'closed' ? 'secondary' : 'outline'}>
+                      {l.status === 'active' ? t('admin.statusActive') : l.status === 'closed' ? t('admin.statusClosed') : t('admin.statusDraft')}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    {l.expected_date && <p>{t('list.expectedDate')}: {l.expected_date}</p>}
+                    <p>{l.item_count || 0} {(l.item_count || 0) === 1 ? (lang === 'es' ? 'producto' : 'producte') : (lang === 'es' ? 'productos' : 'productes')}</p>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="flex-1"
+                      onClick={() => {
+                        setEditingListId(l.id);
+                        setListId(l.id);
+                        setView('editor');
+                      }}
+                    >
+                      {t('list.editList')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open(`/llista-naixement`, '_blank')}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ---------- EDITOR VIEW ----------
   // Determine current step: 1=create, 2=edit, 3=share
   const currentStep = !listId ? 1 : (form.status === 'active' || form.status === 'closed' ? 3 : 2);
   const steps = [
+    { n: 1, label: t('list.stepCreate') },
+    { n: 2, label: t('list.stepEdit') },
+    { n: 3, label: t('list.stepShare') },
+  ];
     { n: 1, label: t('list.stepCreate') },
     { n: 2, label: t('list.stepEdit') },
     { n: 3, label: t('list.stepShare') },
