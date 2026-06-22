@@ -859,8 +859,8 @@ const MyBirthListPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Templates picker — its own card, shown before the products card when empty */}
-      {listId && templates.length > 0 && sections.length === 0 && form.items.length === 0 && (
+      {/* Templates picker — shown before the products card while creating/editing an empty list */}
+      {templates.length > 0 && sections.length === 0 && form.items.length === 0 && (
         <Card className="border-primary/30 bg-primary/5">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -874,7 +874,7 @@ const MyBirthListPage: React.FC = () => {
               {templates.map((tpl: any) => {
                 const tr = tpl.list_template_translations?.find((tt: any) => tt.language === lang)
                   || tpl.list_template_translations?.[0];
-                const label = tr?.name || tpl.name;
+                const label = tr?.name || tpl.slug;
                 const isSel = selectedTemplateId === tpl.id;
                 return (
                   <button
@@ -898,16 +898,7 @@ const MyBirthListPage: React.FC = () => {
         </Card>
       )}
 
-      {/* Products — only after list is created (step 2) */}
-      {!listId ? (
-        <Card className="border-dashed">
-          <CardContent className="py-8 text-center text-sm text-muted-foreground space-y-2">
-            <Heart className="h-8 w-8 mx-auto text-muted-foreground/60" />
-            <p className="font-medium text-foreground">Desa primer les dades de la llista</p>
-            <p>Un cop creada la llista, podràs triar una plantilla i afegir-hi productes.</p>
-          </CardContent>
-        </Card>
-      ) : (
+      {/* Products */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">{t('admin.listProducts')}</CardTitle>
@@ -1260,7 +1251,6 @@ const MyBirthListPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
-      )}
 
 
 
