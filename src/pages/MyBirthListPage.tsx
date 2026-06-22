@@ -859,51 +859,45 @@ const MyBirthListPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Templates picker — shown before the products card while creating/editing an empty list */}
-      {templates.length > 0 && sections.length === 0 && form.items.length === 0 && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              {t('list.useTemplate')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-xs text-muted-foreground">{t('list.useTemplateHint')}</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {templates.map((tpl: any) => {
-                const tr = tpl.list_template_translations?.find((tt: any) => tt.language === lang)
-                  || tpl.list_template_translations?.[0];
-                const label = tr?.name || tpl.slug;
-                const isSel = selectedTemplateId === tpl.id;
-                return (
-                  <button
-                    key={tpl.id}
-                    type="button"
-                    disabled={loadingTemplate}
-                    onClick={() => loadTemplate(tpl.id)}
-                    className={`group relative flex flex-col items-center justify-center gap-2 p-3 rounded-md border-2 bg-background hover:border-primary hover:bg-primary/5 transition-colors text-center min-h-[88px] ${isSel ? 'border-primary' : 'border-border'}`}
-                  >
-                    {loadingTemplate && isSel ? (
-                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                    ) : (
-                      <Heart className="h-6 w-6 text-primary" />
-                    )}
-                    <span className="text-xs font-medium line-clamp-2">{label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Products */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">{t('admin.listProducts')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
+          {templates.length > 0 && sections.length === 0 && form.items.length === 0 && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <Sparkles className="h-4 w-4 text-primary" />
+                {t('list.useTemplate')}
+              </div>
+              <p className="text-xs text-muted-foreground">{t('list.useTemplateHint')}</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {templates.map((tpl: any) => {
+                  const tr = tpl.list_template_translations?.find((tt: any) => tt.language === lang)
+                    || tpl.list_template_translations?.[0];
+                  const label = tr?.name || tpl.slug;
+                  const isSel = selectedTemplateId === tpl.id;
+                  return (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      disabled={loadingTemplate}
+                      onClick={() => loadTemplate(tpl.id)}
+                      className={`group relative flex flex-col items-center justify-center gap-2 p-3 rounded-md border-2 bg-background hover:border-primary hover:bg-primary/5 transition-colors text-center min-h-[88px] ${isSel ? 'border-primary' : 'border-border'}`}
+                    >
+                      {loadingTemplate && isSel ? (
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      ) : (
+                        <Heart className="h-6 w-6 text-primary" />
+                      )}
+                      <span className="text-xs font-medium line-clamp-2">{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {/* Sections composer + draggable bars */}
           <div className="rounded-md border border-border p-3 space-y-3">
             <Label className="text-sm font-semibold">{t('list.sections')}</Label>
