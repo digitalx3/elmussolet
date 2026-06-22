@@ -52,7 +52,7 @@ const Footer: React.FC = () => {
 
   const logoUrl = settings?.logo_footer_url || logoSquare.url;
   const storeName = settings?.store_name || 'El Mussolet';
-  const about = settings?.[`footer_about_${lang}`] || '<br/><br/>🍼 Botiga de Puericultura Física i Online<br/>🌱 Roba de cotó orgànic i bambú<br/>🧸 Llistes de naixement personalitzades';
+  const about = settings?.[`footer_about_${lang}`] || '🍼Puericultura<br/>🌱Roba de cotó orgànic i bambú<br/>🧸Llistes de naixement';
   const bottom = settings?.[`footer_bottom_${lang}`] || `© ${year} ${storeName}. ${t('footer.rights')}.`;
 
   return (
@@ -61,33 +61,31 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-2">
-            <div className="flex items-center gap-4">
-              <img src={logoUrl} alt={storeName} className="h-20 w-auto shrink-0" />
-              <div className="space-y-2 text-sm text-muted-foreground">
-                {settings?.store_email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-primary" />
-                    <a href={`mailto:${settings.store_email}`} className="hover:text-primary">{settings.store_email}</a>
-                  </div>
-                )}
-                {settings?.store_phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-primary" />
-                    <a href={`tel:${settings.store_phone}`} className="hover:text-primary">{settings.store_phone}</a>
-                  </div>
-                )}
-                {settings?.store_address && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    <span>{settings.store_address}</span>
-                  </div>
-                )}
-              </div>
-            </div>
+            <img src={logoUrl} alt={storeName} className="h-20 w-auto mb-3" />
             <div
-              className="mt-4 text-sm text-muted-foreground leading-relaxed prose prose-sm max-w-none"
+              className="text-sm text-muted-foreground leading-relaxed prose prose-sm max-w-none"
               dangerouslySetInnerHTML={{ __html: about }}
             />
+            <div className="mt-4 space-y-2 text-sm text-muted-foreground">
+              {settings?.store_email && (
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-primary" />
+                  <a href={`mailto:${settings.store_email}`} className="hover:text-primary">{settings.store_email}</a>
+                </div>
+              )}
+              {settings?.store_phone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-primary" />
+                  <a href={`tel:${settings.store_phone}`} className="hover:text-primary">{settings.store_phone}</a>
+                </div>
+              )}
+              {settings?.store_address && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span>{settings.store_address}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Information / CMS pages */}
