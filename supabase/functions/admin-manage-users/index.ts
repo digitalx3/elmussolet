@@ -201,17 +201,26 @@ Deno.serve(async (req: Request) => {
 
     if (body.action === "restore") {
       if (!body.user_id) return json({ error: "user_id required" }, 400);
-      await admin.from("profiles").update({
-        deleted_at: null,
-        deleted_email: null,
-      }).eq("id", body.user_id);
+
+      // 1) Unban the auth user (remove ban_duration / banned_until)
       try {
         await admin.auth.admin.updateUserById(body.user_id, {
           ban_duration: "none",
         } as any);
       } catch (e) {
-        console.error("unban failed", e);
+        console.error("unban via admin API failed", e);
       }
+
+      // 2) Clear soft-delete markers on the profile so the email is freed
+      const { error: profErr } = await admin.from("profiles").update({
+        deleted_at: null,
+        deleted_email: null,
+      }).eq("id", body.user_id);
+      if (profErr) {
+        console.error("profile restore failed", profErr);
+        return json({ error: profErr.message }, 500);
+      }
+
       return json({ ok: true });
     }
 

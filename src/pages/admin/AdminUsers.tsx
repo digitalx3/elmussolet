@@ -68,6 +68,7 @@ const AdminUsers: React.FC = () => {
   const [editMode, setEditMode] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteMode, setDeleteMode] = useState<'soft' | 'hard' | null>(null);
+  const [restoreId, setRestoreId] = useState<string | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-users'],
@@ -184,7 +185,8 @@ const AdminUsers: React.FC = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('Usuari restaurat');
+      toast.success('Usuari restaurat. Ja pot iniciar sessió de nou.');
+      setRestoreId(null);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -301,9 +303,9 @@ const AdminUsers: React.FC = () => {
                     </Button>
                     {user.deleted_at ? (
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        onClick={() => restoreUser.mutate(user.id)}
+                        onClick={() => setRestoreId(user.id)}
                       >
                         Restaurar
                       </Button>
@@ -506,6 +508,26 @@ const AdminUsers: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Restore confirmation */}
+      <AlertDialog open={!!restoreId} onOpenChange={o => { if (!o) setRestoreId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restaurar usuari?</AlertDialogTitle>
+            <AlertDialogDescription>
+              L'usuari tornarà a estar actiu i podrà iniciar sessió de nou amb el seu email. Es desbloquejarà l'accés i s'alliberarà l'email reservat.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => restoreId && restoreUser.mutate(restoreId)}>
+              Restaurar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
 
 
       {/* User Detail Dialog */}
