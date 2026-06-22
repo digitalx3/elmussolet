@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Save, Upload, Monitor, Tablet, Smartphone, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import { optimizeImage } from '@/lib/optimizeImage';
 import HeroCanvasEditor, { defaultLayout, Layout, Device, FloatingImage, DEFAULT_FLOATING_BOX } from '@/components/admin/HeroCanvasEditor';
 import HeroSlideView, { Slide } from '@/components/home/HeroSlideView';
 import ImageUploader from '@/components/admin/ImageUploader';
@@ -77,12 +78,17 @@ const AdminHeroForm: React.FC = () => {
     if (Array.isArray(fi)) setFloatingImages(fi);
   }, [existing]);
 
-  const handleUpload = async (file: File) => {
+  const handleUpload = async (rawFile: File) => {
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
+      const file = rawFile.type === 'image/svg+xml'
+        ? rawFile
+        : await optimizeImage(rawFile, { maxDimension: 1920, quality: 0.85 });
+      const ext = file.name.split('.').pop() || 'webp';
       const path = `hero/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error } = await supabase.storage.from('site-assets').upload(path, file, { upsert: false });
+      const { error } = await supabase.storage
+        .from('site-assets')
+        .upload(path, file, { upsert: false, contentType: file.type });
       if (error) throw error;
       const { data } = supabase.storage.from('site-assets').getPublicUrl(path);
       setBgUrl(data.publicUrl);

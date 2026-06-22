@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, Pencil, Trash2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { optimizeImage } from '@/lib/optimizeImage';
 
 interface BrandRow {
   id: string;
@@ -54,12 +55,15 @@ const AdminBrands: React.FC = () => {
     },
   });
 
-  const uploadLogo = async (file: File): Promise<string> => {
-    const ext = file.name.split('.').pop();
+  const uploadLogo = async (rawFile: File): Promise<string> => {
+    const file = rawFile.type === 'image/svg+xml'
+      ? rawFile
+      : await optimizeImage(rawFile, { maxDimension: 600, quality: 0.9 });
+    const ext = file.name.split('.').pop() || 'webp';
     const fileName = `${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage
       .from('brand-logos')
-      .upload(fileName, file, { upsert: true });
+      .upload(fileName, file, { upsert: true, contentType: file.type });
     if (error) throw error;
     const { data: urlData } = supabase.storage
       .from('brand-logos')
