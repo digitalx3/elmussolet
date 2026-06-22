@@ -71,6 +71,29 @@ const MyBirthListPage: React.FC = () => {
   const [loadingTemplate, setLoadingTemplate] = useState(false);
   const [browseOpen, setBrowseOpen] = useState(false);
   const [browseCategory, setBrowseCategory] = useState<string>('all');
+  const [view, setView] = useState<'list' | 'editor'>('list');
+  const [editingListId, setEditingListId] = useState<string | null>(null);
+  const [initialViewSet, setInitialViewSet] = useState(false);
+
+  const MAX_LISTS = 10;
+  const isAdmin = profile?.role === 'admin';
+
+  const resetEditor = () => {
+    setListId(null);
+    setSections([]);
+    setForm({
+      list_code: generateCode(),
+      password: '',
+      baby_name: '',
+      expected_date: '',
+      status: 'draft',
+      notes: '',
+      first_name: profile?.full_name?.trim().split(' ')[0] || '',
+      last_name: profile?.full_name?.trim().split(' ').slice(1).join(' ') || '',
+      items: [],
+    });
+  };
+
 
   // Templates available to copy from (only relevant while creating)
   const { data: templates = [] } = useQuery({
