@@ -1161,9 +1161,17 @@ const MyBirthListPage: React.FC = () => {
                       </p>
                     ) : (
                       <div className="space-y-2">
-                        {sectionItems.map(({ it: item, idx }) => (
+                        {sectionItems.map(({ it: item, idx }) => {
+                          const isDragging = draggedItemIdx === idx;
+                          const isDropTarget = dragOverItemIdx === idx && draggedItemIdx !== null && draggedItemIdx !== idx;
+                          const showInsertAbove = isDropTarget && (draggedItemIdx as number) > idx;
+                          const showInsertBelow = isDropTarget && (draggedItemIdx as number) < idx;
+                          return (
+                          <div key={idx} className="relative">
+                            {showInsertAbove && (
+                              <div className="absolute -top-1 left-0 right-0 h-0.5 bg-primary rounded-full shadow-[0_0_0_2px_hsl(var(--primary)/0.25)] z-10 pointer-events-none" />
+                            )}
                           <div
-                            key={idx}
                             draggable
                             onDragStart={() => {
                               productDragRef.current = { kind: 'move', itemIdx: idx };
@@ -1189,11 +1197,11 @@ const MyBirthListPage: React.FC = () => {
                               setDraggedItemIdx(null);
                               setDragOverItemIdx(null);
                             }}
-                            className={`flex items-center gap-3 p-3 border rounded-md bg-background transition-colors ${
-                              dragOverItemIdx === idx ? 'border-primary border-2 bg-primary/5' : 'border-border'
-                            } ${draggedItemIdx === idx ? 'opacity-50' : ''}`}
+                            className={`flex items-center gap-3 p-3 border rounded-md bg-background transition-all ${
+                              isDropTarget ? 'border-primary border-2 bg-primary/5 ring-2 ring-primary/20' : 'border-border'
+                            } ${isDragging ? 'opacity-40 scale-[0.98] ring-2 ring-primary/40 shadow-lg cursor-grabbing' : 'cursor-grab hover:border-primary/40 hover:shadow-sm'}`}
                           >
-                            <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab shrink-0" />
+                            <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium truncate">{item.productName}</p>
                               {item.price !== undefined && (
