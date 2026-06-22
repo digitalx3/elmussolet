@@ -75,6 +75,8 @@ const MyBirthListPage: React.FC = () => {
   const [newSectionEs, setNewSectionEs] = useState('');
   const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
   const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
+  const [draggedItemIdx, setDraggedItemIdx] = useState<number | null>(null);
+  const [dragOverItemIdx, setDragOverItemIdx] = useState<number | null>(null);
   // Drag payload for products: either { itemIdx } (move existing) or { product } (add new)
   const productDragRef = React.useRef<{ kind: 'move'; itemIdx: number } | { kind: 'add'; product: any } | null>(null);
   const [view, setView] = useState<'list' | 'editor'>('list');
