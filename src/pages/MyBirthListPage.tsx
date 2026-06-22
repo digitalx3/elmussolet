@@ -807,6 +807,47 @@ const MyBirthListPage: React.FC = () => {
         </Card>
       )}
 
+      {/* Purchases summary */}
+      {listId && (purchases as any[]).length > 0 && (
+        <Card className="border-emerald-500/30 bg-emerald-500/5">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4 text-emerald-600" />
+              {lang === 'es' ? 'Compras de tu lista' : 'Compres de la teva llista'}
+              <Badge variant="secondary" className="ml-2">{(purchases as any[]).length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {lang === 'es'
+                ? 'Estas personas han comprado productos de tu lista. Encuentra el detalle de cada producto más abajo.'
+                : 'Aquestes persones han comprat productes de la teva llista. Trobaràs el detall de cada producte més avall.'}
+            </p>
+            <div className="space-y-1.5">
+              {(purchases as any[]).map((p: any, i: number) => (
+                <div key={i} className="flex items-center justify-between gap-2 p-2 bg-background border rounded-md text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="font-medium truncate">{p.buyer_full_name || (lang === 'es' ? '(sin nombre)' : '(sense nom)')}</span>
+                    <span className="text-muted-foreground font-mono shrink-0">#{p.order_number}</span>
+                  </div>
+                  <Badge
+                    variant={p.payment_status === 'paid' ? 'default' : p.payment_status === 'pending' ? 'secondary' : 'outline'}
+                    className="shrink-0 text-[10px]"
+                  >
+                    {p.payment_status === 'paid'
+                      ? (lang === 'es' ? 'Pagado' : 'Pagat')
+                      : p.payment_status === 'pending'
+                        ? (lang === 'es' ? 'Pendiente' : 'Pendent')
+                        : p.payment_status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Basic info */}
       <Card>
         <CardHeader><CardTitle className="text-base">{t('admin.listInfo')}</CardTitle></CardHeader>
