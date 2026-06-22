@@ -75,6 +75,8 @@ const MyBirthListPage: React.FC = () => {
   const [newSectionEs, setNewSectionEs] = useState('');
   const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
   const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
+  const [draggedItemIdx, setDraggedItemIdx] = useState<number | null>(null);
+  const [dragOverItemIdx, setDragOverItemIdx] = useState<number | null>(null);
   // Drag payload for products: either { itemIdx } (move existing) or { product } (add new)
   const productDragRef = React.useRef<{ kind: 'move'; itemIdx: number } | { kind: 'add'; product: any } | null>(null);
   const [view, setView] = useState<'list' | 'editor'>('list');
@@ -406,6 +408,19 @@ const MyBirthListPage: React.FC = () => {
       const [moved] = next.splice(from, 1);
       next.splice(to, 0, moved);
       return next.map((x, i) => ({ ...x, sort_order: i }));
+    });
+  };
+
+  const reorderItem = (fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx) return;
+    setForm(prev => {
+      if (fromIdx < 0 || toIdx < 0 || fromIdx >= prev.items.length || toIdx >= prev.items.length) return prev;
+      const next = [...prev.items];
+      const [moved] = next.splice(fromIdx, 1);
+      // Ensure dropped item keeps the target's section
+      moved.section_temp_id = next[toIdx]?.section_temp_id ?? moved.section_temp_id;
+      next.splice(toIdx, 0, moved);
+      return { ...prev, items: next.map((it, i) => ({ ...it, sort_order: i })) };
     });
   };
 
@@ -1150,9 +1165,33 @@ const MyBirthListPage: React.FC = () => {
                           <div
                             key={idx}
                             draggable
-                            onDragStart={() => { productDragRef.current = { kind: 'move', itemIdx: idx }; }}
-                            onDragEnd={() => { productDragRef.current = null; }}
-                            className="flex items-center gap-3 p-3 border border-border rounded-md bg-background"
+                            onDragStart={() => {
+                              productDragRef.current = { kind: 'move', itemIdx: idx };
+                              setDraggedItemIdx(idx);
+                            }}
+                            onDragEnd={() => {
+                              productDragRef.current = null;
+                              setDraggedItemIdx(null);
+                              setDragOverItemIdx(null);
+                            }}
+                            onDragOver={e => {
+                              if (draggedItemIdx === null || draggedItemIdx === idx) return;
+                              e.preventDefault();
+                              setDragOverItemIdx(idx);
+                            }}
+                            onDragLeave={() => setDragOverItemIdx(prev => prev === idx ? null : prev)}
+                            onDrop={e => {
+                              if (draggedItemIdx === null || draggedItemIdx === idx) return;
+                              e.preventDefault();
+                              e.stopPropagation();
+                              reorderItem(draggedItemIdx, idx);
+                              productDragRef.current = null;
+                              setDraggedItemIdx(null);
+                              setDragOverItemIdx(null);
+                            }}
+                            className={`flex items-center gap-3 p-3 border rounded-md bg-background transition-colors ${
+                              dragOverItemIdx === idx ? 'border-primary border-2 bg-primary/5' : 'border-border'
+                            } ${draggedItemIdx === idx ? 'opacity-50' : ''}`}
                           >
                             <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab shrink-0" />
                             <div className="flex-1 min-w-0">
