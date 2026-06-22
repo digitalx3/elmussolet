@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Heart, Plus, Trash2, Search, Copy, Eye, EyeOff, Share2, Loader2 } from 'lucide-react';
+import { Heart, Plus, Trash2, Search, Copy, Eye, EyeOff, Share2, Loader2, Sparkles, Package, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -69,6 +69,8 @@ const MyBirthListPage: React.FC = () => {
   const [sections, setSections] = useState<PendingSection[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [loadingTemplate, setLoadingTemplate] = useState(false);
+  const [browseOpen, setBrowseOpen] = useState(false);
+  const [browseCategory, setBrowseCategory] = useState<string>('all');
 
   // Templates available to copy from (only relevant while creating)
   const { data: templates = [] } = useQuery({
@@ -82,6 +84,38 @@ const MyBirthListPage: React.FC = () => {
       return data || [];
     },
   });
+
+  // Categories for browse filter
+  const { data: browseCategories = [] } = useQuery({
+    queryKey: ['birthlist-browse-cats'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('categories')
+        .select('id, slug, category_translations(language, name)')
+        .eq('is_active', true)
+        .order('sort_order');
+      return data || [];
+    },
+  });
+
+  // Browse products (loaded only when browseOpen)
+  const { data: browseProducts = [], isFetching: browseLoading } = useQuery({
+    queryKey: ['birthlist-browse-products', browseCategory],
+    enabled: browseOpen,
+    queryFn: async () => {
+      let q = supabase
+        .from('products')
+        .select(`id, base_price, slug, category_id, product_translations(language, name), product_images(image_url, is_primary, sort_order)`)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(60);
+      if (browseCategory !== 'all') q = q.eq('category_id', browseCategory);
+      const { data } = await q;
+      return data || [];
+    },
+  });
+
+
 
 
   // Load existing list owned by this user
@@ -217,15 +251,17 @@ const MyBirthListPage: React.FC = () => {
     }));
   };
 
-  const loadTemplate = async () => {
-    if (!selectedTemplateId) return;
+  const loadTemplate = async (templateIdArg?: string) => {
+    const tplId = templateIdArg || selectedTemplateId;
+    if (!tplId) return;
+    setSelectedTemplateId(tplId);
     setLoadingTemplate(true);
     try {
       const [{ data: secs }, { data: tplItems }] = await Promise.all([
         supabase
           .from('list_template_sections')
           .select('id, name_ca, name_es, sort_order')
-          .eq('template_id', selectedTemplateId)
+          .eq('template_id', tplId)
           .order('sort_order', { ascending: true }),
         supabase
           .from('list_template_items')
@@ -233,7 +269,7 @@ const MyBirthListPage: React.FC = () => {
             section_id, product_id, variant_id, quantity_desired, priority, sort_order,
             product:products(id, base_price, slug, product_translations(language, name))
           `)
-          .eq('template_id', selectedTemplateId)
+          .eq('template_id', tplId)
           .order('sort_order', { ascending: true }),
       ]);
 
@@ -587,34 +623,39 @@ const MyBirthListPage: React.FC = () => {
         <CardContent className="space-y-4">
           {/* Template loader (only when list has no items/sections yet) */}
           {templates.length > 0 && sections.length === 0 && form.items.length === 0 && (
-            <div className="rounded-md border border-dashed border-primary/40 bg-primary/5 p-3 space-y-2">
-              <Label className="text-sm">{t('list.useTemplate')}</Label>
-              <div className="flex gap-2">
-                <select
-                  value={selectedTemplateId}
-                  onChange={e => setSelectedTemplateId(e.target.value)}
-                  className="flex-1 h-9 rounded-md border border-input bg-background px-2 text-sm"
-                >
-                  <option value="">— {t('common.select') || '...'} —</option>
-                  {templates.map((tpl: any) => {
-                    const tr = tpl.list_template_translations?.find((tt: any) => tt.language === lang)
-                      || tpl.list_template_translations?.[0];
-                    return <option key={tpl.id} value={tpl.id}>{tr?.name || tpl.name}</option>;
-                  })}
-                </select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!selectedTemplateId || loadingTemplate}
-                  onClick={loadTemplate}
-                >
-                  {loadingTemplate && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-                  {t('list.loadTemplate')}
-                </Button>
+            <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <Label className="text-sm font-semibold">{t('list.useTemplate')}</Label>
               </div>
               <p className="text-xs text-muted-foreground">{t('list.useTemplateHint')}</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {templates.map((tpl: any) => {
+                  const tr = tpl.list_template_translations?.find((tt: any) => tt.language === lang)
+                    || tpl.list_template_translations?.[0];
+                  const label = tr?.name || tpl.name;
+                  const isSel = selectedTemplateId === tpl.id;
+                  return (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      disabled={loadingTemplate}
+                      onClick={() => loadTemplate(tpl.id)}
+                      className={`group relative flex flex-col items-center justify-center gap-2 p-3 rounded-md border-2 bg-background hover:border-primary hover:bg-primary/5 transition-colors text-center min-h-[88px] ${isSel ? 'border-primary' : 'border-border'}`}
+                    >
+                      {loadingTemplate && isSel ? (
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      ) : (
+                        <Heart className="h-6 w-6 text-primary" />
+                      )}
+                      <span className="text-xs font-medium line-clamp-2">{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
+
 
           {/* Sections manager */}
           {true && (
@@ -714,6 +755,104 @@ const MyBirthListPage: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Browse products with thumbnails */}
+          <div className="rounded-md border border-border">
+            <button
+              type="button"
+              onClick={() => setBrowseOpen(v => !v)}
+              className="w-full flex items-center justify-between gap-2 p-3 text-sm font-medium hover:bg-muted/50"
+            >
+              <span className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-primary" />
+                {lang === 'es' ? 'Explorar productos del catálogo' : 'Explorar productes del catàleg'}
+              </span>
+              {browseOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+            {browseOpen && (
+              <div className="border-t border-border p-3 space-y-3">
+                {/* Category filter */}
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setBrowseCategory('all')}
+                    className={`px-2.5 py-1 rounded-full text-xs border ${browseCategory === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:bg-muted'}`}
+                  >
+                    {lang === 'es' ? 'Todas' : 'Totes'}
+                  </button>
+                  {browseCategories.map((c: any) => {
+                    const tr = c.category_translations?.find((tt: any) => tt.language === lang) || c.category_translations?.[0];
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setBrowseCategory(c.id)}
+                        className={`px-2.5 py-1 rounded-full text-xs border ${browseCategory === c.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:bg-muted'}`}
+                      >
+                        {tr?.name || c.slug}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Optional section assignment for newly added items */}
+                {sections.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {lang === 'es'
+                      ? 'Los productos añadidos se podrán asignar a una sección abajo.'
+                      : 'Els productes afegits es podran assignar a una secció a sota.'}
+                  </p>
+                )}
+
+                {browseLoading ? (
+                  <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                ) : browseProducts.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">
+                    {lang === 'es' ? 'No hay productos en esta categoría.' : 'No hi ha productes en aquesta categoria.'}
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-[480px] overflow-y-auto pr-1">
+                    {browseProducts.map((p: any) => {
+                      const tr = p.product_translations?.find((tt: any) => tt.language === lang) || p.product_translations?.[0];
+                      const imgs = (p.product_images || []).slice().sort((a: any, b: any) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order || 0) - (b.sort_order || 0));
+                      const img = imgs[0]?.image_url;
+                      const added = form.items.some(it => it.product_id === p.id);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => addProduct(p)}
+                          disabled={added}
+                          className={`group relative flex flex-col items-stretch gap-1 p-2 rounded-md border-2 bg-background transition-colors text-left ${added ? 'border-primary/40 opacity-70 cursor-not-allowed' : 'border-border hover:border-primary hover:bg-primary/5'}`}
+                        >
+                          <div className="aspect-square w-full bg-muted rounded overflow-hidden flex items-center justify-center">
+                            {img ? (
+                              <img src={img} alt={tr?.name || p.slug} className="w-full h-full object-cover" loading="lazy" />
+                            ) : (
+                              <Package className="h-6 w-6 text-muted-foreground" />
+                            )}
+                          </div>
+                          <span className="text-xs font-medium line-clamp-2">{tr?.name || p.slug}</span>
+                          <span className="text-[11px] text-muted-foreground">{formatPrice(p.base_price)}</span>
+                          {added ? (
+                            <span className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                              <Check className="h-3 w-3" />
+                            </span>
+                          ) : (
+                            <span className="absolute top-1 right-1 bg-background/90 border border-border rounded-full p-0.5 opacity-0 group-hover:opacity-100">
+                              <Plus className="h-3 w-3" />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+
 
           {form.items.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">{t('list.emptyList')}</p>
