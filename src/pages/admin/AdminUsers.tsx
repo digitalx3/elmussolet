@@ -509,6 +509,26 @@ const AdminUsers: React.FC = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Restore confirmation */}
+      <AlertDialog open={!!restoreId} onOpenChange={o => { if (!o) setRestoreId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restaurar usuari?</AlertDialogTitle>
+            <AlertDialogDescription>
+              L'usuari tornarà a estar actiu i podrà iniciar sessió de nou amb el seu email. Es desbloquejarà l'accés i s'alliberarà l'email reservat.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => restoreId && restoreUser.mutate(restoreId)}>
+              Restaurar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
+
 
       {/* User Detail Dialog */}
       <Dialog open={!!detailUser} onOpenChange={() => setDetailUser(null)}>
