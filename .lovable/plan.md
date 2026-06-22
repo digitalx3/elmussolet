@@ -1,66 +1,73 @@
-# Pla — Lot 4
+# Múltiples listas de nacimiento por usuario (máx. 10)
 
-Quatre blocs independents. Els implemento en una sola tongada si ho confirmes.
+Actualmente `MyBirthListPage` solo carga **una** lista por usuario (la primera que encuentra en `list_owners`). Para soportar hasta 10 listas por cliente, hay que refactorizar la página y añadir un selector.
 
----
+## 1. UI: nueva pantalla "Les meves llistes"
 
-## 1) Servidor SMTP propi (admin + enviament real)
+En `/compte/llista-naixement` (`MyBirthListPage.tsx`):
 
-**Backend**
-- Nova taula `smtp_settings` (única fila): `host`, `port`, `username`, `from_email`, `from_name`, `security` (`none|ssl|tls|starttls`), `password_encrypted`, `is_active`.
-- RLS: només admins poden llegir/escriure.
-- La contrasenya s'escriu des de l'admin però **no es retorna mai** al client (columna marcada i la query d'admin omet `password_encrypted`; un endpoint dedicat la desa via service role).
+- Al entrar, si el usuario tiene **0 listas** → mostrar formulario de creación directamente (como ahora cuando `existing === null`).
+- Si tiene **1 o más** → mostrar al inicio una rejilla de tarjetas con todas sus listas:
+  - Cada tarjeta: nombre del bebé (o código), código de lista, estado (esborrany/activa/tancada), nº de productos, fecha esperada.
+  - Botón "Editar" → abre el editor de esa lista.
+  - Botón "Veure pública" → abre la vista pública.
+- Botón superior "Crear nova llista":
+  - Si `count < 10` (o usuario es admin) → abre el editor en modo creación con un nuevo `list_code`.
+  - Si `count >= 10` y NO es admin → botón deshabilitado + mensaje: "Has arribat al màxim de 10 llistes. Contacta amb l'administrador per crear-ne més." con enlace a `/contacte`.
+- Mientras se está editando/creando una lista concreta, mostrar un botón "← Tornar a les meves llistes" para volver al listado.
 
-**Edge Function** `send-smtp-email`
-- Llegeix la fila activa de `smtp_settings` amb service role.
-- Envia via `denomailer` (SMTP/STARTTLS/SSL natiu Deno, sense dependències npm).
-- Reemplaça l'ús actual de Resend a `send-contact-email` i `send-order-status-email` per aquest nou enviament unificat.
+## 2. Estado interno
 
-**Admin UI** — nova pestanya "Correu / SMTP" a Configuració:
-- Camps: Servidor, Port, Usuari, Contrasenya (write-only), Seguretat (select), Email remitent, Nom remitent, Actiu.
-- Botó "Provar enviament" que invoca la funció amb un destinatari de prova.
+`MyBirthListPage` añade:
+- `view: 'list' | 'editor'` (por defecto `'list'` si hay listas, `'editor'` si no hay ninguna).
+- `editingListId: string | null` (null = creando nueva).
+- Query `useQuery(['my-birth-lists', user.id])` que devuelve **todas** las listas del usuario (en lugar de `.limit(1)`).
+- La query existente que carga una lista concreta se filtra por `editingListId` cuando `view === 'editor'`.
 
-> Nota: la contrasenya viatja per HTTPS al desar, queda emmagatzemada xifrada en repòs per Postgres però llegible per la funció. És la forma habitual per a SMTP gestionable des d'UI.
+El flujo de guardado actual ya cubre crear y actualizar; solo hay que asegurar que al pulsar "Crear nova llista" se reseteen `listId`, `form` y `sections`.
 
----
+## 3. Lógica de límite (frontend + backend)
 
-## 2) Editor HTML per pàgines legals (AdminPages)
+**Frontend:** desactivar el botón "Crear nova llista" cuando `lists.length >= 10` y el perfil no es admin.
 
-- Al `RichTextEditor` afegir botó toggle **"</> Codi font"** que canvia entre vista WYSIWYG i `<textarea>` amb el HTML cru.
-- En desar des de vista codi, es guarda tal com està (permet enganxar HTML existent de pàgines actuals).
-- Sanititzat al render públic amb una whitelist permissiva (`DOMPurify` ja disponible al projecte, o el sanititzador actual si n'hi ha).
+**Backend (seguridad real):** añadir un trigger `BEFORE INSERT` en `birth_lists` que cuente las listas del `auth.uid()` en `list_owners` (vía función `SECURITY DEFINER`) y lance error si supera 10, excepto si `public.is_admin(auth.uid())` es `true`. Así no se puede saltar el límite por API.
 
----
+```sql
+CREATE OR REPLACE FUNCTION public.enforce_birth_list_limit()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  uid uuid := auth.uid();
+  cnt int;
+BEGIN
+  IF uid IS NULL OR public.is_admin(uid) THEN
+    RETURN NEW;
+  END IF;
+  SELECT count(*) INTO cnt FROM public.list_owners WHERE user_id = uid;
+  IF cnt >= 10 THEN
+    RAISE EXCEPTION 'BIRTH_LIST_LIMIT_REACHED' USING HINT = 'Max 10 lists per user';
+  END IF;
+  RETURN NEW;
+END $$;
 
-## 3) Tipografia headings que no s'aplica
+CREATE TRIGGER birth_lists_limit
+BEFORE INSERT ON public.birth_lists
+FOR EACH ROW EXECUTE FUNCTION public.enforce_birth_list_limit();
+```
 
-**Diagnòstic ràpid (a fer abans):** comprovar `AppearanceInjector.tsx` per veure si injecta variables CSS de `font_heading` i si `index.css`/`tailwind.config.ts` les fan servir a `h1..h6`.
+El frontend captura el error `BIRTH_LIST_LIMIT_REACHED` y muestra el mensaje correspondiente.
 
-**Fix esperat**
-- Garantir que la font de heading es carrega via Google Fonts loader.
-- Afegir CSS global:
-  ```css
-  h1,h2,h3,h4,h5,h6,.font-display { font-family: var(--font-heading, var(--font-display, serif)); }
-  body { font-family: var(--font-body, system-ui, sans-serif); }
-  ```
-- Assegurar que els `<h1>`/`<h2>` del frontend no porten `font-display` hardcoded que els bloquegi.
+## 4. Traducciones
 
----
+Añadir en `ca.json` / `es.json` bajo `list`:
+- `myLists`, `createNew`, `backToLists`, `limitReached`, `contactAdmin`, `listsCount`, `editList`.
 
-## 4) Ubicació de les pàgines CMS al frontend
+## 5. Fuera de alcance
 
-- Afegir camps a la taula `pages` (o `cms_pages`): `menu_location` (`none|header|footer`), `menu_order` (int), `is_published` (bool).
-- Al formulari d'admin de pàgines: selector "Ubicació al menú" (Cap / Menú superior / Peu de pàgina) + ordre.
-- `Header.tsx` carrega pàgines amb `menu_location='header'` i les pinta com a enllaços `/p/{slug}`.
-- `Footer.tsx` afegeix una columna "Informació" amb pàgines `menu_location='footer'`.
-- Ruta pública `/p/:slug` ja existeix (`CmsPagePage`); si no, la creo.
+- No se toca el panel admin (`AdminBirthListList`): el admin sigue creando sin límite desde allí.
+- No se modifica la vista pública ni el carrito.
 
----
+## Resumen de archivos
 
-## Ordre d'execució suggerit
-1. Pàgines CMS al menú (ràpid, alt impacte visual).
-2. Fix tipografia headings.
-3. Vista HTML a l'editor.
-4. SMTP propi (més feina; necessita migració + edge function + UI).
-
-Confirma-ho i ho faig **tot seguit**. Si vols saltar-te algun bloc, indica-m'ho.
+- `src/pages/MyBirthListPage.tsx` — refactor a vista lista + editor.
+- `src/locales/ca.json`, `src/locales/es.json` — nuevas claves.
+- Nueva migración SQL: trigger de límite en `birth_lists`.
