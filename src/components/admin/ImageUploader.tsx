@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { optimizeImage } from '@/lib/optimizeImage';
 
 interface Props {
   value: string;
@@ -25,17 +26,23 @@ const ImageUploader: React.FC<Props> = ({
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = async (file: File) => {
-    if (!file) return;
-    if (file.size > 4 * 1024 * 1024) {
-      toast.error('Màxim 4 MB');
+  const handleFile = async (rawFile: File) => {
+    if (!rawFile) return;
+    if (rawFile.size > 10 * 1024 * 1024) {
+      toast.error('Màxim 10 MB');
       return;
     }
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop() || 'png';
+      // Don't re-encode SVGs (vector); optimize raster images.
+      const file = rawFile.type === 'image/svg+xml'
+        ? rawFile
+        : await optimizeImage(rawFile, { maxDimension: 1200, quality: 0.85 });
+      const ext = file.name.split('.').pop() || 'webp';
       const path = `${pathPrefix}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error } = await supabase.storage.from('site-assets').upload(path, file, { upsert: false });
+      const { error } = await supabase.storage
+        .from('site-assets')
+        .upload(path, file, { upsert: false, contentType: file.type });
       if (error) throw error;
       const { data } = supabase.storage.from('site-assets').getPublicUrl(path);
       onChange(data.publicUrl);

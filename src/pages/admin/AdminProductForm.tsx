@@ -18,6 +18,7 @@ import { useAdminProduct, useSaveProduct, useVariantTypes, type ProductFormData 
 import { useCategories } from '@/hooks/useCategories';
 import { useBrands } from '@/hooks/useBrands';
 import { useActiveTaxRates, priceWithTax } from '@/hooks/useTaxRates';
+import { optimizeImage } from '@/lib/optimizeImage';
 
 const emptyTranslation = { name: '', short_description: '', description: '' };
 
