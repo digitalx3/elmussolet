@@ -185,7 +185,8 @@ const AdminUsers: React.FC = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('Usuari restaurat');
+      toast.success('Usuari restaurat. Ja pot iniciar sessió de nou.');
+      setRestoreId(null);
     },
     onError: (e: any) => toast.error(e.message),
   });
