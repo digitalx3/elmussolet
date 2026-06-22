@@ -1165,9 +1165,33 @@ const MyBirthListPage: React.FC = () => {
                           <div
                             key={idx}
                             draggable
-                            onDragStart={() => { productDragRef.current = { kind: 'move', itemIdx: idx }; }}
-                            onDragEnd={() => { productDragRef.current = null; }}
-                            className="flex items-center gap-3 p-3 border border-border rounded-md bg-background"
+                            onDragStart={() => {
+                              productDragRef.current = { kind: 'move', itemIdx: idx };
+                              setDraggedItemIdx(idx);
+                            }}
+                            onDragEnd={() => {
+                              productDragRef.current = null;
+                              setDraggedItemIdx(null);
+                              setDragOverItemIdx(null);
+                            }}
+                            onDragOver={e => {
+                              if (draggedItemIdx === null || draggedItemIdx === idx) return;
+                              e.preventDefault();
+                              setDragOverItemIdx(idx);
+                            }}
+                            onDragLeave={() => setDragOverItemIdx(prev => prev === idx ? null : prev)}
+                            onDrop={e => {
+                              if (draggedItemIdx === null || draggedItemIdx === idx) return;
+                              e.preventDefault();
+                              e.stopPropagation();
+                              reorderItem(draggedItemIdx, idx);
+                              productDragRef.current = null;
+                              setDraggedItemIdx(null);
+                              setDragOverItemIdx(null);
+                            }}
+                            className={`flex items-center gap-3 p-3 border rounded-md bg-background transition-colors ${
+                              dragOverItemIdx === idx ? 'border-primary border-2 bg-primary/5' : 'border-border'
+                            } ${draggedItemIdx === idx ? 'opacity-50' : ''}`}
                           >
                             <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab shrink-0" />
                             <div className="flex-1 min-w-0">
