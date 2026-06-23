@@ -1250,8 +1250,9 @@ const MyBirthListPage: React.FC = () => {
                   : (lang === 'es' ? 'Cargando plantilla…' : 'Carregant plantilla…')}
               </div>
             </div>
-          ) : form.items.length === 0 ? (
+          ) : form.items.length === 0 && sections.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">{t('list.emptyList')}</p>
+
           ) : (
             <div className="space-y-4">
               {[
