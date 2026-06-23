@@ -778,10 +778,26 @@ const MyBirthListPage: React.FC = () => {
     }
   };
 
-  const copy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(`${label} ${t('list.copied')}`);
+  const copy = async (text: string, label: string) => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      toast.success(`${label} ${t('list.copied')}`);
+    } catch {
+      toast.error(lang === 'es' ? 'No se pudo copiar' : 'No s\'ha pogut copiar');
+    }
   };
+
 
   const shareWhatsApp = () => {
     const message = t('list.shareMessage', {
