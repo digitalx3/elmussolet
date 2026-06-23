@@ -1395,6 +1395,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_list_block_summary: {
+        Args: { _list_id: string }
+        Returns: {
+          delivered_qty: number
+          list_item_id: string
+          reserved_qty: number
+        }[]
+      }
       get_list_purchases: {
         Args: { _list_id: string }
         Returns: {
