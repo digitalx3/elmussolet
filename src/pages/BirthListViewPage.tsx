@@ -103,7 +103,7 @@ const BirthListViewPage: React.FC = () => {
           if (item.variant_id) {
             const { data: v } = await supabase
               .from('product_variants')
-              .select('id, value, price_override, variant_type_id')
+              .select('id, value, price_override, stock_quantity, variant_type_id')
               .eq('id', item.variant_id)
               .single();
             variant = v;
