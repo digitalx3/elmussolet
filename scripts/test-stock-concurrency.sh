@@ -82,8 +82,8 @@ wait $PID_B || true
 echo "----- TX A output -----"; cat "$TMP/a.out"
 echo "----- TX B output -----"; cat "$TMP/b.out"
 
-OK_COUNT=$(grep -lc "INSERT 0 1" "$TMP/a.out" "$TMP/b.out" 2>/dev/null | awk '{s+=$1} END{print s+0}')
-FAIL_COUNT=$(grep -lc "STOCK_INSUFFICIENT" "$TMP/a.out" "$TMP/b.out" 2>/dev/null | awk '{s+=$1} END{print s+0}')
+OK_COUNT=$(grep -h "INSERT 0 1" "$TMP/a.out" "$TMP/b.out" | wc -l)
+FAIL_COUNT=$(grep -h "STOCK_INSUFFICIENT" "$TMP/a.out" "$TMP/b.out" | wc -l)
 
 echo
 echo "Successful inserts: $OK_COUNT"
