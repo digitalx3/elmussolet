@@ -57,6 +57,7 @@ const BirthListViewPage: React.FC = () => {
   const { addListItem } = useCart();
   const [items, setItems] = useState<ListItemWithProduct[]>([]);
   const [sections, setSections] = useState<ListSection[]>([]);
+  const [blockSummary, setBlockSummary] = useState<Record<string, { reserved: number; delivered: number }>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const lang = i18n.language === 'es' ? 'es' : 'ca';
