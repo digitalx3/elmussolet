@@ -913,15 +913,21 @@ const MyBirthListPage: React.FC = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => copy(l.list_code, t('list.listCode'))}
-                    title={t('list.listCode')}
+                    onClick={() => {
+                      setSharingList({ id: l.id, code: l.list_code, babyName: l.baby_name || '' });
+                      setSharePassword('');
+                      setShowSharePassword(false);
+                      setView('share');
+                    }}
+                    title={lang === 'es' ? 'Compartir' : 'Compartir'}
                   >
-                    <Copy className="h-4 w-4" />
+                    <Share2 className="h-4 w-4" />
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => window.open(`/llista-naixement`, '_blank')}
+                    onClick={() => window.open(`/llista-naixement?code=${encodeURIComponent(l.list_code)}`, '_blank')}
+                    title={lang === 'es' ? 'Ver' : 'Veure'}
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
