@@ -78,7 +78,7 @@ const BirthListViewPage: React.FC = () => {
           .select(`
             id, product_id, variant_id, section_id, quantity_desired, quantity_purchased, priority, sort_order,
             product:products(
-              id, slug, base_price, has_variants,
+              id, slug, base_price, has_variants, stock_quantity, stock_status,
               product_translations(language, name, short_description),
               product_images(image_url, is_primary, alt_text),
               tax_rates(percentage)
