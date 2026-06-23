@@ -19,6 +19,7 @@ interface OrderItem {
   id: string;
   product_id: string;
   variant_id: string | null;
+  list_item_id: string | null;
   quantity: number;
   unit_price: number;
   base_unit_price: number | null;
@@ -39,6 +40,8 @@ interface Order {
   tax_amount: number | null;
   total: number;
   delivery_method: string | null;
+  list_id: string | null;
+  birth_lists?: { baby_name: string | null; list_code: string } | null;
   order_items: OrderItem[];
 }
 
@@ -199,7 +202,7 @@ function OrdersTab() {
     (async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_items(*, products(product_translations(name, language)))')
+        .select('*, birth_lists(baby_name, list_code), order_items(*, products(product_translations(name, language)))')
         .order('created_at', { ascending: false });
       if (!error && data) {
         setOrders(data as unknown as Order[]);
@@ -260,39 +263,76 @@ function OrdersTab() {
 
             {expanded && (
               <CardContent className="pt-0 border-t">
-                {/* Items table */}
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('account.orderProduct')}</TableHead>
-                        <TableHead className="text-right">{t('account.orderQty')}</TableHead>
-                        <TableHead className="text-right">{t('account.orderBasePrice')}</TableHead>
-                        <TableHead className="text-right">{t('account.orderTaxPct')}</TableHead>
-                        <TableHead className="text-right">{t('account.orderTaxAmt')}</TableHead>
-                        <TableHead className="text-right">{t('account.orderTotal')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {order.order_items.map(item => {
-                        const translations = (item as any).products?.product_translations;
-                        const name = Array.isArray(translations)
-                          ? (translations.find((t: any) => t.language === lang)?.name || translations[0]?.name || item.product_id)
-                          : item.product_id;
-                        return (
-                          <TableRow key={item.id}>
-                            <TableCell className="font-medium">{name}</TableCell>
-                            <TableCell className="text-right">{item.quantity}</TableCell>
-                            <TableCell className="text-right">{formatPrice((item.base_unit_price ?? item.unit_price) * item.quantity)}</TableCell>
-                            <TableCell className="text-right">{item.tax_percentage ?? 0}%</TableCell>
-                            <TableCell className="text-right">{formatPrice(item.tax_amount ?? 0)}</TableCell>
-                            <TableCell className="text-right font-semibold">{formatPrice(item.total_price)}</TableCell>
+                {(() => {
+                  const listItems = order.order_items.filter(i => i.list_item_id);
+                  const standardItems = order.order_items.filter(i => !i.list_item_id);
+                  const babyName = order.birth_lists?.baby_name;
+                  const listCode = order.birth_lists?.list_code;
+
+                  const renderTable = (items: OrderItem[]) => (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t('account.orderProduct')}</TableHead>
+                            <TableHead className="text-right">{t('account.orderQty')}</TableHead>
+                            <TableHead className="text-right">{t('account.orderBasePrice')}</TableHead>
+                            <TableHead className="text-right">{t('account.orderTaxPct')}</TableHead>
+                            <TableHead className="text-right">{t('account.orderTaxAmt')}</TableHead>
+                            <TableHead className="text-right">{t('account.orderTotal')}</TableHead>
                           </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+                        </TableHeader>
+                        <TableBody>
+                          {items.map(item => {
+                            const translations = (item as any).products?.product_translations;
+                            const name = Array.isArray(translations)
+                              ? (translations.find((t: any) => t.language === lang)?.name || translations[0]?.name || item.product_id)
+                              : item.product_id;
+                            return (
+                              <TableRow key={item.id}>
+                                <TableCell className="font-medium">{name}</TableCell>
+                                <TableCell className="text-right">{item.quantity}</TableCell>
+                                <TableCell className="text-right">{formatPrice((item.base_unit_price ?? item.unit_price) * item.quantity)}</TableCell>
+                                <TableCell className="text-right">{item.tax_percentage ?? 0}%</TableCell>
+                                <TableCell className="text-right">{formatPrice(item.tax_amount ?? 0)}</TableCell>
+                                <TableCell className="text-right font-semibold">{formatPrice(item.total_price)}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  );
+
+                  return (
+                    <div className="space-y-6">
+                      {listItems.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2 mt-2 flex-wrap">
+                            <Heart className="h-4 w-4 text-primary" />
+                            <h4 className="font-semibold text-sm">
+                              {t('cart.listCart')}
+                              {babyName ? ` · ${babyName}` : ''}
+                            </h4>
+                            {listCode && (
+                              <Badge variant="outline" className="text-xs font-mono">{listCode}</Badge>
+                            )}
+                          </div>
+                          {renderTable(listItems)}
+                        </div>
+                      )}
+                      {standardItems.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2 mt-2">
+                            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                            <h4 className="font-semibold text-sm">{t('cart.standardCart')}</h4>
+                          </div>
+                          {renderTable(standardItems)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Tax breakdown summary */}
                 <div className="mt-4 space-y-1 text-sm border-t pt-4">
