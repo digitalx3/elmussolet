@@ -14,7 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { Search, Eye, X } from 'lucide-react';
+import { Search, Eye, X, Pencil, Trash2, Plus, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ca, es } from 'date-fns/locale';
