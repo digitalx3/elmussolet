@@ -764,6 +764,18 @@ const MyBirthListPage: React.FC = () => {
     return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   }
 
+  if (listsError) {
+    return (
+      <Card className="border-destructive/40 bg-destructive/5">
+        <CardContent className="py-4 text-sm text-destructive">
+          {lang === 'es'
+            ? 'No se han podido cargar tus listas. Vuelve a intentarlo en unos segundos.'
+            : 'No s\'han pogut carregar les teves llistes. Torna-ho a intentar d\'aquí uns segons.'}
+        </CardContent>
+      </Card>
+    );
+  }
+
   const atLimit = !isAdmin && myLists.length >= MAX_LISTS;
 
   const goToCreateChoice = () => {
