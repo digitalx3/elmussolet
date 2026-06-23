@@ -1259,7 +1259,6 @@ const MyBirthListPage: React.FC = () => {
                                 <p className="text-xs text-muted-foreground">{formatPrice(item.price)}</p>
                               )}
                               {(() => {
-                                const itemPurchases = item.id ? (purchasesByItem[item.id] || []) : [];
                                 if (itemPurchases.length === 0) {
                                   return (
                                     <p className="text-[11px] text-muted-foreground italic mt-1">
@@ -1275,6 +1274,11 @@ const MyBirthListPage: React.FC = () => {
                                         <Check className="h-3 w-3 mr-0.5" />
                                         {lang === 'es' ? `Comprado: ${totalQty}/${item.quantity_desired}` : `Comprat: ${totalQty}/${item.quantity_desired}`}
                                       </Badge>
+                                      {hasPaid && (
+                                        <Badge variant="outline" className="text-[10px] border-amber-500 text-amber-700">
+                                          {lang === 'es' ? '🔒 Bloqueado (pago confirmado)' : '🔒 Bloquejat (pagament confirmat)'}
+                                        </Badge>
+                                      )}
                                     </div>
                                     <div className="flex flex-col gap-0.5">
                                       {itemPurchases.map((p: any, i: number) => (
@@ -1300,7 +1304,8 @@ const MyBirthListPage: React.FC = () => {
                               <select
                                 value={item.section_temp_id || ''}
                                 onChange={e => assignItemSection(idx, e.target.value || null)}
-                                className="h-8 rounded-md border border-input bg-background px-2 text-xs max-w-[140px]"
+                                disabled={hasPaid}
+                                className="h-8 rounded-md border border-input bg-background px-2 text-xs max-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <option value="">— {t('list.noSection')} —</option>
                                 {sections.map(s => (
@@ -1316,10 +1321,12 @@ const MyBirthListPage: React.FC = () => {
                                 min={1}
                                 value={item.quantity_desired}
                                 onChange={e => updateItem(idx, 'quantity_desired', parseInt(e.target.value) || 1)}
+                                disabled={hasPaid}
+                                title={hasPaid ? (lang === 'es' ? 'No editable: hay compras pagadas' : 'No editable: hi ha compres pagades') : undefined}
                                 className="h-8"
                               />
                             </div>
-                            <Select value={item.priority} onValueChange={v => updateItem(idx, 'priority', v)}>
+                            <Select value={item.priority} onValueChange={v => updateItem(idx, 'priority', v)} disabled={hasPaid}>
                               <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="high">{t('list.priorityHigh')}</SelectItem>
@@ -1327,7 +1334,13 @@ const MyBirthListPage: React.FC = () => {
                                 <SelectItem value="low">{t('list.priorityLow')}</SelectItem>
                               </SelectContent>
                             </Select>
-                            <Button variant="ghost" size="icon" onClick={() => removeItem(idx)}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeItem(idx)}
+                              disabled={hasPaid}
+                              title={hasPaid ? (lang === 'es' ? 'No se puede eliminar: hay compras pagadas' : 'No es pot eliminar: hi ha compres pagades') : undefined}
+                            >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
