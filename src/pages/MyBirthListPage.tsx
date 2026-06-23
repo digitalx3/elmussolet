@@ -161,18 +161,19 @@ const MyBirthListPage: React.FC = () => {
     queryKey: ['my-birth-lists', user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { data: ownerships } = await supabase
+      const { data: ownerships, error } = await supabase
         .from('list_owners')
         .select('list_id, first_name, last_name, birth_lists(id, list_code, baby_name, expected_date, status, created_at)')
-        .eq('user_id', user!.id)
-        .order('created_at', { ascending: false });
+        .eq('user_id', user!.id);
+      if (error) throw error;
       const rows = (ownerships || [])
         .filter((o: any) => o.birth_lists)
         .map((o: any) => ({
           ...o.birth_lists,
           first_name: o.first_name,
           last_name: o.last_name,
-        }));
+        }))
+        .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
       // Item counts
       if (rows.length > 0) {
         const ids = rows.map((r: any) => r.id);
@@ -598,6 +599,7 @@ const MyBirthListPage: React.FC = () => {
     setSaving(true);
     try {
       let currentId = listId;
+      const wasCreating = !currentId;
       let passwordHash: string | undefined;
 
       if (form.password.trim()) {
@@ -711,6 +713,10 @@ const MyBirthListPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['my-birth-list-detail', currentId] });
       toast.success(t('common.success'));
       setForm(prev => ({ ...prev, password: '' }));
+      if (wasCreating) {
+        setEditingListId(null);
+        setView('list');
+      }
     } catch (err: any) {
       toast.error(err.message || t('errors.generic'));
     } finally {
