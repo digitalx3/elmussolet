@@ -64,6 +64,7 @@ const ProductDetailPage: React.FC = () => {
       taxPercentage: taxPct,
       quantity,
       variantLabel: selectedVariant?.value,
+      ...(isGiftMode && giftItemId ? { listItemId: giftItemId } : {}),
     };
     if (isGiftMode && giftListId) {
       addListItem(payload, giftListId);

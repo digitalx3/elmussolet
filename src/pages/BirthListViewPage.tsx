@@ -57,6 +57,7 @@ const BirthListViewPage: React.FC = () => {
   const { addListItem } = useCart();
   const [items, setItems] = useState<ListItemWithProduct[]>([]);
   const [sections, setSections] = useState<ListSection[]>([]);
+  const [blockSummary, setBlockSummary] = useState<Record<string, { reserved: number; delivered: number }>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const lang = i18n.language === 'es' ? 'es' : 'ca';
@@ -113,6 +114,14 @@ const BirthListViewPage: React.FC = () => {
       );
 
       setItems(withVariants);
+
+      // Fetch block summary (reserved vs delivered per list_item)
+      const { data: summary } = await supabase.rpc('get_list_block_summary', { _list_id: listId! });
+      const map: Record<string, { reserved: number; delivered: number }> = {};
+      (summary || []).forEach((r: any) => {
+        if (r.list_item_id) map[r.list_item_id] = { reserved: r.reserved_qty ?? 0, delivered: r.delivered_qty ?? 0 };
+      });
+      setBlockSummary(map);
     } catch {
       toast.error(t('errors.generic'));
     } finally {
@@ -164,6 +173,7 @@ const BirthListViewPage: React.FC = () => {
     addListItem({
       productId: item.product_id,
       variantId: item.variant_id || undefined,
+      listItemId: item.id,
       name: getProductName(item) + (item.variant ? ` (${item.variant.value})` : ''),
       image: getProductImage(item),
       price: getPrice(item),
@@ -302,16 +312,41 @@ const BirthListViewPage: React.FC = () => {
                         return null;
                       })()}
                     </div>
-                    {status === 'purchased' && (
-                      <Badge variant="secondary" className="flex-shrink-0 gap-1">
-                        <Check className="h-3 w-3" />{t('list.purchased')}
-                      </Badge>
-                    )}
-                    {status === 'partial' && (
-                      <Badge variant="outline" className="flex-shrink-0 gap-1 border-accent text-accent">
-                        <Minus className="h-3 w-3" />{item.quantity_purchased}/{item.quantity_desired}
-                      </Badge>
-                    )}
+                    {(() => {
+                      const summary = blockSummary[item.id] || { reserved: 0, delivered: 0 };
+                      const reservedLabel = lang === 'es' ? 'Reservado' : 'Reservat';
+                      const deliveredLabel = lang === 'es' ? 'Entregado' : 'Entregat';
+                      const badges: JSX.Element[] = [];
+                      if (summary.delivered > 0) {
+                        badges.push(
+                          <Badge key="delivered" variant="secondary" className="flex-shrink-0 gap-1">
+                            <Check className="h-3 w-3" />{deliveredLabel} ({summary.delivered})
+                          </Badge>
+                        );
+                      }
+                      if (summary.reserved > 0) {
+                        badges.push(
+                          <Badge key="reserved" variant="outline" className="flex-shrink-0 gap-1 border-warm text-warm-foreground bg-warm/20">
+                            <Minus className="h-3 w-3" />{reservedLabel} ({summary.reserved})
+                          </Badge>
+                        );
+                      }
+                      if (badges.length === 0 && status === 'partial') {
+                        badges.push(
+                          <Badge key="partial" variant="outline" className="flex-shrink-0 gap-1 border-accent text-accent">
+                            <Minus className="h-3 w-3" />{item.quantity_purchased}/{item.quantity_desired}
+                          </Badge>
+                        );
+                      }
+                      if (badges.length === 0 && status === 'purchased') {
+                        badges.push(
+                          <Badge key="purchased" variant="secondary" className="flex-shrink-0 gap-1">
+                            <Check className="h-3 w-3" />{t('list.purchased')}
+                          </Badge>
+                        );
+                      }
+                      return <div className="flex flex-col gap-1 items-end">{badges}</div>;
+                    })()}
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-xs text-muted-foreground">
