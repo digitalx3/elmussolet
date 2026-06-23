@@ -726,22 +726,9 @@ const MyBirthListPage: React.FC = () => {
     if (atLimit) return;
     resetEditor();
     setEditingListId(null);
-    if (customBabyName.trim()) {
-      setForm(prev => ({ ...prev, baby_name: customBabyName.trim() }));
-    }
-    const ca = customSectionCa.trim();
-    const es = customSectionEs.trim();
-    if (ca || es) {
-      setSections([{
-        temp_id: `new-${Date.now()}-0`,
-        name_ca: ca || es,
-        name_es: es || ca,
-        sort_order: 0,
-      }]);
-    }
-    setBrowseOpen(true);
     setView('editor');
   };
+
 
   const startFromTemplate = async (tplId: string) => {
     if (atLimit) return;
