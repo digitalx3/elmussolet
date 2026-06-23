@@ -1835,6 +1835,30 @@ const MyBirthListPage: React.FC = () => {
           {listId ? t('common.save') : t('list.createList')}
         </Button>
       </div>
+
+      <AlertDialog open={!!deletingList} onOpenChange={(o) => !o && !deleting && setDeletingList(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{lang === 'es' ? 'Eliminar lista' : 'Eliminar llista'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {lang === 'es'
+                ? `Esta acción eliminará permanentemente la lista "${deletingList?.label ?? ''}", sus productos y secciones. No se puede deshacer.`
+                : `Aquesta acció eliminarà permanentment la llista "${deletingList?.label ?? ''}", els seus productes i seccions. No es pot desfer.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{t('common.cancel') || (lang === 'es' ? 'Cancelar' : 'Cancel·lar')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDeleteList(); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {lang === 'es' ? 'Eliminar' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
