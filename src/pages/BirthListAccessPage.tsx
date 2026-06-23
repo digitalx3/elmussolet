@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Heart, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,9 +14,16 @@ const BirthListAccessPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { setAccess } = useListAccess();
+  const [searchParams] = useSearchParams();
   const [listCode, setListCode] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const code = searchParams.get('code');
+    if (code) setListCode(code.trim().toUpperCase());
+  }, [searchParams]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

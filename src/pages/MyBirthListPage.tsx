@@ -82,8 +82,11 @@ const MyBirthListPage: React.FC = () => {
   const [dragOverItemIdx, setDragOverItemIdx] = useState<number | null>(null);
   // Drag payload for products: either { itemIdx } (move existing) or { product } (add new)
   const productDragRef = React.useRef<{ kind: 'move'; itemIdx: number } | { kind: 'add'; product: any } | null>(null);
-  const [view, setView] = useState<'list' | 'create-choice' | 'editor'>('list');
+  const [view, setView] = useState<'list' | 'create-choice' | 'editor' | 'share'>('list');
   const [editingListId, setEditingListId] = useState<string | null>(null);
+  const [sharingList, setSharingList] = useState<{ id: string; code: string; babyName: string } | null>(null);
+  const [sharePassword, setSharePassword] = useState('');
+  const [showSharePassword, setShowSharePassword] = useState(false);
   const [initialViewSet, setInitialViewSet] = useState(false);
   const [customBabyName, setCustomBabyName] = useState('');
   const [customSectionCa, setCustomSectionCa] = useState('');
@@ -853,8 +856,131 @@ const MyBirthListPage: React.FC = () => {
     await loadTemplate(tplId);
   };
 
+  // ---------- SHARE VIEW ----------
+  if (view === 'share' && sharingList) {
+    const shareUrl = `${window.location.origin}/llista-naixement?code=${encodeURIComponent(sharingList.code)}`;
+    const pwd = sharePassword.trim();
+    const fullMessage = lang === 'es'
+      ? `Hola! Te comparto ${sharingList.babyName ? `la lista de nacimiento de ${sharingList.babyName}` : 'nuestra lista de nacimiento'} en El Mussolet:\n\n${shareUrl}\n\nContraseña: ${pwd || '[escribe aquí tu contraseña]'}\n\nGracias!`
+      : `Hola! Et comparteixo ${sharingList.babyName ? `la llista de naixement de ${sharingList.babyName}` : 'la nostra llista de naixement'} a El Mussolet:\n\n${shareUrl}\n\nContrasenya: ${pwd || '[escriu aquí la teva contrasenya]'}\n\nGràcies!`;
+    return (
+      <div className="space-y-6 max-w-2xl">
+        <div className="flex items-center gap-3">
+          <Share2 className="h-6 w-6 text-primary" />
+          <div>
+            <h2 className="font-display text-2xl font-bold">
+              {lang === 'es' ? 'Compartir tu lista' : 'Compartir la teva llista'}
+            </h2>
+            <p className="text-sm text-muted-foreground font-mono">{sharingList.code}</p>
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="py-6 space-y-5 text-sm">
+            <p>
+              {lang === 'es'
+                ? 'Para compartir tu lista, copia el enlace con el botón de abajo y envíaselo a tus conocidos. También deberás indicarles la contraseña que configuraste para tu lista.'
+                : 'Per compartir la teva llista, copia l\'enllaç amb el botó de sota i envia\'l als teus coneguts. També hauràs d\'indicar-los la contrasenya que vas configurar per a la teva llista.'}
+            </p>
+
+            <div className="space-y-2">
+              <Label>{lang === 'es' ? 'Enlace de tu lista' : 'Enllaç de la teva llista'}</Label>
+              <div className="flex gap-2">
+                <Input value={shareUrl} readOnly className="font-mono text-xs" />
+                <Button type="button" variant="outline" onClick={() => copy(shareUrl, lang === 'es' ? 'Enlace' : 'Enllaç')} className="gap-2">
+                  <Copy className="h-4 w-4" />
+                  {lang === 'es' ? 'Copiar' : 'Copiar'}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {lang === 'es'
+                  ? 'El código de la lista ya va incluido en el enlace; quien lo abra solo tendrá que escribir la contraseña.'
+                  : 'El codi de la llista ja va inclòs a l\'enllaç; qui l\'obri només haurà d\'escriure la contrasenya.'}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{lang === 'es' ? 'Contraseña de tu lista' : 'Contrasenya de la teva llista'}</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    type={showSharePassword ? 'text' : 'password'}
+                    value={sharePassword}
+                    onChange={(e) => setSharePassword(e.target.value)}
+                    placeholder={lang === 'es' ? 'Escribe la contraseña que configuraste' : 'Escriu la contrasenya que vas configurar'}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSharePassword(v => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label={showSharePassword ? 'Hide' : 'Show'}
+                  >
+                    {showSharePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => pwd && copy(pwd, lang === 'es' ? 'Contraseña' : 'Contrasenya')}
+                  disabled={!pwd}
+                  className="gap-2"
+                >
+                  <Copy className="h-4 w-4" />
+                  {lang === 'es' ? 'Copiar' : 'Copiar'}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {lang === 'es'
+                  ? 'Por seguridad no guardamos la contraseña en texto plano: escríbela aquí para incluirla en el mensaje a compartir.'
+                  : 'Per seguretat no desem la contrasenya en text pla: escriu-la aquí per incloure-la al missatge a compartir.'}
+              </p>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-2">
+              <Label>{lang === 'es' ? 'Mensaje listo para WhatsApp o email' : 'Missatge llest per WhatsApp o email'}</Label>
+              <Textarea value={fullMessage} readOnly rows={7} className="font-mono text-xs" />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  onClick={() => copy(fullMessage, lang === 'es' ? 'Mensaje' : 'Missatge')}
+                  className="gap-2"
+                >
+                  <Copy className="h-4 w-4" />
+                  {lang === 'es' ? 'Copiar mensaje completo' : 'Copiar missatge complet'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(fullMessage)}`, '_blank')}
+                  className="gap-2"
+                >
+                  {lang === 'es' ? 'Abrir en WhatsApp' : 'Obrir a WhatsApp'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => window.open(`mailto:?subject=${encodeURIComponent(lang === 'es' ? 'Mi lista de nacimiento - El Mussolet' : 'La meva llista de naixement - El Mussolet')}&body=${encodeURIComponent(fullMessage)}`, '_self')}
+                  className="gap-2"
+                >
+                  {lang === 'es' ? 'Enviar por email' : 'Enviar per email'}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Button variant="outline" onClick={() => { setView('list'); setSharingList(null); }}>
+          {lang === 'es' ? '← Volver a mis listas' : '← Tornar a les meves llistes'}
+        </Button>
+      </div>
+    );
+  }
+
   // ---------- LIST VIEW ----------
   if (view === 'list' || view === 'create-choice') {
+
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
@@ -910,15 +1036,21 @@ const MyBirthListPage: React.FC = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => copy(l.list_code, t('list.listCode'))}
-                    title={t('list.listCode')}
+                    onClick={() => {
+                      setSharingList({ id: l.id, code: l.list_code, babyName: l.baby_name || '' });
+                      setSharePassword('');
+                      setShowSharePassword(false);
+                      setView('share');
+                    }}
+                    title={lang === 'es' ? 'Compartir' : 'Compartir'}
                   >
-                    <Copy className="h-4 w-4" />
+                    <Share2 className="h-4 w-4" />
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => window.open(`/llista-naixement`, '_blank')}
+                    onClick={() => window.open(`/llista-naixement?code=${encodeURIComponent(l.list_code)}`, '_blank')}
+                    title={lang === 'es' ? 'Ver' : 'Veure'}
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
