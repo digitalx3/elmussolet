@@ -25,6 +25,7 @@ interface ListItem {
   sort_order: number;
   productName?: string;
   price?: number;
+  image_url?: string | null;
   section_id?: string | null;
   section_temp_id?: string | null;
 }
@@ -80,9 +81,12 @@ const MyBirthListPage: React.FC = () => {
   const [dragOverItemIdx, setDragOverItemIdx] = useState<number | null>(null);
   // Drag payload for products: either { itemIdx } (move existing) or { product } (add new)
   const productDragRef = React.useRef<{ kind: 'move'; itemIdx: number } | { kind: 'add'; product: any } | null>(null);
-  const [view, setView] = useState<'list' | 'editor'>('list');
+  const [view, setView] = useState<'list' | 'create-choice' | 'editor'>('list');
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [initialViewSet, setInitialViewSet] = useState(false);
+  const [customBabyName, setCustomBabyName] = useState('');
+  const [customSectionCa, setCustomSectionCa] = useState('');
+  const [customSectionEs, setCustomSectionEs] = useState('');
 
   const MAX_LISTS = 10;
   const isAdmin = profile?.role === 'admin';
@@ -197,7 +201,7 @@ const MyBirthListPage: React.FC = () => {
           .from('list_items')
           .select(`
             id, product_id, variant_id, section_id, quantity_desired, priority, sort_order,
-            product:products(id, base_price, product_translations(language, name))
+            product:products(id, base_price, product_translations(language, name), product_images(image_url, is_primary, sort_order))
           `)
           .eq('list_id', listIdLocal)
           .order('sort_order', { ascending: true }),
@@ -235,13 +239,7 @@ const MyBirthListPage: React.FC = () => {
   // Decide initial view once lists are loaded
   useEffect(() => {
     if (initialViewSet || listsLoading) return;
-    if (myLists.length === 0) {
-      setView('editor');
-      setEditingListId(null);
-      resetEditor();
-    } else {
-      setView('list');
-    }
+    setView('list');
     setInitialViewSet(true);
   }, [listsLoading, myLists.length, initialViewSet]);
 
@@ -261,6 +259,8 @@ const MyBirthListPage: React.FC = () => {
         items: (existing.items || []).map((item: any) => {
           const tr = item.product?.product_translations?.find((t: any) => t.language === lang)
             || item.product?.product_translations?.[0];
+          const imgs = (item.product?.product_images || []).slice().sort((a: any, b: any) =>
+            (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order || 0) - (b.sort_order || 0));
           return {
             id: item.id,
             product_id: item.product_id,
@@ -270,6 +270,7 @@ const MyBirthListPage: React.FC = () => {
             sort_order: item.sort_order,
             productName: tr?.name || item.product_id,
             price: item.product?.base_price,
+            image_url: imgs[0]?.image_url || null,
             section_id: item.section_id || null,
             section_temp_id: item.section_id || null,
           };
@@ -291,7 +292,7 @@ const MyBirthListPage: React.FC = () => {
     if (query.trim().length < 2) { setSearchResults([]); return; }
     const { data } = await supabase
       .from('products')
-      .select(`id, base_price, slug, product_translations(language, name)`)
+      .select(`id, base_price, slug, product_translations(language, name), product_images(image_url, is_primary, sort_order)`)
       .eq('is_active', true)
       .limit(20);
     const filtered = (data || []).filter(p => {
@@ -300,6 +301,12 @@ const MyBirthListPage: React.FC = () => {
       return tr?.name?.toLowerCase().includes(query.toLowerCase());
     });
     setSearchResults(filtered);
+  };
+
+  const pickProductImage = (product: any): string | null => {
+    const imgs = (product?.product_images || []).slice().sort((a: any, b: any) =>
+      (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order || 0) - (b.sort_order || 0));
+    return imgs[0]?.image_url || null;
   };
 
   const addProduct = (product: any) => {
@@ -319,6 +326,7 @@ const MyBirthListPage: React.FC = () => {
         sort_order: prev.items.length,
         productName: tr?.name || product.slug,
         price: product.base_price,
+        image_url: pickProductImage(product),
       }],
     }));
     setProductSearch('');
@@ -352,7 +360,7 @@ const MyBirthListPage: React.FC = () => {
           .from('list_template_items')
           .select(`
             section_id, product_id, variant_id, quantity, sort_order,
-            product:products(id, base_price, slug, product_translations(language, name))
+            product:products(id, base_price, slug, product_translations(language, name), product_images(image_url, is_primary, sort_order))
           `)
           .eq('template_id', tplId)
           .order('sort_order', { ascending: true }),
@@ -376,6 +384,7 @@ const MyBirthListPage: React.FC = () => {
           sort_order: idx,
           productName: tr?.name || it.product?.slug || it.product_id,
           price: it.product?.base_price,
+          image_url: pickProductImage(it.product),
           section_temp_id: it.section_id ? `tpl-${it.section_id}` : null,
         };
       });
@@ -547,6 +556,7 @@ const MyBirthListPage: React.FC = () => {
         sort_order: prev.items.length,
         productName: tr?.name || product.slug,
         price: product.base_price,
+        image_url: pickProductImage(product),
         section_temp_id: sectionTempId,
       }],
     }));
@@ -701,32 +711,58 @@ const MyBirthListPage: React.FC = () => {
 
   const atLimit = !isAdmin && myLists.length >= MAX_LISTS;
 
+  const goToCreateChoice = () => {
+    if (atLimit) return;
+    resetEditor();
+    setEditingListId(null);
+    setSelectedTemplateId('');
+    setCustomBabyName('');
+    setCustomSectionCa('');
+    setCustomSectionEs('');
+    setView('create-choice');
+  };
+
+  const startCustomList = () => {
+    if (atLimit) return;
+    resetEditor();
+    setEditingListId(null);
+    if (customBabyName.trim()) {
+      setForm(prev => ({ ...prev, baby_name: customBabyName.trim() }));
+    }
+    const ca = customSectionCa.trim();
+    const es = customSectionEs.trim();
+    if (ca || es) {
+      setSections([{
+        temp_id: `new-${Date.now()}-0`,
+        name_ca: ca || es,
+        name_es: es || ca,
+        sort_order: 0,
+      }]);
+    }
+    setBrowseOpen(true);
+    setView('editor');
+  };
+
+  const startFromTemplate = async (tplId: string) => {
+    if (atLimit) return;
+    resetEditor();
+    setEditingListId(null);
+    setView('editor');
+    await loadTemplate(tplId);
+  };
+
   // ---------- LIST VIEW ----------
-  if (view === 'list') {
+  if (view === 'list' || view === 'create-choice') {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <Heart className="h-6 w-6 text-primary" />
-            <div>
-              <h2 className="font-display text-2xl font-bold">{t('list.myLists')}</h2>
-              <p className="text-sm text-muted-foreground">
-                {t('list.listsCount', { count: myLists.length, max: MAX_LISTS })}
-              </p>
-            </div>
+        <div className="flex items-center gap-3">
+          <Heart className="h-6 w-6 text-primary" />
+          <div>
+            <h2 className="font-display text-2xl font-bold">{t('list.myLists')}</h2>
+            <p className="text-sm text-muted-foreground">
+              {t('list.listsCount', { count: myLists.length, max: MAX_LISTS })}
+            </p>
           </div>
-          <Button
-            onClick={() => {
-              if (atLimit) return;
-              resetEditor();
-              setEditingListId(null);
-              setView('editor');
-            }}
-            disabled={atLimit}
-            className="gap-2"
-          >
-            <Plus className="h-4 w-4" /> {t('list.createNew')}
-          </Button>
         </div>
 
         {atLimit && (
@@ -739,60 +775,196 @@ const MyBirthListPage: React.FC = () => {
           </Card>
         )}
 
-        {myLists.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              <Heart className="h-8 w-8 mx-auto text-muted-foreground/60 mb-2" />
-              <p>{t('list.emptyList')}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {myLists.map((l: any) => (
+            <Card key={l.id} className="hover:border-primary transition-colors">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-display font-semibold truncate">{l.baby_name || l.list_code}</p>
+                    <p className="font-mono text-xs text-muted-foreground truncate">{l.list_code}</p>
+                  </div>
+                  <Badge variant={l.status === 'active' ? 'default' : l.status === 'closed' ? 'secondary' : 'outline'}>
+                    {l.status === 'active' ? t('admin.statusActive') : l.status === 'closed' ? t('admin.statusClosed') : t('admin.statusDraft')}
+                  </Badge>
+                </div>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  {l.expected_date && <p>{t('list.expectedDate')}: {l.expected_date}</p>}
+                  <p className="flex items-center gap-1"><Package className="h-3 w-3" />{l.item_count || 0} {(l.item_count || 0) === 1 ? (lang === 'es' ? 'producto' : 'producte') : (lang === 'es' ? 'productos' : 'productes')}</p>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="flex-1"
+                    onClick={() => {
+                      setEditingListId(l.id);
+                      setListId(l.id);
+                      setView('editor');
+                    }}
+                  >
+                    {t('list.editList')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copy(l.list_code, t('list.listCode'))}
+                    title={t('list.listCode')}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => window.open(`/llista-naixement`, '_blank')}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {!atLimit && (
+            <button
+              type="button"
+              onClick={goToCreateChoice}
+              className={`group flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed bg-background hover:bg-primary/5 hover:border-primary transition-colors min-h-[180px] ${view === 'create-choice' ? 'border-primary bg-primary/5' : 'border-primary/40'}`}
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                <Plus className="h-5 w-5" />
+              </span>
+              <span className="font-display font-semibold">{t('list.createNew')}</span>
+              <span className="text-xs text-muted-foreground text-center">
+                {lang === 'es' ? 'Empieza desde una plantilla o crea una personalizada' : 'Comença des d\'una plantilla o crea\'n una personalitzada'}
+              </span>
+            </button>
+          )}
+        </div>
+
+        {myLists.length === 0 && view === 'list' && !atLimit && (
+          <p className="text-sm text-muted-foreground text-center">
+            {lang === 'es' ? 'Aún no tienes ninguna lista. Crea la primera para empezar.' : 'Encara no tens cap llista. Crea la primera per començar.'}
+          </p>
+        )}
+
+        {/* Create-choice expanded panel */}
+        {view === 'create-choice' && (
+          <Card className="border-primary/40">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                {lang === 'es' ? 'Crear una lista nueva' : 'Crear una llista nova'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Templates */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Heart className="h-4 w-4 text-primary" />
+                  <h3 className="font-semibold text-sm">
+                    {lang === 'es' ? 'Empezar con una plantilla' : 'Començar amb una plantilla'}
+                  </h3>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {lang === 'es'
+                    ? 'Carga una lista predefinida con sus secciones y productos. Después podrás eliminar o reordenar a tu gusto.'
+                    : 'Carrega una llista predefinida amb les seves seccions i productes. Després podràs eliminar o reordenar al teu gust.'}
+                </p>
+                {templates.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">
+                    {lang === 'es' ? 'No hay plantillas disponibles.' : 'No hi ha plantilles disponibles.'}
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {templates.map((tpl: any) => {
+                      const tr = tpl.list_template_translations?.find((tt: any) => tt.language === lang)
+                        || tpl.list_template_translations?.[0];
+                      const label = tr?.name || tpl.slug;
+                      const desc = tr?.description;
+                      return (
+                        <button
+                          key={tpl.id}
+                          type="button"
+                          disabled={loadingTemplate}
+                          onClick={() => startFromTemplate(tpl.id)}
+                          className="group relative flex flex-col items-center justify-center gap-2 p-3 rounded-md border-2 border-border bg-background hover:border-primary hover:bg-primary/5 transition-colors text-center min-h-[100px]"
+                        >
+                          {loadingTemplate ? (
+                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          ) : (
+                            <Heart className="h-6 w-6 text-primary" />
+                          )}
+                          <span className="text-xs font-semibold line-clamp-2">{label}</span>
+                          {desc && <span className="text-[10px] text-muted-foreground line-clamp-2">{desc}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Custom */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <h3 className="font-semibold text-sm">
+                    {lang === 'es' ? 'Crear una lista personalizada' : 'Crear una llista personalitzada'}
+                  </h3>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {lang === 'es'
+                    ? 'Empieza desde cero. Crea tus secciones y añade productos desde el catálogo.'
+                    : 'Comença de zero. Crea les teves seccions i afegeix productes des del catàleg.'}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">{lang === 'es' ? 'Nombre del bebé (opcional)' : 'Nom del nadó (opcional)'}</Label>
+                    <Input
+                      value={customBabyName}
+                      onChange={e => setCustomBabyName(e.target.value)}
+                      placeholder={lang === 'es' ? 'Ej. Júlia' : 'Ex. Júlia'}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{lang === 'es' ? 'Primera sección (CA)' : 'Primera secció (CA)'}</Label>
+                    <Input
+                      value={customSectionCa}
+                      onChange={e => setCustomSectionCa(e.target.value)}
+                      placeholder={lang === 'es' ? 'Ej. Habitació' : 'Ex. Habitació'}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{lang === 'es' ? 'Primera sección (ES)' : 'Primera secció (ES)'}</Label>
+                    <Input
+                      value={customSectionEs}
+                      onChange={e => setCustomSectionEs(e.target.value)}
+                      placeholder={lang === 'es' ? 'Ej. Habitación' : 'Ex. Habitación'}
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" onClick={() => setView('list')}>
+                    {t('common.cancel') !== 'common.cancel' ? t('common.cancel') : (lang === 'es' ? 'Cancelar' : 'Cancel·lar')}
+                  </Button>
+                  <Button onClick={startCustomList} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    {lang === 'es' ? 'Empezar' : 'Començar'}
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {myLists.map((l: any) => (
-              <Card key={l.id} className="hover:border-primary transition-colors">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-semibold truncate">{l.baby_name || l.list_code}</p>
-                      <p className="font-mono text-xs text-muted-foreground truncate">{l.list_code}</p>
-                    </div>
-                    <Badge variant={l.status === 'active' ? 'default' : l.status === 'closed' ? 'secondary' : 'outline'}>
-                      {l.status === 'active' ? t('admin.statusActive') : l.status === 'closed' ? t('admin.statusClosed') : t('admin.statusDraft')}
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    {l.expected_date && <p>{t('list.expectedDate')}: {l.expected_date}</p>}
-                    <p>{l.item_count || 0} {(l.item_count || 0) === 1 ? (lang === 'es' ? 'producto' : 'producte') : (lang === 'es' ? 'productos' : 'productes')}</p>
-                  </div>
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className="flex-1"
-                      onClick={() => {
-                        setEditingListId(l.id);
-                        setListId(l.id);
-                        setView('editor');
-                      }}
-                    >
-                      {t('list.editList')}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => window.open(`/llista-naixement`, '_blank')}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         )}
       </div>
     );
   }
+
 
   // ---------- EDITOR VIEW ----------
   // Determine current step: 1=create, 2=edit, 3=share
@@ -1276,6 +1448,13 @@ const MyBirthListPage: React.FC = () => {
                             } ${isDragging ? 'opacity-40 scale-[0.98] ring-2 ring-primary/40 shadow-lg cursor-grabbing' : 'cursor-grab hover:border-primary/40 hover:shadow-sm'}`}
                           >
                             <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <div className="h-12 w-12 shrink-0 rounded-md overflow-hidden bg-muted flex items-center justify-center border border-border">
+                              {item.image_url ? (
+                                <img src={item.image_url} alt={item.productName} className="h-full w-full object-cover" loading="lazy" />
+                              ) : (
+                                <Package className="h-5 w-5 text-muted-foreground" />
+                              )}
+                            </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium truncate">{item.productName}</p>
                               {item.price !== undefined && (

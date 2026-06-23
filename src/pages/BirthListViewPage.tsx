@@ -274,6 +274,12 @@ const BirthListViewPage: React.FC = () => {
                           <span className="text-muted-foreground ml-1">({item.variant.value})</span>
                         )}
                       </h3>
+                      {item.variant_id && (
+                        <Badge variant="outline" className="mt-1 text-[10px] border-primary/40 text-primary gap-1">
+                          <Check className="h-3 w-3" />
+                          {lang === 'es' ? 'Configuración escogida por la familia' : 'Configuració escollida per la família'}
+                        </Badge>
+                      )}
                       <p className="text-primary font-semibold text-sm mt-1">{getPrice(item).toFixed(2)} €</p>
                     </div>
                     {status === 'purchased' && (
