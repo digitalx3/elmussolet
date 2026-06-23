@@ -1,46 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Save, Upload } from 'lucide-react';
+import { Save, Upload, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { optimizeImage } from '@/lib/optimizeImage';
-import HeroSlideView, { Slide } from '@/components/home/HeroSlideView';
+import DefaultHero from '@/components/home/DefaultHero';
 import {
+  DEFAULT_HERO,
   DEFAULT_HERO_OVERRIDES_KEY,
-  createDefaultHeroSlide,
-  baseDefaultHeroSlide,
   DefaultHeroOverrides,
 } from '@/lib/defaultHeroSlide';
 
-const BUTTON_VARIANTS = ['default', 'outline', 'secondary', 'ghost'];
+const ASPECTS: DefaultHeroOverrides['image_aspect'][] = ['1/1', '4/5', '4/3', '3/4', '16/9'];
 
 const AdminDefaultHeroForm: React.FC = () => {
-  const navigate = useNavigate();
   const qc = useQueryClient();
-  const base = baseDefaultHeroSlide();
+  const [state, setState] = useState<Required<typeof DEFAULT_HERO>>({ ...DEFAULT_HERO });
+  const [uploading, setUploading] = useState<'image' | 'logo' | null>(null);
 
-  const [bgUrl, setBgUrl] = useState<string | null>(base.background_image_url);
-  const [overlay, setOverlay] = useState<number>(base.background_overlay);
-  const [badgeCa, setBadgeCa] = useState(base.badge_text_ca);
-  const [badgeEs, setBadgeEs] = useState(base.badge_text_es);
-  const [titleCa, setTitleCa] = useState(base.title_ca);
-  const [titleEs, setTitleEs] = useState(base.title_es);
-  const [subtitleCa, setSubtitleCa] = useState(base.subtitle_ca);
-  const [subtitleEs, setSubtitleEs] = useState(base.subtitle_es);
-  const [btn1Ca, setBtn1Ca] = useState(base.button1_text_ca);
-  const [btn1Es, setBtn1Es] = useState(base.button1_text_es);
-  const [btn1Url, setBtn1Url] = useState(base.button1_url);
-  const [btn1Variant, setBtn1Variant] = useState(base.button1_variant);
-  const [btn2Ca, setBtn2Ca] = useState(base.button2_text_ca);
-  const [btn2Es, setBtn2Es] = useState(base.button2_text_es);
-  const [btn2Url, setBtn2Url] = useState(base.button2_url);
-  const [btn2Variant, setBtn2Variant] = useState(base.button2_variant);
-  const [uploading, setUploading] = useState(false);
+  const set = <K extends keyof typeof state>(k: K, v: (typeof state)[K]) =>
+    setState((s) => ({ ...s, [k]: v }));
 
   const { data: existing } = useQuery({
     queryKey: ['default-hero-overrides'],
@@ -52,72 +35,46 @@ const AdminDefaultHeroForm: React.FC = () => {
         .maybeSingle();
       if (error) throw error;
       if (!data?.value) return null;
-      try {
-        return JSON.parse(data.value as unknown as string) as DefaultHeroOverrides;
-      } catch {
-        return null;
-      }
+      try { return JSON.parse(data.value as unknown as string) as DefaultHeroOverrides; }
+      catch { return null; }
     },
   });
 
   useEffect(() => {
     if (!existing) return;
-    if ('background_image_url' in existing) setBgUrl(existing.background_image_url ?? null);
-    if (existing.background_overlay !== undefined) setOverlay(Number(existing.background_overlay));
-    if (existing.badge_text_ca !== undefined) setBadgeCa(existing.badge_text_ca);
-    if (existing.badge_text_es !== undefined) setBadgeEs(existing.badge_text_es);
-    if (existing.title_ca !== undefined) setTitleCa(existing.title_ca);
-    if (existing.title_es !== undefined) setTitleEs(existing.title_es);
-    if (existing.subtitle_ca !== undefined) setSubtitleCa(existing.subtitle_ca);
-    if (existing.subtitle_es !== undefined) setSubtitleEs(existing.subtitle_es);
-    if (existing.button1_text_ca !== undefined) setBtn1Ca(existing.button1_text_ca);
-    if (existing.button1_text_es !== undefined) setBtn1Es(existing.button1_text_es);
-    if (existing.button1_url !== undefined) setBtn1Url(existing.button1_url);
-    if (existing.button1_variant !== undefined) setBtn1Variant(existing.button1_variant);
-    if (existing.button2_text_ca !== undefined) setBtn2Ca(existing.button2_text_ca);
-    if (existing.button2_text_es !== undefined) setBtn2Es(existing.button2_text_es);
-    if (existing.button2_url !== undefined) setBtn2Url(existing.button2_url);
-    if (existing.button2_variant !== undefined) setBtn2Variant(existing.button2_variant);
+    setState((s) => ({ ...s, ...existing }));
   }, [existing]);
 
-  const handleUpload = async (rawFile: File) => {
-    setUploading(true);
+  const upload = async (kind: 'image' | 'logo', rawFile: File) => {
+    setUploading(kind);
     try {
       const file = rawFile.type === 'image/svg+xml'
         ? rawFile
-        : await optimizeImage(rawFile, { maxDimension: 1920, quality: 0.85 });
+        : await optimizeImage(rawFile, {
+            maxDimension: kind === 'image' ? 1600 : 400,
+            quality: 0.85,
+          });
       const ext = file.name.split('.').pop() || 'webp';
-      const path = `hero/default/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const path = `hero/default/${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error } = await supabase.storage
         .from('site-assets')
         .upload(path, file, { upsert: false, contentType: file.type });
       if (error) throw error;
       const { data } = supabase.storage.from('site-assets').getPublicUrl(path);
-      setBgUrl(data.publicUrl);
+      if (kind === 'image') set('image_url', data.publicUrl);
+      else set('card_logo_url', data.publicUrl);
       toast.success('Imatge pujada');
     } catch (e) {
       console.error(e);
       toast.error('Error pujant la imatge');
     } finally {
-      setUploading(false);
+      setUploading(null);
     }
   };
 
-  const buildOverrides = (): DefaultHeroOverrides => ({
-    background_image_url: bgUrl,
-    background_overlay: overlay,
-    badge_text_ca: badgeCa, badge_text_es: badgeEs,
-    title_ca: titleCa, title_es: titleEs,
-    subtitle_ca: subtitleCa, subtitle_es: subtitleEs,
-    button1_text_ca: btn1Ca, button1_text_es: btn1Es,
-    button1_url: btn1Url, button1_variant: btn1Variant,
-    button2_text_ca: btn2Ca, button2_text_es: btn2Es,
-    button2_url: btn2Url, button2_variant: btn2Variant,
-  });
-
   const save = useMutation({
     mutationFn: async () => {
-      const value = JSON.stringify(buildOverrides());
+      const value = JSON.stringify(state);
       const { error } = await supabase
         .from('site_settings')
         .upsert({ key: DEFAULT_HERO_OVERRIDES_KEY, value }, { onConflict: 'key' });
@@ -125,8 +82,8 @@ const AdminDefaultHeroForm: React.FC = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['default-hero-overrides'] });
-      qc.invalidateQueries({ queryKey: ['hero-slides-public'] });
-      toast.success('Portada per defecte desada');
+      qc.invalidateQueries({ queryKey: ['default-hero-overrides-public'] });
+      toast.success('Portada desada');
     },
     onError: (e) => { console.error(e); toast.error('Error desant'); },
   });
@@ -141,39 +98,30 @@ const AdminDefaultHeroForm: React.FC = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['default-hero-overrides'] });
-      qc.invalidateQueries({ queryKey: ['hero-slides-public'] });
-      // reset local state to base values
-      setBgUrl(base.background_image_url);
-      setOverlay(base.background_overlay);
-      setBadgeCa(base.badge_text_ca); setBadgeEs(base.badge_text_es);
-      setTitleCa(base.title_ca); setTitleEs(base.title_es);
-      setSubtitleCa(base.subtitle_ca); setSubtitleEs(base.subtitle_es);
-      setBtn1Ca(base.button1_text_ca); setBtn1Es(base.button1_text_es);
-      setBtn1Url(base.button1_url); setBtn1Variant(base.button1_variant);
-      setBtn2Ca(base.button2_text_ca); setBtn2Es(base.button2_text_es);
-      setBtn2Url(base.button2_url); setBtn2Variant(base.button2_variant);
-      toast.success('Portada per defecte restaurada');
+      qc.invalidateQueries({ queryKey: ['default-hero-overrides-public'] });
+      setState({ ...DEFAULT_HERO });
+      toast.success('Portada restaurada als valors originals');
     },
     onError: (e) => { console.error(e); toast.error('Error restaurant'); },
   });
 
-  const previewSlide = createDefaultHeroSlide({
-    id: 'preview-default',
-    ...buildOverrides(),
-  }) as unknown as Slide;
-
   return (
-    <div className="max-w-[1400px] mx-auto">
+    <div className="max-w-[1500px] mx-auto">
       <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/admin/heros')} className="gap-1">
-            <ArrowLeft className="h-4 w-4" /> Tornar
-          </Button>
-          <h1 className="font-display text-2xl font-bold">Editar portada per defecte</h1>
+        <div>
+          <h1 className="font-display text-3xl font-bold">Portada (Hero)</h1>
+          <p className="text-muted-foreground text-sm">
+            Edita els elements de la portada. L'estructura i distribució no es poden modificar.
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => { if (confirm('Restaurar la portada per defecte original?')) reset.mutate(); }} disabled={reset.isPending}>
-            Restaurar original
+          <Button
+            variant="outline"
+            onClick={() => { if (confirm('Restaurar els valors originals?')) reset.mutate(); }}
+            disabled={reset.isPending}
+            className="gap-2"
+          >
+            <RotateCcw className="h-4 w-4" /> Restaurar
           </Button>
           <Button onClick={() => save.mutate()} disabled={save.isPending} className="gap-2">
             <Save className="h-4 w-4" /> {save.isPending ? 'Desant...' : 'Desar'}
@@ -181,92 +129,163 @@ const AdminDefaultHeroForm: React.FC = () => {
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground mb-4">
-        Aquesta és la portada que apareix al front-office quan no hi ha cap hero publicat. Pots editar la imatge, els textos i els botons. L'estructura, dimensions i distribució dels elements del carrusel no es poden modificar.
-      </p>
+      <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6">
+        <div className="space-y-6">
+          {/* LEFT BLOCK */}
+          <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+            <div className="font-display font-semibold">Bloc de l'esquerra</div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-6">
-        <div className="space-y-5 bg-card p-4 rounded-lg border border-border h-fit">
-          <div>
-            <Label className="mb-2 block">Imatge de fons</Label>
-            {bgUrl && (
-              <div className="mb-2 relative aspect-video rounded overflow-hidden border border-border">
-                <img src={bgUrl} alt="" className="w-full h-full object-cover" />
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label className="text-xs">Eyebrow (CA)</Label><Input value={state.eyebrow_ca} onChange={(e) => set('eyebrow_ca', e.target.value)} /></div>
+              <div><Label className="text-xs">Eyebrow (ES)</Label><Input value={state.eyebrow_es} onChange={(e) => set('eyebrow_es', e.target.value)} /></div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label className="text-xs">Títol (CA)</Label><Textarea rows={2} value={state.title_ca} onChange={(e) => set('title_ca', e.target.value)} /></div>
+              <div><Label className="text-xs">Títol (ES)</Label><Textarea rows={2} value={state.title_es} onChange={(e) => set('title_es', e.target.value)} /></div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label className="text-xs">Subtítol (CA)</Label><Textarea rows={3} value={state.subtitle_ca} onChange={(e) => set('subtitle_ca', e.target.value)} /></div>
+              <div><Label className="text-xs">Subtítol (ES)</Label><Textarea rows={3} value={state.subtitle_es} onChange={(e) => set('subtitle_es', e.target.value)} /></div>
+            </div>
+
+            <div className="border-t border-border pt-3 space-y-2">
+              <div className="text-xs font-semibold text-muted-foreground">Botó 1</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label className="text-xs">Text (CA)</Label><Input value={state.button1_text_ca} onChange={(e) => set('button1_text_ca', e.target.value)} /></div>
+                <div><Label className="text-xs">Text (ES)</Label><Input value={state.button1_text_es} onChange={(e) => set('button1_text_es', e.target.value)} /></div>
               </div>
-            )}
-            <label className="inline-flex items-center gap-2 cursor-pointer text-sm px-3 py-2 rounded-md border border-border hover:bg-muted">
-              <Upload className="h-4 w-4" />
-              {uploading ? 'Pujant...' : bgUrl ? 'Canviar imatge' : 'Pujar imatge'}
-              <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
-            </label>
-            {bgUrl && (
-              <Button variant="ghost" size="sm" className="ml-2 text-destructive" onClick={() => setBgUrl(null)}>
-                Treure
-              </Button>
-            )}
-            <div className="mt-3">
-              <Label className="text-xs">Opacitat overlay fosc ({overlay.toFixed(2)})</Label>
-              <input
-                type="range" min={0} max={0.8} step={0.05}
-                value={overlay}
-                onChange={(e) => setOverlay(parseFloat(e.target.value))}
-                className="w-full"
-              />
+              <div><Label className="text-xs">Enllaç</Label><Input value={state.button1_url} onChange={(e) => set('button1_url', e.target.value)} placeholder="/cataleg" /></div>
+            </div>
+
+            <div className="border-t border-border pt-3 space-y-2">
+              <div className="text-xs font-semibold text-muted-foreground">Botó 2</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label className="text-xs">Text (CA)</Label><Input value={state.button2_text_ca} onChange={(e) => set('button2_text_ca', e.target.value)} /></div>
+                <div><Label className="text-xs">Text (ES)</Label><Input value={state.button2_text_es} onChange={(e) => set('button2_text_es', e.target.value)} /></div>
+              </div>
+              <div><Label className="text-xs">Enllaç</Label><Input value={state.button2_url} onChange={(e) => set('button2_url', e.target.value)} placeholder="/llista-naixement" /></div>
             </div>
           </div>
 
-          <div className="border-t border-border pt-4 space-y-3">
-            <div className="font-semibold text-sm">Continguts</div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label className="text-xs">Badge (CA)</Label><Input value={badgeCa} onChange={(e) => setBadgeCa(e.target.value)} /></div>
-              <div><Label className="text-xs">Badge (ES)</Label><Input value={badgeEs} onChange={(e) => setBadgeEs(e.target.value)} /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label className="text-xs">Títol (CA)</Label><Textarea value={titleCa} onChange={(e) => setTitleCa(e.target.value)} rows={2} /></div>
-              <div><Label className="text-xs">Títol (ES)</Label><Textarea value={titleEs} onChange={(e) => setTitleEs(e.target.value)} rows={2} /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label className="text-xs">Subtítol (CA)</Label><Textarea value={subtitleCa} onChange={(e) => setSubtitleCa(e.target.value)} rows={2} /></div>
-              <div><Label className="text-xs">Subtítol (ES)</Label><Textarea value={subtitleEs} onChange={(e) => setSubtitleEs(e.target.value)} rows={2} /></div>
-            </div>
-          </div>
+          {/* RIGHT BLOCK */}
+          <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+            <div className="font-display font-semibold">Bloc de la dreta</div>
 
-          <div className="border-t border-border pt-4 space-y-3">
-            <div className="font-semibold text-sm">Botó 1</div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label className="text-xs">Text (CA)</Label><Input value={btn1Ca} onChange={(e) => setBtn1Ca(e.target.value)} /></div>
-              <div><Label className="text-xs">Text (ES)</Label><Input value={btn1Es} onChange={(e) => setBtn1Es(e.target.value)} /></div>
-            </div>
-            <div><Label className="text-xs">Enllaç</Label><Input value={btn1Url} onChange={(e) => setBtn1Url(e.target.value)} /></div>
             <div>
-              <Label className="text-xs">Estil</Label>
-              <select value={btn1Variant} onChange={(e) => setBtn1Variant(e.target.value)} className="w-full h-9 rounded border border-input bg-background px-2 text-sm">
-                {BUTTON_VARIANTS.map((v) => <option key={v} value={v}>{v}</option>)}
-              </select>
+              <Label className="text-xs mb-1 block">Imatge principal</Label>
+              {state.image_url && (
+                <div className="mb-2 relative aspect-video rounded overflow-hidden border border-border">
+                  <img src={state.image_url} alt="" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                <label className="inline-flex items-center gap-2 cursor-pointer text-sm px-3 py-2 rounded-md border border-border hover:bg-muted">
+                  <Upload className="h-4 w-4" />
+                  {uploading === 'image' ? 'Pujant...' : state.image_url ? 'Canviar' : 'Pujar'}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && upload('image', e.target.files[0])} />
+                </label>
+                {state.image_url && (
+                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => set('image_url', null)}>
+                    Treure
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
 
-          <div className="border-t border-border pt-4 space-y-3">
-            <div className="font-semibold text-sm">Botó 2</div>
             <div className="grid grid-cols-2 gap-2">
-              <div><Label className="text-xs">Text (CA)</Label><Input value={btn2Ca} onChange={(e) => setBtn2Ca(e.target.value)} /></div>
-              <div><Label className="text-xs">Text (ES)</Label><Input value={btn2Es} onChange={(e) => setBtn2Es(e.target.value)} /></div>
+              <div>
+                <Label className="text-xs">Proporció</Label>
+                <select
+                  value={state.image_aspect}
+                  onChange={(e) => set('image_aspect', e.target.value as typeof state.image_aspect)}
+                  className="w-full h-9 rounded border border-input bg-background px-2 text-sm"
+                >
+                  {ASPECTS.map((a) => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs">Format imatge</Label>
+                <select
+                  value={state.image_object_fit}
+                  onChange={(e) => set('image_object_fit', e.target.value as 'cover' | 'contain')}
+                  className="w-full h-9 rounded border border-input bg-background px-2 text-sm"
+                >
+                  <option value="cover">Omplir (cover)</option>
+                  <option value="contain">Encaixar (contain)</option>
+                </select>
+              </div>
             </div>
-            <div><Label className="text-xs">Enllaç</Label><Input value={btn2Url} onChange={(e) => setBtn2Url(e.target.value)} /></div>
-            <div>
-              <Label className="text-xs">Estil</Label>
-              <select value={btn2Variant} onChange={(e) => setBtn2Variant(e.target.value)} className="w-full h-9 rounded border border-input bg-background px-2 text-sm">
-                {BUTTON_VARIANTS.map((v) => <option key={v} value={v}>{v}</option>)}
-              </select>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Amplada màx. (px)</Label>
+                <Input
+                  type="number" min={320} max={800}
+                  value={state.image_max_width}
+                  onChange={(e) => set('image_max_width', Number(e.target.value) || 560)}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Cantonades (px)</Label>
+                <Input
+                  type="number" min={0} max={80}
+                  value={state.image_radius}
+                  onChange={(e) => set('image_radius', Number(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-semibold text-muted-foreground">Targeta inferior (logo + text)</div>
+                <label className="flex items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={state.card_visible}
+                    onChange={(e) => set('card_visible', e.target.checked)}
+                  />
+                  Visible
+                </label>
+              </div>
+
+              <div>
+                <Label className="text-xs mb-1 block">Logo</Label>
+                {state.card_logo_url && (
+                  <div className="mb-2 w-14 h-14 rounded-full overflow-hidden border border-border">
+                    <img src={state.card_logo_url} alt="" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <label className="inline-flex items-center gap-2 cursor-pointer text-sm px-3 py-2 rounded-md border border-border hover:bg-muted">
+                    <Upload className="h-4 w-4" />
+                    {uploading === 'logo' ? 'Pujant...' : state.card_logo_url ? 'Canviar' : 'Pujar'}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && upload('logo', e.target.files[0])} />
+                  </label>
+                  {state.card_logo_url && (
+                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => set('card_logo_url', null)}>
+                      Treure
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label className="text-xs">Títol (CA)</Label><Input value={state.card_title_ca} onChange={(e) => set('card_title_ca', e.target.value)} /></div>
+                <div><Label className="text-xs">Títol (ES)</Label><Input value={state.card_title_es} onChange={(e) => set('card_title_es', e.target.value)} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label className="text-xs">Subtítol (CA)</Label><Input value={state.card_subtitle_ca} onChange={(e) => set('card_subtitle_ca', e.target.value)} /></div>
+                <div><Label className="text-xs">Subtítol (ES)</Label><Input value={state.card_subtitle_es} onChange={(e) => set('card_subtitle_es', e.target.value)} /></div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <div className="text-sm font-semibold mb-3">Vista prèvia</div>
-          <div className="rounded-md overflow-hidden border border-border">
-            <HeroSlideView slide={previewSlide} device="desktop" />
-          </div>
+        <div className="bg-card border border-border rounded-lg overflow-hidden h-fit">
+          <div className="text-sm font-semibold px-4 py-2 border-b border-border">Vista prèvia</div>
+          <DefaultHero preview={state} />
         </div>
       </div>
     </div>
