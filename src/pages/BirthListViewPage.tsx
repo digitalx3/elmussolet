@@ -164,6 +164,7 @@ const BirthListViewPage: React.FC = () => {
     addListItem({
       productId: item.product_id,
       variantId: item.variant_id || undefined,
+      listItemId: item.id,
       name: getProductName(item) + (item.variant ? ` (${item.variant.value})` : ''),
       image: getProductImage(item),
       price: getPrice(item),
