@@ -142,6 +142,117 @@ const AdminOrders: React.FC = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const recomputeOrderTotals = async (orderId: string) => {
+    const { data: items, error } = await supabase
+      .from('order_items')
+      .select('quantity, base_unit_price, unit_price, tax_amount')
+      .eq('order_id', orderId);
+    if (error) throw error;
+    const subtotal = (items || []).reduce((s, it: any) => s + Number(it.base_unit_price ?? it.unit_price ?? 0) * Number(it.quantity), 0);
+    const tax_amount = (items || []).reduce((s, it: any) => s + Number(it.tax_amount ?? 0), 0);
+    const { data: ord, error: ordErr } = await supabase
+      .from('orders').select('shipping_cost').eq('id', orderId).single();
+    if (ordErr) throw ordErr;
+    const shipping = Number(ord?.shipping_cost ?? 0);
+    const total = subtotal + tax_amount + shipping;
+    const { error: upErr } = await supabase.from('orders')
+      .update({ subtotal, tax_amount, total })
+      .eq('id', orderId);
+    if (upErr) throw upErr;
+    // refresh local selected order with new totals
+    setSelectedOrder(prev => prev ? { ...prev, subtotal, tax_amount, total } : prev);
+  };
+
+  const updateItemQtyMutation = useMutation({
+    mutationFn: async ({ item, quantity }: { item: OrderItemRow; quantity: number }) => {
+      if (quantity < 1) throw new Error('Quantity must be >= 1');
+      const basePrice = Number(item.base_unit_price ?? item.unit_price);
+      const taxPct = Number(item.tax_percentage ?? 0);
+      const taxAmount = basePrice * quantity * (taxPct / 100);
+      const totalPrice = basePrice * quantity + taxAmount;
+      const { error } = await supabase.from('order_items').update({
+        quantity,
+        tax_amount: taxAmount,
+        total_price: totalPrice,
+      }).eq('id', item.id);
+      if (error) throw error;
+      await recomputeOrderTotals(item.product_id ? selectedOrder!.id : selectedOrder!.id);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-order-items', selectedOrder?.id] });
+      qc.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast.success(t('common.success'));
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteItemMutation = useMutation({
+    mutationFn: async (item: OrderItemRow) => {
+      const { error } = await supabase.from('order_items').delete().eq('id', item.id);
+      if (error) throw error;
+      await recomputeOrderTotals(selectedOrder!.id);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-order-items', selectedOrder?.id] });
+      qc.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast.success(t('common.success'));
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const addItemMutation = useMutation({
+    mutationFn: async (product: any) => {
+      if (!selectedOrder) return;
+      const basePrice = Number(product.base_price ?? 0);
+      const taxPct = Number(product.tax_rates?.percentage ?? 0);
+      const quantity = 1;
+      const taxAmount = basePrice * quantity * (taxPct / 100);
+      const totalPrice = basePrice * quantity + taxAmount;
+      const unitPrice = basePrice * (1 + taxPct / 100);
+      const { error } = await supabase.from('order_items').insert({
+        order_id: selectedOrder.id,
+        product_id: product.id,
+        variant_id: null,
+        quantity,
+        unit_price: unitPrice,
+        base_unit_price: basePrice,
+        tax_percentage: taxPct,
+        tax_amount: taxAmount,
+        total_price: totalPrice,
+      });
+      if (error) throw error;
+      await recomputeOrderTotals(selectedOrder.id);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-order-items', selectedOrder?.id] });
+      qc.invalidateQueries({ queryKey: ['admin-orders'] });
+      setProductSearch('');
+      setProductResults([]);
+      toast.success(t('common.success'));
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const handleProductSearch = async (q: string) => {
+    setProductSearch(q);
+    if (q.trim().length < 2) {
+      setProductResults([]);
+      return;
+    }
+    const { data } = await supabase
+      .from('products')
+      .select('id, slug, base_price, product_translations(name, language), tax_rates(percentage)')
+      .eq('is_active', true)
+      .limit(8);
+    const lower = q.toLowerCase();
+    const filtered = (data || []).filter((p: any) => {
+      const names = (p.product_translations || []).map((tr: any) => tr.name?.toLowerCase() || '');
+      return names.some((n: string) => n.includes(lower)) || p.slug?.toLowerCase().includes(lower);
+    });
+    setProductResults(filtered);
+  };
+
+
   const filteredOrders = orders.filter(o => {
     if (!search) return true;
     const s = search.toLowerCase();
