@@ -239,13 +239,7 @@ const MyBirthListPage: React.FC = () => {
   // Decide initial view once lists are loaded
   useEffect(() => {
     if (initialViewSet || listsLoading) return;
-    if (myLists.length === 0) {
-      setView('editor');
-      setEditingListId(null);
-      resetEditor();
-    } else {
-      setView('list');
-    }
+    setView('list');
     setInitialViewSet(true);
   }, [listsLoading, myLists.length, initialViewSet]);
 
