@@ -412,7 +412,7 @@ const AdminOrders: React.FC = () => {
       )}
 
       {/* Order Detail Dialog */}
-      <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+      <Dialog open={!!selectedOrder} onOpenChange={(o) => { if (!o) { setSelectedOrder(null); setEditing(false); setProductSearch(''); setProductResults([]); } }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           {selectedOrder && (
             <>
