@@ -82,8 +82,11 @@ const MyBirthListPage: React.FC = () => {
   const [dragOverItemIdx, setDragOverItemIdx] = useState<number | null>(null);
   // Drag payload for products: either { itemIdx } (move existing) or { product } (add new)
   const productDragRef = React.useRef<{ kind: 'move'; itemIdx: number } | { kind: 'add'; product: any } | null>(null);
-  const [view, setView] = useState<'list' | 'create-choice' | 'editor'>('list');
+  const [view, setView] = useState<'list' | 'create-choice' | 'editor' | 'share'>('list');
   const [editingListId, setEditingListId] = useState<string | null>(null);
+  const [sharingList, setSharingList] = useState<{ id: string; code: string; babyName: string } | null>(null);
+  const [sharePassword, setSharePassword] = useState('');
+  const [showSharePassword, setShowSharePassword] = useState(false);
   const [initialViewSet, setInitialViewSet] = useState(false);
   const [customBabyName, setCustomBabyName] = useState('');
   const [customSectionCa, setCustomSectionCa] = useState('');
