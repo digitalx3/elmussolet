@@ -88,6 +88,34 @@ const MyBirthListPage: React.FC = () => {
   const [customBabyName, setCustomBabyName] = useState('');
   const [customSectionCa, setCustomSectionCa] = useState('');
   const [customSectionEs, setCustomSectionEs] = useState('');
+  const [deletingList, setDeletingList] = useState<{ id: string; label: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteList = async () => {
+    if (!deletingList) return;
+    setDeleting(true);
+    try {
+      const lid = deletingList.id;
+      await supabase.from('list_items').delete().eq('list_id', lid);
+      await supabase.from('list_sections').delete().eq('list_id', lid);
+      await supabase.from('list_owners').delete().eq('list_id', lid);
+      const { error } = await supabase.from('birth_lists').delete().eq('id', lid);
+      if (error) throw error;
+      toast.success(lang === 'es' ? 'Lista eliminada' : 'Llista eliminada');
+      if (editingListId === lid) {
+        setEditingListId(null);
+        setView('list');
+        resetEditor();
+      }
+      await queryClient.invalidateQueries({ queryKey: ['my-birth-lists', user?.id] });
+      await queryClient.refetchQueries({ queryKey: ['my-birth-lists', user?.id] });
+      setDeletingList(null);
+    } catch (e: any) {
+      toast.error(e?.message || (lang === 'es' ? 'No se pudo eliminar' : 'No s\'ha pogut eliminar'));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const MAX_LISTS = 10;
   const isAdmin = profile?.role === 'admin';
