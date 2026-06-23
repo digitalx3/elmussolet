@@ -1063,11 +1063,36 @@ const MyBirthListPage: React.FC = () => {
               </Button>
             </div>
 
-            <p className="text-[11px] text-muted-foreground">
-              {lang === 'es'
-                ? 'Las secciones aparecen abajo con sus productos. Usa las flechas para reordenarlas.'
-                : 'Les seccions apareixen a sota amb els seus productes. Usa les fletxes per reordenar-les.'}
-            </p>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-[11px] text-muted-foreground">
+                {lang === 'es'
+                  ? 'Las secciones aparecen abajo con sus productos. Usa las flechas o arrastra para reordenarlas.'
+                  : 'Les seccions apareixen a sota amb els seus productes. Usa les fletxes o arrossega per reordenar-les.'}
+              </p>
+              {sectionsSaveStatus !== 'idle' && (
+                <Badge
+                  variant={sectionsSaveStatus === 'error' ? 'destructive' : 'outline'}
+                  className="text-[10px] flex items-center gap-1"
+                  aria-live="polite"
+                >
+                  {sectionsSaveStatus === 'saving' && (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      {lang === 'es' ? 'Guardando orden…' : 'Desant ordre…'}
+                    </>
+                  )}
+                  {sectionsSaveStatus === 'success' && (
+                    <>
+                      <Check className="h-3 w-3 text-primary" />
+                      {lang === 'es' ? 'Orden guardado' : 'Ordre desat'}
+                    </>
+                  )}
+                  {sectionsSaveStatus === 'error' && (
+                    <>{lang === 'es' ? 'Error al guardar' : 'Error en desar'}</>
+                  )}
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Items grouped by section */}
