@@ -422,35 +422,78 @@ const MyBirthListPage: React.FC = () => {
     }));
   };
 
+  const [sectionsSaveStatus, setSectionsSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+
+  const applySectionsOrder = (snapshot: PendingSection[], options?: { silent?: boolean }) => {
+    const reindexed = snapshot.map((x, i) => ({ ...x, sort_order: i }));
+    setSections(reindexed);
+    persistSectionsOrder(reindexed, { silent: options?.silent });
+  };
+
+  const persistSectionsOrder = async (
+    next: PendingSection[],
+    options?: { previous?: PendingSection[]; silent?: boolean }
+  ) => {
+    if (!listId) return;
+    const updates = next
+      .map((s, i) => ({ id: s.id, sort_order: i }))
+      .filter(u => !!u.id);
+    if (updates.length === 0) return;
+    setSectionsSaveStatus('saving');
+    try {
+      await Promise.all(updates.map(u =>
+        supabase.from('list_sections').update({ sort_order: u.sort_order }).eq('id', u.id!)
+      ));
+      queryClient.invalidateQueries({ queryKey: ['my-birth-list-detail', listId] });
+      setSectionsSaveStatus('success');
+      window.setTimeout(() => {
+        setSectionsSaveStatus(prev => (prev === 'success' ? 'idle' : prev));
+      }, 2500);
+      if (!options?.silent) {
+        const description = lang === 'es'
+          ? 'El nuevo orden se guardó en el servidor.'
+          : 'El nou ordre s\'ha desat al servidor.';
+        if (options?.previous) {
+          const snapshot = options.previous;
+          toast.success(lang === 'es' ? 'Orden actualizado' : 'Ordre actualitzat', {
+            description,
+            action: {
+              label: lang === 'es' ? 'Deshacer' : 'Desfer',
+              onClick: () => applySectionsOrder(snapshot, { silent: true }),
+            },
+          });
+        } else {
+          toast.success(lang === 'es' ? 'Orden actualizado' : 'Ordre actualitzat', { description });
+        }
+      }
+    } catch (err: any) {
+      setSectionsSaveStatus('error');
+      toast.error(err.message || t('errors.generic'), {
+        description: lang === 'es'
+          ? 'No se pudo guardar el orden. Inténtalo de nuevo.'
+          : 'No s\'ha pogut desar l\'ordre. Torna-ho a provar.',
+        action: options?.previous ? {
+          label: lang === 'es' ? 'Revertir' : 'Revertir',
+          onClick: () => applySectionsOrder(options.previous!, { silent: true }),
+        } : undefined,
+      });
+    }
+  };
+
   const reorderSections = (fromId: string, toId: string) => {
     if (fromId === toId) return;
     setSections(prev => {
       const from = prev.findIndex(s => s.temp_id === fromId);
       const to = prev.findIndex(s => s.temp_id === toId);
       if (from < 0 || to < 0) return prev;
+      const previous = prev.map(s => ({ ...s }));
       const next = [...prev];
       const [moved] = next.splice(from, 1);
       next.splice(to, 0, moved);
       const reindexed = next.map((x, i) => ({ ...x, sort_order: i }));
-      persistSectionsOrder(reindexed);
+      persistSectionsOrder(reindexed, { previous });
       return reindexed;
     });
-  };
-
-  const persistSectionsOrder = async (next: PendingSection[]) => {
-    if (!listId) return;
-    const updates = next
-      .map((s, i) => ({ id: s.id, sort_order: i }))
-      .filter(u => !!u.id);
-    if (updates.length === 0) return;
-    try {
-      await Promise.all(updates.map(u =>
-        supabase.from('list_sections').update({ sort_order: u.sort_order }).eq('id', u.id!)
-      ));
-      queryClient.invalidateQueries({ queryKey: ['my-birth-list-detail', listId] });
-    } catch (err: any) {
-      toast.error(err.message || t('errors.generic'));
-    }
   };
 
   const moveSection = (tempId: string, direction: 'up' | 'down') => {
@@ -459,10 +502,11 @@ const MyBirthListPage: React.FC = () => {
       if (idx < 0) return prev;
       const target = direction === 'up' ? idx - 1 : idx + 1;
       if (target < 0 || target >= prev.length) return prev;
+      const previous = prev.map(s => ({ ...s }));
       const next = [...prev];
       [next[idx], next[target]] = [next[target], next[idx]];
       const reindexed = next.map((x, i) => ({ ...x, sort_order: i }));
-      persistSectionsOrder(reindexed);
+      persistSectionsOrder(reindexed, { previous });
       return reindexed;
     });
   };
@@ -1019,11 +1063,36 @@ const MyBirthListPage: React.FC = () => {
               </Button>
             </div>
 
-            <p className="text-[11px] text-muted-foreground">
-              {lang === 'es'
-                ? 'Las secciones aparecen abajo con sus productos. Usa las flechas para reordenarlas.'
-                : 'Les seccions apareixen a sota amb els seus productes. Usa les fletxes per reordenar-les.'}
-            </p>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-[11px] text-muted-foreground">
+                {lang === 'es'
+                  ? 'Las secciones aparecen abajo con sus productos. Usa las flechas o arrastra para reordenarlas.'
+                  : 'Les seccions apareixen a sota amb els seus productes. Usa les fletxes o arrossega per reordenar-les.'}
+              </p>
+              {sectionsSaveStatus !== 'idle' && (
+                <Badge
+                  variant={sectionsSaveStatus === 'error' ? 'destructive' : 'outline'}
+                  className="text-[10px] flex items-center gap-1"
+                  aria-live="polite"
+                >
+                  {sectionsSaveStatus === 'saving' && (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      {lang === 'es' ? 'Guardando orden…' : 'Desant ordre…'}
+                    </>
+                  )}
+                  {sectionsSaveStatus === 'success' && (
+                    <>
+                      <Check className="h-3 w-3 text-primary" />
+                      {lang === 'es' ? 'Orden guardado' : 'Ordre desat'}
+                    </>
+                  )}
+                  {sectionsSaveStatus === 'error' && (
+                    <>{lang === 'es' ? 'Error al guardar' : 'Error en desar'}</>
+                  )}
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Items grouped by section */}
