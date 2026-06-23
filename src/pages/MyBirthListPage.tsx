@@ -236,6 +236,31 @@ const MyBirthListPage: React.FC = () => {
     return map;
   }, [purchases]);
 
+  // Fetch variants for all products currently in the editor
+  const itemProductIds = useMemo(() => {
+    const ids = Array.from(new Set(form.items.map(i => i.product_id))).filter(Boolean);
+    return ids.sort();
+  }, [form.items]);
+
+  const { data: variantsByProduct = {} } = useQuery({
+    queryKey: ['my-birth-list-variants', itemProductIds.join(',')],
+    enabled: itemProductIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_variants')
+        .select('id, product_id, value, price_override, is_active, variant_type_id, variant_types(id, variant_type_translations(language, name))')
+        .in('product_id', itemProductIds)
+        .eq('is_active', true);
+      if (error) throw error;
+      const map: Record<string, any[]> = {};
+      (data || []).forEach((v: any) => {
+        (map[v.product_id] ||= []).push(v);
+      });
+      return map;
+    },
+  });
+
+
   // Decide initial view once lists are loaded
   useEffect(() => {
     if (initialViewSet || listsLoading) return;
