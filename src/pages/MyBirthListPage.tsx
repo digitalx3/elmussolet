@@ -1218,6 +1218,20 @@ const MyBirthListPage: React.FC = () => {
                           const showInsertBelow = isDropTarget && (draggedItemIdx as number) < idx;
                           const itemPurchases = item.id ? (purchasesByItem[item.id] || []) : [];
                           const hasPaid = itemPurchases.some((p: any) => p.payment_status === 'paid');
+                          const notifyLocked = (action: string) => {
+                            const title = lang === 'es' ? 'Producto bloqueado' : 'Producte bloquejat';
+                            const desc = lang === 'es'
+                              ? `No se puede ${action}: este producto ya tiene compras pagadas. Solo se permiten cambios (cantidad, prioridad, sección o eliminar) mientras todas las compras estén pendientes.`
+                              : `No es pot ${action}: aquest producte ja té compres pagades. Només es permeten canvis (quantitat, prioritat, secció o eliminar) mentre totes les compres estiguin pendents.`;
+                            toast.error(title, { description: desc });
+                          };
+                          const lockGuard = (action: string) => (e: React.SyntheticEvent) => {
+                            if (!hasPaid) return false;
+                            e.preventDefault();
+                            e.stopPropagation();
+                            notifyLocked(action);
+                            return true;
+                          };
                           return (
                           <div key={idx} className="relative">
                             {showInsertAbove && (
