@@ -56,6 +56,8 @@
     --terracotta-foreground: 0 0% 100%;
     --cream: 38 55% 95%;
     --sand: 30 40% 85%;
+    --last-unit: 0 85% 92%;
+    --last-unit-foreground: 0 65% 38%;
 
     --font-display: 'Sweet Pea', 'Caveat', cursive;
     --font-body: 'Nunito', 'Quicksand', sans-serif;
