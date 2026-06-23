@@ -213,7 +213,7 @@ const CheckoutPage: React.FC = () => {
           base_unit_price: baseUnit,
           tax_percentage: taxPct,
           tax_amount: lineTax,
-          list_item_id: null,
+          list_item_id: item.listItemId || null,
         };
       });
 
