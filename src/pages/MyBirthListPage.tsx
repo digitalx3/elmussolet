@@ -1275,10 +1275,56 @@ const MyBirthListPage: React.FC = () => {
                                         <Check className="h-3 w-3 mr-0.5" />
                                         {lang === 'es' ? `Comprado: ${totalQty}/${item.quantity_desired}` : `Comprat: ${totalQty}/${item.quantity_desired}`}
                                       </Badge>
-                                      {hasPaid && (
-                                        <Badge variant="outline" className="text-[10px] border-amber-500 text-amber-700">
-                                          {lang === 'es' ? '🔒 Bloqueado (pago confirmado)' : '🔒 Bloquejat (pagament confirmat)'}
-                                        </Badge>
+                                      {hasPaid ? (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Badge variant="outline" className="text-[10px] border-amber-500 text-amber-700 cursor-help gap-1">
+                                              <Lock className="h-3 w-3" />
+                                              {lang === 'es' ? 'Bloqueado' : 'Bloquejat'}
+                                              <Info className="h-3 w-3 opacity-70" />
+                                            </Badge>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="max-w-xs text-xs">
+                                            {lang === 'es' ? (
+                                              <div className="space-y-1">
+                                                <p className="font-semibold">Producto bloqueado</p>
+                                                <p>Este producto tiene compras con pago confirmado, por lo que no se puede modificar ni eliminar.</p>
+                                                <p className="text-muted-foreground">Solo se permite editar cantidad, prioridad, sección o eliminar el producto mientras todas las compras estén en estado <strong>pendiente</strong>.</p>
+                                              </div>
+                                            ) : (
+                                              <div className="space-y-1">
+                                                <p className="font-semibold">Producte bloquejat</p>
+                                                <p>Aquest producte té compres amb pagament confirmat, així que no es pot modificar ni eliminar.</p>
+                                                <p className="text-muted-foreground">Només es pot editar quantitat, prioritat, secció o eliminar el producte mentre totes les compres estiguin en estat <strong>pendent</strong>.</p>
+                                              </div>
+                                            )}
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      ) : (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700 cursor-help gap-1">
+                                              <Clock className="h-3 w-3" />
+                                              {lang === 'es' ? 'Editable (pendiente)' : 'Editable (pendent)'}
+                                              <Info className="h-3 w-3 opacity-70" />
+                                            </Badge>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="max-w-xs text-xs">
+                                            {lang === 'es' ? (
+                                              <div className="space-y-1">
+                                                <p className="font-semibold">Compras pendientes de pago</p>
+                                                <p>Aún puedes modificar la cantidad, la prioridad, cambiar de sección o eliminar el producto.</p>
+                                                <p className="text-muted-foreground">Cuando alguna compra pase a <strong>pagada</strong>, el producto quedará bloqueado automáticamente.</p>
+                                              </div>
+                                            ) : (
+                                              <div className="space-y-1">
+                                                <p className="font-semibold">Compres pendents de pagament</p>
+                                                <p>Encara pots modificar la quantitat, la prioritat, canviar de secció o eliminar el producte.</p>
+                                                <p className="text-muted-foreground">Quan alguna compra passi a <strong>pagada</strong>, el producte quedarà bloquejat automàticament.</p>
+                                              </div>
+                                            )}
+                                          </TooltipContent>
+                                        </Tooltip>
                                       )}
                                     </div>
                                     <div className="flex flex-col gap-0.5">
