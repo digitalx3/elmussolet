@@ -284,6 +284,23 @@ const BirthListViewPage: React.FC = () => {
                         </Badge>
                       )}
                       <p className="text-primary font-semibold text-sm mt-1">{getPrice(item).toFixed(2)} €</p>
+                      {(() => {
+                        const stockQty = item.variant ? item.variant.stock_quantity : item.product.stock_quantity;
+                        const stockStatus = item.product.stock_status;
+                        if (stockStatus === 'in_stock' && stockQty === 1) {
+                          return <Badge variant="secondary" className="mt-1 bg-last-unit text-last-unit-foreground">{t('products.lastUnit')}</Badge>;
+                        }
+                        if (stockStatus === 'in_stock') {
+                          return <Badge variant="secondary" className="mt-1 bg-sage text-sage-foreground">{t('products.inStock')}</Badge>;
+                        }
+                        if (stockStatus === 'on_order') {
+                          return <Badge variant="secondary" className="mt-1 bg-warm text-warm-foreground">{t('products.onOrder')}</Badge>;
+                        }
+                        if (stockStatus === 'out_of_stock') {
+                          return <Badge variant="destructive" className="mt-1">{t('products.outOfStock')}</Badge>;
+                        }
+                        return null;
+                      })()}
                     </div>
                     {status === 'purchased' && (
                       <Badge variant="secondary" className="flex-shrink-0 gap-1">
