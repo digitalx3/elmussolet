@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import {
-  DEFAULT_HERO_OVERRIDES_KEY,
   DefaultHeroOverrides,
+  HERO_ROTATION_MS,
+  HERO_VARIANT_KEYS,
   mergeHeroOverrides,
 } from '@/lib/defaultHeroSlide';
 
@@ -20,23 +21,48 @@ const DefaultHero: React.FC<Props> = ({ preview }) => {
   const { i18n } = useTranslation();
   const lang = i18n.language?.startsWith('es') ? 'es' : 'ca';
 
-  const { data: dbOverrides } = useQuery({
-    queryKey: ['default-hero-overrides-public'],
+  const { data: dbVariants } = useQuery({
+    queryKey: ['default-hero-variants-public'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('site_settings')
-        .select('value')
-        .eq('key', DEFAULT_HERO_OVERRIDES_KEY)
-        .maybeSingle();
+        .select('key, value')
+        .in('key', HERO_VARIANT_KEYS as unknown as string[]);
       if (error) throw error;
-      if (!data?.value) return null;
-      try { return JSON.parse(data.value as unknown as string) as DefaultHeroOverrides; }
-      catch { return null; }
+      const map = new Map<string, DefaultHeroOverrides>();
+      (data ?? []).forEach((row) => {
+        try {
+          map.set(row.key, JSON.parse(row.value as unknown as string) as DefaultHeroOverrides);
+        } catch { /* ignore */ }
+      });
+      return HERO_VARIANT_KEYS.map((k, i) => {
+        const v = map.get(k);
+        if (!v) return i === 0 ? {} : null; // variant 1 always shows fallback
+        if (v.enabled === false) return null;
+        return v;
+      });
     },
     enabled: !preview,
   });
 
-  const h = mergeHeroOverrides(preview ?? dbOverrides ?? undefined);
+  // Active variants for rotation
+  const variants: DefaultHeroOverrides[] = preview
+    ? [preview]
+    : ((dbVariants ?? [{}]).filter((v): v is DefaultHeroOverrides => v !== null));
+  const safeVariants = variants.length > 0 ? variants : [{}];
+
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    if (safeVariants.length <= 1) return;
+    const id = window.setInterval(() => {
+      setIndex((i) => (i + 1) % safeVariants.length);
+    }, HERO_ROTATION_MS);
+    return () => window.clearInterval(id);
+  }, [safeVariants.length]);
+
+  const current = safeVariants[Math.min(index, safeVariants.length - 1)];
+  const h = mergeHeroOverrides(current);
+
   const pick = (ca: string, es: string) => (lang === 'es' ? es || ca : ca || es);
 
   const eyebrow = pick(h.eyebrow_ca, h.eyebrow_es);

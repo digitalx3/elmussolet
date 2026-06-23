@@ -1,7 +1,12 @@
 export const DEFAULT_HERO_OVERRIDES_KEY = 'default_hero_overrides';
+export const DEFAULT_HERO_OVERRIDES_KEY_2 = 'default_hero_overrides_2';
+export const HERO_VARIANT_KEYS = [DEFAULT_HERO_OVERRIDES_KEY, DEFAULT_HERO_OVERRIDES_KEY_2] as const;
+export const HERO_ROTATION_MS = 10000;
 
 /** Editable content fields of the default hero (fixed layout). */
 export type DefaultHeroOverrides = {
+  /** When true, this variant is included in the rotation. Defaults to true for variant 1. */
+  enabled?: boolean;
   // Left block
   eyebrow_ca?: string;
   eyebrow_es?: string;
@@ -34,6 +39,7 @@ export type DefaultHeroOverrides = {
 
 export const DEFAULT_HERO: Required<Omit<DefaultHeroOverrides,
   'image_url' | 'card_logo_url'>> & { image_url: string | null; card_logo_url: string | null } = {
+  enabled: true,
   eyebrow_ca: 'Puericultura amb cor',
   eyebrow_es: 'Puericultura con corazón',
   title_ca: 'La teva botiga de puericultura de confiança',
