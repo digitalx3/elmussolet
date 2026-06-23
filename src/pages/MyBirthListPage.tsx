@@ -435,6 +435,19 @@ const MyBirthListPage: React.FC = () => {
     });
   };
 
+  const moveSection = (tempId: string, direction: 'up' | 'down') => {
+    setSections(prev => {
+      const idx = prev.findIndex(s => s.temp_id === tempId);
+      if (idx < 0) return prev;
+      const target = direction === 'up' ? idx - 1 : idx + 1;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next.map((x, i) => ({ ...x, sort_order: i }));
+    });
+  };
+
+
   const reorderItem = (fromIdx: number, toIdx: number) => {
     if (fromIdx === toIdx) return;
     setForm(prev => {
