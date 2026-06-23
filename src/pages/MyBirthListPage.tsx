@@ -562,6 +562,7 @@ const MyBirthListPage: React.FC = () => {
         sort_order: prev.items.length,
         productName: tr?.name || product.slug,
         price: product.base_price,
+        image_url: pickProductImage(product),
         section_temp_id: sectionTempId,
       }],
     }));
