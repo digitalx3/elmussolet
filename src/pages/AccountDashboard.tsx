@@ -202,7 +202,7 @@ function OrdersTab() {
     (async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_items(*, products(product_translations(name, language)))')
+        .select('*, birth_lists(baby_name, list_code), order_items(*, products(product_translations(name, language)))')
         .order('created_at', { ascending: false });
       if (!error && data) {
         setOrders(data as unknown as Order[]);
