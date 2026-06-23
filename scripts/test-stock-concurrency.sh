@@ -45,7 +45,7 @@ echo "product_id=$PRODUCT_ID"
 
 echo "== 2. Creating two pending orders =="
 # Pick any existing user (service-defined data) — required by orders.user_id FK
-USER_ID=$(psql -tA -c "SELECT id FROM auth.users ORDER BY created_at LIMIT 1;")
+USER_ID=$(psql -tA -c "SELECT id FROM public.profiles ORDER BY created_at LIMIT 1;")
 if [ -z "$USER_ID" ]; then
   echo "No auth.users found — create at least one user first." >&2
   exit 2
