@@ -350,17 +350,44 @@ const AdminBirthListForm: React.FC = () => {
     }
   };
 
-  const handleDelete = async () => {
+  const [deleteStep, setDeleteStep] = useState<'idle' | 'first' | 'orders' | 'final'>('idle');
+  const [ordersCount, setOrdersCount] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+
+  const openDeleteDialog = async () => {
     if (isNew || !id) return;
+    const { count, error } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('list_id', id);
+    if (error) {
+      toast.error(error.message || t('errors.generic'));
+      return;
+    }
+    const n = count ?? 0;
+    setOrdersCount(n);
+    setDeleteStep(n > 0 ? 'orders' : 'first');
+  };
+
+  const performDelete = async () => {
+    if (isNew || !id) return;
+    setDeleting(true);
     try {
-      await supabase.from('list_items').delete().eq('list_id', id);
-      await supabase.from('list_owners').delete().eq('list_id', id);
-      await supabase.from('birth_lists').delete().eq('id', id);
+      if (ordersCount > 0) {
+        // Delete orders first (cascades order_items), then the list cascades the rest.
+        const { error: ordErr } = await supabase.from('orders').delete().eq('list_id', id);
+        if (ordErr) throw ordErr;
+      }
+      const { error } = await supabase.from('birth_lists').delete().eq('id', id);
+      if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ['admin-birth-lists'] });
       toast.success(t('common.success'));
       navigate('/admin/llistes');
-    } catch {
-      toast.error(t('errors.generic'));
+    } catch (err: any) {
+      toast.error(err?.message || t('errors.generic'));
+    } finally {
+      setDeleting(false);
+      setDeleteStep('idle');
     }
   };
 
@@ -592,21 +619,61 @@ const AdminBirthListForm: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             {!isNew && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">{t('common.delete')}</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>{t('admin.deleteList')}</AlertDialogTitle>
-                    <AlertDialogDescription>{t('admin.deleteListConfirm')}</AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>{t('common.delete')}</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <>
+                <Button variant="destructive" size="sm" onClick={openDeleteDialog} disabled={deleting}>
+                  {t('common.delete')}
+                </Button>
+
+                {/* Step 1 (no orders): simple confirmation */}
+                <AlertDialog open={deleteStep === 'first'} onOpenChange={(o) => !o && setDeleteStep('idle')}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t('admin.deleteList')}</AlertDialogTitle>
+                      <AlertDialogDescription>{t('admin.deleteListConfirm')}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                      <AlertDialogAction onClick={performDelete}>{t('common.delete')}</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                {/* Step 1 (with orders): warn that orders will be deleted */}
+                <AlertDialog open={deleteStep === 'orders'} onOpenChange={(o) => !o && setDeleteStep('idle')}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t('admin.deleteListWithOrdersTitle')}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {t('admin.deleteListWithOrdersDesc', { count: ordersCount })}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => setDeleteStep('final')}>
+                        {t('admin.deleteListWithOrdersConfirm')}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                {/* Step 2 (with orders): final confirmation */}
+                <AlertDialog open={deleteStep === 'final'} onOpenChange={(o) => !o && setDeleteStep('idle')}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t('admin.deleteListFinalTitle')}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {t('admin.deleteListFinalDesc', { count: ordersCount })}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                      <AlertDialogAction onClick={performDelete} disabled={deleting}>
+                        {deleting ? t('common.loading') : t('common.delete')}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
             )}
           </div>
           <div className="flex gap-3">
