@@ -903,6 +903,15 @@ const MyBirthListPage: React.FC = () => {
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => setDeletingList({ id: l.id, label: l.baby_name || l.list_code })}
+                    title={lang === 'es' ? 'Eliminar lista' : 'Eliminar llista'}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
