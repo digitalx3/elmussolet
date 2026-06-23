@@ -1215,13 +1215,15 @@ const MyBirthListPage: React.FC = () => {
                           const isDropTarget = dragOverItemIdx === idx && draggedItemIdx !== null && draggedItemIdx !== idx;
                           const showInsertAbove = isDropTarget && (draggedItemIdx as number) > idx;
                           const showInsertBelow = isDropTarget && (draggedItemIdx as number) < idx;
+                          const itemPurchases = item.id ? (purchasesByItem[item.id] || []) : [];
+                          const hasPaid = itemPurchases.some((p: any) => p.payment_status === 'paid');
                           return (
                           <div key={idx} className="relative">
                             {showInsertAbove && (
                               <div className="absolute -top-1 left-0 right-0 h-0.5 bg-primary rounded-full shadow-[0_0_0_2px_hsl(var(--primary)/0.25)] z-10 pointer-events-none" />
                             )}
                           <div
-                            draggable
+                            draggable={!hasPaid}
                             onDragStart={() => {
                               productDragRef.current = { kind: 'move', itemIdx: idx };
                               setDraggedItemIdx(idx);
