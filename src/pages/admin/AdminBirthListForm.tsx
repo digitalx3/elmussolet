@@ -350,17 +350,44 @@ const AdminBirthListForm: React.FC = () => {
     }
   };
 
-  const handleDelete = async () => {
+  const [deleteStep, setDeleteStep] = useState<'idle' | 'first' | 'orders' | 'final'>('idle');
+  const [ordersCount, setOrdersCount] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+
+  const openDeleteDialog = async () => {
     if (isNew || !id) return;
+    const { count, error } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('list_id', id);
+    if (error) {
+      toast.error(error.message || t('errors.generic'));
+      return;
+    }
+    const n = count ?? 0;
+    setOrdersCount(n);
+    setDeleteStep(n > 0 ? 'orders' : 'first');
+  };
+
+  const performDelete = async () => {
+    if (isNew || !id) return;
+    setDeleting(true);
     try {
-      await supabase.from('list_items').delete().eq('list_id', id);
-      await supabase.from('list_owners').delete().eq('list_id', id);
-      await supabase.from('birth_lists').delete().eq('id', id);
+      if (ordersCount > 0) {
+        // Delete orders first (cascades order_items), then the list cascades the rest.
+        const { error: ordErr } = await supabase.from('orders').delete().eq('list_id', id);
+        if (ordErr) throw ordErr;
+      }
+      const { error } = await supabase.from('birth_lists').delete().eq('id', id);
+      if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ['admin-birth-lists'] });
       toast.success(t('common.success'));
       navigate('/admin/llistes');
-    } catch {
-      toast.error(t('errors.generic'));
+    } catch (err: any) {
+      toast.error(err?.message || t('errors.generic'));
+    } finally {
+      setDeleting(false);
+      setDeleteStep('idle');
     }
   };
 
