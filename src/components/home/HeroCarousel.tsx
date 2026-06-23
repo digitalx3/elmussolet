@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Device } from '@/components/admin/HeroCanvasEditor';
 import HeroSlideView, { Slide } from '@/components/home/HeroSlideView';
-import { createDefaultHeroSlide } from '@/lib/defaultHeroSlide';
+import { createDefaultHeroSlide, DEFAULT_HERO_OVERRIDES_KEY, DefaultHeroOverrides } from '@/lib/defaultHeroSlide';
 
 function useDevice(): Device {
   const [d, setD] = useState<Device>(() => {
@@ -33,20 +33,30 @@ const HeroCarousel: React.FC = () => {
   const { data: dbSlides, isLoading } = useQuery({
     queryKey: ['hero-slides-public'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('hero_slides')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as unknown as Slide[];
+      const [slidesRes, overridesRes] = await Promise.all([
+        supabase
+          .from('hero_slides')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true }),
+        supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', DEFAULT_HERO_OVERRIDES_KEY)
+          .maybeSingle(),
+      ]);
+      if (slidesRes.error) throw slidesRes.error;
+      let overrides: DefaultHeroOverrides = {};
+      if (overridesRes.data?.value) {
+        try { overrides = JSON.parse(overridesRes.data.value as unknown as string); } catch { /* ignore */ }
+      }
+      const active = (slidesRes.data ?? []) as unknown as Slide[];
+      if (active.length > 0) return active;
+      return [createDefaultHeroSlide({ id: 'fallback-default-hero', ...overrides }) as unknown as Slide];
     },
   });
 
-  const activeSlides = dbSlides ?? [];
-  const slides = activeSlides.length > 0
-    ? activeSlides
-    : (!isLoading ? [createDefaultHeroSlide({ id: 'fallback-default-hero' }) as unknown as Slide] : []);
+  const slides = !isLoading ? (dbSlides ?? []) : [];
 
   useEffect(() => {
     if (slides.length <= 1) return;

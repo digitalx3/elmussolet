@@ -19,6 +19,7 @@ import AdminUsers from '@/pages/admin/AdminUsers';
 import AdminSettings from '@/pages/admin/AdminSettings';
 import AdminHeroList from '@/pages/admin/AdminHeroList';
 import AdminHeroForm from '@/pages/admin/AdminHeroForm';
+import AdminDefaultHeroForm from '@/pages/admin/AdminDefaultHeroForm';
 import AdminPages from '@/pages/admin/AdminPages';
 import AdminHomeContent from '@/pages/admin/AdminHomeContent';
 import AdminAppearance from '@/pages/admin/AdminAppearance';
@@ -58,6 +59,7 @@ const AdminDashboard: React.FC = () => {
         <Route path="configuracio/general" element={<AdminSettings />} />
         <Route path="configuracio/estats" element={<AdminOrderStatuses />} />
         <Route path="heros" element={<AdminHeroList />} />
+        <Route path="heros/portada-defecte" element={<AdminDefaultHeroForm />} />
         <Route path="heros/nou" element={<AdminHeroForm />} />
         <Route path="heros/:id" element={<AdminHeroForm />} />
         <Route path="pagines" element={<AdminPages />} />
