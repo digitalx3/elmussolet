@@ -81,9 +81,12 @@ const MyBirthListPage: React.FC = () => {
   const [dragOverItemIdx, setDragOverItemIdx] = useState<number | null>(null);
   // Drag payload for products: either { itemIdx } (move existing) or { product } (add new)
   const productDragRef = React.useRef<{ kind: 'move'; itemIdx: number } | { kind: 'add'; product: any } | null>(null);
-  const [view, setView] = useState<'list' | 'editor'>('list');
+  const [view, setView] = useState<'list' | 'create-choice' | 'editor'>('list');
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [initialViewSet, setInitialViewSet] = useState(false);
+  const [customBabyName, setCustomBabyName] = useState('');
+  const [customSectionCa, setCustomSectionCa] = useState('');
+  const [customSectionEs, setCustomSectionEs] = useState('');
 
   const MAX_LISTS = 10;
   const isAdmin = profile?.role === 'admin';
