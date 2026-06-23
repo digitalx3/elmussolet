@@ -236,6 +236,31 @@ const MyBirthListPage: React.FC = () => {
     return map;
   }, [purchases]);
 
+  // Fetch variants for all products currently in the editor
+  const itemProductIds = useMemo(() => {
+    const ids = Array.from(new Set(form.items.map(i => i.product_id))).filter(Boolean);
+    return ids.sort();
+  }, [form.items]);
+
+  const { data: variantsByProduct = {} } = useQuery({
+    queryKey: ['my-birth-list-variants', itemProductIds.join(',')],
+    enabled: itemProductIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_variants')
+        .select('id, product_id, value, price_override, is_active, variant_type_id, variant_types(id, variant_type_translations(language, name))')
+        .in('product_id', itemProductIds)
+        .eq('is_active', true);
+      if (error) throw error;
+      const map: Record<string, any[]> = {};
+      (data || []).forEach((v: any) => {
+        (map[v.product_id] ||= []).push(v);
+      });
+      return map;
+    },
+  });
+
+
   // Decide initial view once lists are loaded
   useEffect(() => {
     if (initialViewSet || listsLoading) return;
@@ -680,7 +705,9 @@ const MyBirthListPage: React.FC = () => {
       }
 
 
-      queryClient.invalidateQueries({ queryKey: ['my-birth-lists', user.id] });
+      await queryClient.invalidateQueries({ queryKey: ['my-birth-lists', user.id] });
+      await queryClient.refetchQueries({ queryKey: ['my-birth-lists', user.id] });
+
       queryClient.invalidateQueries({ queryKey: ['my-birth-list-detail', currentId] });
       toast.success(t('common.success'));
       setForm(prev => ({ ...prev, password: '' }));
@@ -726,22 +753,9 @@ const MyBirthListPage: React.FC = () => {
     if (atLimit) return;
     resetEditor();
     setEditingListId(null);
-    if (customBabyName.trim()) {
-      setForm(prev => ({ ...prev, baby_name: customBabyName.trim() }));
-    }
-    const ca = customSectionCa.trim();
-    const es = customSectionEs.trim();
-    if (ca || es) {
-      setSections([{
-        temp_id: `new-${Date.now()}-0`,
-        name_ca: ca || es,
-        name_es: es || ca,
-        sort_order: 0,
-      }]);
-    }
-    setBrowseOpen(true);
     setView('editor');
   };
+
 
   const startFromTemplate = async (tplId: string) => {
     if (atLimit) return;
@@ -916,48 +930,20 @@ const MyBirthListPage: React.FC = () => {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {lang === 'es'
-                    ? 'Empieza desde cero. Crea tus secciones y añade productos desde el catálogo.'
-                    : 'Comença de zero. Crea les teves seccions i afegeix productes des del catàleg.'}
+                    ? 'Empieza desde cero. Configura la información de la lista y añade tus secciones y productos.'
+                    : 'Comença de zero. Configura la informació de la llista i afegeix les teves seccions i productes.'}
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">{lang === 'es' ? 'Nombre del bebé (opcional)' : 'Nom del nadó (opcional)'}</Label>
-                    <Input
-                      value={customBabyName}
-                      onChange={e => setCustomBabyName(e.target.value)}
-                      placeholder={lang === 'es' ? 'Ej. Júlia' : 'Ex. Júlia'}
-                      className="h-9"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{lang === 'es' ? 'Primera sección (CA)' : 'Primera secció (CA)'}</Label>
-                    <Input
-                      value={customSectionCa}
-                      onChange={e => setCustomSectionCa(e.target.value)}
-                      placeholder={lang === 'es' ? 'Ej. Habitació' : 'Ex. Habitació'}
-                      className="h-9"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{lang === 'es' ? 'Primera sección (ES)' : 'Primera secció (ES)'}</Label>
-                    <Input
-                      value={customSectionEs}
-                      onChange={e => setCustomSectionEs(e.target.value)}
-                      placeholder={lang === 'es' ? 'Ej. Habitación' : 'Ex. Habitación'}
-                      className="h-9"
-                    />
-                  </div>
-                </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="ghost" onClick={() => setView('list')}>
                     {t('common.cancel') !== 'common.cancel' ? t('common.cancel') : (lang === 'es' ? 'Cancelar' : 'Cancel·lar')}
                   </Button>
                   <Button onClick={startCustomList} className="gap-2">
                     <Plus className="h-4 w-4" />
-                    {lang === 'es' ? 'Empezar' : 'Començar'}
+                    {lang === 'es' ? 'Crear lista personalizada' : 'Crear llista personalitzada'}
                   </Button>
                 </div>
               </div>
+
             </CardContent>
           </Card>
         )}
@@ -1291,8 +1277,9 @@ const MyBirthListPage: React.FC = () => {
                   : (lang === 'es' ? 'Cargando plantilla…' : 'Carregant plantilla…')}
               </div>
             </div>
-          ) : form.items.length === 0 ? (
+          ) : form.items.length === 0 && sections.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">{t('list.emptyList')}</p>
+
           ) : (
             <div className="space-y-4">
               {[
@@ -1564,6 +1551,29 @@ const MyBirthListPage: React.FC = () => {
                                 ))}
                               </select>
                             )}
+                            {(variantsByProduct as any)[item.product_id]?.length > 0 && (
+                              <select
+                                value={item.variant_id || ''}
+                                onChange={e => { if (hasPaid) { notifyLocked(lang === 'es' ? 'cambiar la variante' : 'canviar la variant'); return; } updateItem(idx, 'variant_id', e.target.value || null); }}
+                                onMouseDown={e => { if (hasPaid) { e.preventDefault(); notifyLocked(lang === 'es' ? 'cambiar la variante' : 'canviar la variant'); } }}
+                                aria-disabled={hasPaid}
+                                className={`h-8 rounded-md border border-input bg-background px-2 text-xs max-w-[140px] ${hasPaid ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                title={lang === 'es' ? 'Variante / atributo' : 'Variant / atribut'}
+                              >
+                                <option value="">{lang === 'es' ? '— Sin variante —' : '— Sense variant —'}</option>
+                                {((variantsByProduct as any)[item.product_id] || []).map((v: any) => {
+                                  const typeName = v.variant_types?.variant_type_translations?.find((tt: any) => tt.language === lang)?.name
+                                    || v.variant_types?.variant_type_translations?.[0]?.name
+                                    || '';
+                                  return (
+                                    <option key={v.id} value={v.id}>
+                                      {typeName ? `${typeName}: ${v.value}` : v.value}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                            )}
+
                             <div className="w-20">
                               <Input
                                 type="number"
