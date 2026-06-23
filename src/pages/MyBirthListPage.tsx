@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -87,6 +88,34 @@ const MyBirthListPage: React.FC = () => {
   const [customBabyName, setCustomBabyName] = useState('');
   const [customSectionCa, setCustomSectionCa] = useState('');
   const [customSectionEs, setCustomSectionEs] = useState('');
+  const [deletingList, setDeletingList] = useState<{ id: string; label: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteList = async () => {
+    if (!deletingList) return;
+    setDeleting(true);
+    try {
+      const lid = deletingList.id;
+      await supabase.from('list_items').delete().eq('list_id', lid);
+      await supabase.from('list_sections').delete().eq('list_id', lid);
+      await supabase.from('list_owners').delete().eq('list_id', lid);
+      const { error } = await supabase.from('birth_lists').delete().eq('id', lid);
+      if (error) throw error;
+      toast.success(lang === 'es' ? 'Lista eliminada' : 'Llista eliminada');
+      if (editingListId === lid) {
+        setEditingListId(null);
+        setView('list');
+        resetEditor();
+      }
+      await queryClient.invalidateQueries({ queryKey: ['my-birth-lists', user?.id] });
+      await queryClient.refetchQueries({ queryKey: ['my-birth-lists', user?.id] });
+      setDeletingList(null);
+    } catch (e: any) {
+      toast.error(e?.message || (lang === 'es' ? 'No se pudo eliminar' : 'No s\'ha pogut eliminar'));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const MAX_LISTS = 10;
   const isAdmin = profile?.role === 'admin';
@@ -873,6 +902,15 @@ const MyBirthListPage: React.FC = () => {
                     onClick={() => window.open(`/llista-naixement`, '_blank')}
                   >
                     <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => setDeletingList({ id: l.id, label: l.baby_name || l.list_code })}
+                    title={lang === 'es' ? 'Eliminar lista' : 'Eliminar llista'}
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
@@ -1797,6 +1835,30 @@ const MyBirthListPage: React.FC = () => {
           {listId ? t('common.save') : t('list.createList')}
         </Button>
       </div>
+
+      <AlertDialog open={!!deletingList} onOpenChange={(o) => !o && !deleting && setDeletingList(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{lang === 'es' ? 'Eliminar lista' : 'Eliminar llista'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {lang === 'es'
+                ? `Esta acción eliminará permanentemente la lista "${deletingList?.label ?? ''}", sus productos y secciones. No se puede deshacer.`
+                : `Aquesta acció eliminarà permanentment la llista "${deletingList?.label ?? ''}", els seus productes i seccions. No es pot desfer.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{t('common.cancel') || (lang === 'es' ? 'Cancelar' : 'Cancel·lar')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDeleteList(); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {lang === 'es' ? 'Eliminar' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
