@@ -1428,16 +1428,6 @@ const MyBirthListPage: React.FC = () => {
                           >
                             <ChevronDown className="h-4 w-4" />
                           </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => removeSection(sec.temp_id)}
-                            title={lang === 'es' ? 'Eliminar sección' : 'Eliminar secció'}
-                          >
-                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                          </Button>
                         </>
                       )}
                     </div>
