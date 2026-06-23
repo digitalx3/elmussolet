@@ -1549,6 +1549,29 @@ const MyBirthListPage: React.FC = () => {
                                 ))}
                               </select>
                             )}
+                            {(variantsByProduct as any)[item.product_id]?.length > 0 && (
+                              <select
+                                value={item.variant_id || ''}
+                                onChange={e => { if (hasPaid) { notifyLocked(lang === 'es' ? 'cambiar la variante' : 'canviar la variant'); return; } updateItem(idx, 'variant_id', e.target.value || null); }}
+                                onMouseDown={e => { if (hasPaid) { e.preventDefault(); notifyLocked(lang === 'es' ? 'cambiar la variante' : 'canviar la variant'); } }}
+                                aria-disabled={hasPaid}
+                                className={`h-8 rounded-md border border-input bg-background px-2 text-xs max-w-[140px] ${hasPaid ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                title={lang === 'es' ? 'Variante / atributo' : 'Variant / atribut'}
+                              >
+                                <option value="">{lang === 'es' ? '— Sin variante —' : '— Sense variant —'}</option>
+                                {((variantsByProduct as any)[item.product_id] || []).map((v: any) => {
+                                  const typeName = v.variant_types?.variant_type_translations?.find((tt: any) => tt.language === lang)?.name
+                                    || v.variant_types?.variant_type_translations?.[0]?.name
+                                    || '';
+                                  return (
+                                    <option key={v.id} value={v.id}>
+                                      {typeName ? `${typeName}: ${v.value}` : v.value}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                            )}
+
                             <div className="w-20">
                               <Input
                                 type="number"
