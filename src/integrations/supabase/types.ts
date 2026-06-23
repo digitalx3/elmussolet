@@ -1344,6 +1344,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_order_item_stock_delta: {
+        Args: {
+          _delta: number
+          _list_item_id: string
+          _product_id: string
+          _variant_id: string
+        }
+        Returns: undefined
+      }
       get_list_purchases: {
         Args: { _list_id: string }
         Returns: {
