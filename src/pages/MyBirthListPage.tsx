@@ -1286,35 +1286,10 @@ const MyBirthListPage: React.FC = () => {
               </div>
             </div>
           )}
-          {/* Sections composer + draggable bars */}
-          <div className="rounded-md border border-border p-3 space-y-3">
-            <Label className="text-sm font-semibold">{t('list.sections')}</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2">
-              <Input
-                value={newSectionCa}
-                placeholder={lang === 'es' ? 'Nombre sección (CA)' : 'Nom secció (CA)'}
-                onChange={e => setNewSectionCa(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSection(); } }}
-                className="h-9 text-sm"
-              />
-              <Input
-                value={newSectionEs}
-                placeholder={lang === 'es' ? 'Nombre sección (ES)' : 'Nom secció (ES)'}
-                onChange={e => setNewSectionEs(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSection(); } }}
-                className="h-9 text-sm"
-              />
-              <Button type="button" onClick={handleAddSection} className="gap-1">
-                <Plus className="h-4 w-4" /> {t('list.addSection')}
-              </Button>
-            </div>
-
+          {/* Sections status (clients cannot create/rename sections) */}
+          <div className="rounded-md border border-border p-3 space-y-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <p className="text-[11px] text-muted-foreground">
-                {lang === 'es'
-                  ? 'Las secciones aparecen abajo con sus productos. Usa las flechas o arrastra para reordenarlas.'
-                  : 'Les seccions apareixen a sota amb els seus productes. Usa les fletxes o arrossega per reordenar-les.'}
-              </p>
+              <Label className="text-sm font-semibold">{t('list.sections')}</Label>
               {sectionsSaveStatus !== 'idle' && (
                 <Badge
                   variant={sectionsSaveStatus === 'error' ? 'destructive' : 'outline'}
@@ -1339,7 +1314,13 @@ const MyBirthListPage: React.FC = () => {
                 </Badge>
               )}
             </div>
+            <p className="text-[11px] text-muted-foreground">
+              {lang === 'es'
+                ? 'Las secciones están predefinidas. Añade productos a cada sección y reordénalas con las flechas o arrastrando. Si necesitas cambiar o eliminar una lista, contacta con el administrador.'
+                : 'Les seccions estan predefinides. Afegeix productes a cada secció i reordena-les amb les fletxes o arrossegant. Si necessites canviar o eliminar una llista, contacta amb l\'administrador.'}
+            </p>
           </div>
+
 
           {/* Items grouped by section */}
           {loadingTemplate ? (
