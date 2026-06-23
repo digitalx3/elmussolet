@@ -435,6 +435,22 @@ const MyBirthListPage: React.FC = () => {
     });
   };
 
+  const persistSectionsOrder = async (next: PendingSection[]) => {
+    if (!listId) return;
+    const updates = next
+      .map((s, i) => ({ id: s.id, sort_order: i }))
+      .filter(u => !!u.id);
+    if (updates.length === 0) return;
+    try {
+      await Promise.all(updates.map(u =>
+        supabase.from('list_sections').update({ sort_order: u.sort_order }).eq('id', u.id!)
+      ));
+      queryClient.invalidateQueries({ queryKey: ['my-birth-list-detail', listId] });
+    } catch (err: any) {
+      toast.error(err.message || t('errors.generic'));
+    }
+  };
+
   const moveSection = (tempId: string, direction: 'up' | 'down') => {
     setSections(prev => {
       const idx = prev.findIndex(s => s.temp_id === tempId);
@@ -443,9 +459,12 @@ const MyBirthListPage: React.FC = () => {
       if (target < 0 || target >= prev.length) return prev;
       const next = [...prev];
       [next[idx], next[target]] = [next[target], next[idx]];
-      return next.map((x, i) => ({ ...x, sort_order: i }));
+      const reindexed = next.map((x, i) => ({ ...x, sort_order: i }));
+      persistSectionsOrder(reindexed);
+      return reindexed;
     });
   };
+
 
 
   const reorderItem = (fromIdx: number, toIdx: number) => {
