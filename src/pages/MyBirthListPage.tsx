@@ -818,12 +818,31 @@ const MyBirthListPage: React.FC = () => {
     setView('create-choice');
   };
 
+  const DEFAULT_CUSTOM_SECTIONS: Array<{ name_ca: string; name_es: string }> = [
+    { name_ca: 'Higiene personal', name_es: 'Higiene personal' },
+    { name_ca: 'Dormir', name_es: 'Dormir' },
+    { name_ca: 'Alimentació', name_es: 'Alimentación' },
+    { name_ca: 'Passeig', name_es: 'Paseo' },
+    { name_ca: 'Per a casa', name_es: 'Para casa' },
+    { name_ca: 'Cotxe', name_es: 'Coche' },
+    { name_ca: 'Per a la mare (hospital)', name_es: 'Para la madre (hospital)' },
+    { name_ca: 'Per al bebè (hospital)', name_es: 'Para el bebé (hospital)' },
+    { name_ca: "Per a l'espera (hospital)", name_es: 'Para la espera (hospital)' },
+  ];
+
   const startCustomList = () => {
     if (atLimit) return;
     resetEditor();
     setEditingListId(null);
+    setSections(DEFAULT_CUSTOM_SECTIONS.map((s, i) => ({
+      temp_id: `new-${Date.now()}-${i}`,
+      name_ca: s.name_ca,
+      name_es: s.name_es,
+      sort_order: i,
+    })));
     setView('editor');
   };
+
 
 
   const startFromTemplate = async (tplId: string) => {
@@ -902,15 +921,6 @@ const MyBirthListPage: React.FC = () => {
                     onClick={() => window.open(`/llista-naixement`, '_blank')}
                   >
                     <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => setDeletingList({ id: l.id, label: l.baby_name || l.list_code })}
-                    title={lang === 'es' ? 'Eliminar lista' : 'Eliminar llista'}
-                  >
-                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
@@ -1276,35 +1286,10 @@ const MyBirthListPage: React.FC = () => {
               </div>
             </div>
           )}
-          {/* Sections composer + draggable bars */}
-          <div className="rounded-md border border-border p-3 space-y-3">
-            <Label className="text-sm font-semibold">{t('list.sections')}</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2">
-              <Input
-                value={newSectionCa}
-                placeholder={lang === 'es' ? 'Nombre sección (CA)' : 'Nom secció (CA)'}
-                onChange={e => setNewSectionCa(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSection(); } }}
-                className="h-9 text-sm"
-              />
-              <Input
-                value={newSectionEs}
-                placeholder={lang === 'es' ? 'Nombre sección (ES)' : 'Nom secció (ES)'}
-                onChange={e => setNewSectionEs(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSection(); } }}
-                className="h-9 text-sm"
-              />
-              <Button type="button" onClick={handleAddSection} className="gap-1">
-                <Plus className="h-4 w-4" /> {t('list.addSection')}
-              </Button>
-            </div>
-
+          {/* Sections status (clients cannot create/rename sections) */}
+          <div className="rounded-md border border-border p-3 space-y-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <p className="text-[11px] text-muted-foreground">
-                {lang === 'es'
-                  ? 'Las secciones aparecen abajo con sus productos. Usa las flechas o arrastra para reordenarlas.'
-                  : 'Les seccions apareixen a sota amb els seus productes. Usa les fletxes o arrossega per reordenar-les.'}
-              </p>
+              <Label className="text-sm font-semibold">{t('list.sections')}</Label>
               {sectionsSaveStatus !== 'idle' && (
                 <Badge
                   variant={sectionsSaveStatus === 'error' ? 'destructive' : 'outline'}
@@ -1329,7 +1314,13 @@ const MyBirthListPage: React.FC = () => {
                 </Badge>
               )}
             </div>
+            <p className="text-[11px] text-muted-foreground">
+              {lang === 'es'
+                ? 'Las secciones están predefinidas. Añade productos a cada sección y reordénalas con las flechas o arrastrando. Si necesitas cambiar o eliminar una lista, contacta con el administrador.'
+                : 'Les seccions estan predefinides. Afegeix productes a cada secció i reordena-les amb les fletxes o arrossegant. Si necessites canviar o eliminar una llista, contacta amb l\'administrador.'}
+            </p>
           </div>
+
 
           {/* Items grouped by section */}
           {loadingTemplate ? (
@@ -1436,16 +1427,6 @@ const MyBirthListPage: React.FC = () => {
                             title={lang === 'es' ? 'Bajar sección' : 'Baixar secció'}
                           >
                             <ChevronDown className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => removeSection(sec.temp_id)}
-                            title={lang === 'es' ? 'Eliminar sección' : 'Eliminar secció'}
-                          >
-                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
                           </Button>
                         </>
                       )}
