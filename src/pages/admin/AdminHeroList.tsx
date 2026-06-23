@@ -106,47 +106,6 @@ const AdminHeroList: React.FC = () => {
     },
   });
 
-  const configureDefault = useMutation({
-    mutationFn: async () => {
-      const activeSlide = slides.find((s) => s.is_active);
-      if (activeSlide) return activeSlide;
-
-      const existingDefaultDraft = slides.find((s) => s.name === DEFAULT_HERO_NAME);
-      if (existingDefaultDraft) {
-        const { data, error } = await supabase
-          .from('hero_slides')
-          .update({ is_active: true, sort_order: 0 })
-          .eq('id', existingDefaultDraft.id)
-          .select()
-          .single();
-        if (error) throw error;
-        return data;
-      }
-
-      const { data: minRow } = await supabase
-        .from('hero_slides')
-        .select('sort_order')
-        .order('sort_order', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      const sort_order = Math.min(((minRow as { sort_order?: number } | null)?.sort_order ?? 0) - 1, 0);
-      const payload = createDefaultHeroSlide({ is_active: true, sort_order }) as never;
-      const { data, error } = await supabase.from('hero_slides').insert(payload).select().single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: ['hero-slides-admin'] });
-      qc.invalidateQueries({ queryKey: ['hero-slides-public'] });
-      toast.success('Portada per defecte preparada per editar');
-      if (data?.id) navigate(`/admin/heros/${data.id}`);
-    },
-    onError: (e: unknown) => {
-      console.error(e);
-      toast.error('No s\'ha pogut preparar la portada per defecte');
-    },
-  });
-
   const move = useMutation({
     mutationFn: async ({ id, dir }: { id: string; dir: -1 | 1 }) => {
       const idx = slides.findIndex((s) => s.id === id);
@@ -171,8 +130,8 @@ const AdminHeroList: React.FC = () => {
           <p className="text-muted-foreground text-sm">Gestiona els slides del carrusel de la home.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button variant="default" onClick={() => configureDefault.mutate()} disabled={configureDefault.isPending} className="gap-2">
-            <Pencil className="h-4 w-4" /> Configurar portada visible
+          <Button variant="default" onClick={() => navigate('/admin/heros/portada-defecte')} className="gap-2">
+            <Pencil className="h-4 w-4" /> Editar portada per defecte
           </Button>
           <Button variant="outline" onClick={() => seedDefault.mutate()} disabled={seedDefault.isPending} className="gap-2">
             <Sparkles className="h-4 w-4" /> Crear des de plantilla
@@ -187,13 +146,12 @@ const AdminHeroList: React.FC = () => {
         <div className="text-muted-foreground">Carregant...</div>
       ) : slides.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-border rounded-lg">
-          <p className="text-muted-foreground mb-4">No hi ha cap hero guardat. La home mostra la portada per defecte integrada.</p>
+          <p className="text-muted-foreground mb-4">
+            No hi ha cap hero personalitzat. La home mostra la portada per defecte, que pots editar amb el botó "Editar portada per defecte".
+          </p>
           <div className="flex justify-center gap-2 flex-wrap">
-            <Button variant="default" onClick={() => configureDefault.mutate()} disabled={configureDefault.isPending} className="gap-2">
-              <Pencil className="h-4 w-4" /> Configurar portada per defecte
-            </Button>
-            <Button variant="outline" onClick={() => seedDefault.mutate()} disabled={seedDefault.isPending} className="gap-2">
-              <Sparkles className="h-4 w-4" /> Crear des de plantilla
+            <Button variant="default" onClick={() => navigate('/admin/heros/portada-defecte')} className="gap-2">
+              <Pencil className="h-4 w-4" /> Editar portada per defecte
             </Button>
             <Button onClick={() => navigate('/admin/heros/nou')} className="gap-2">
               <Plus className="h-4 w-4" /> Crear hero en esborrany

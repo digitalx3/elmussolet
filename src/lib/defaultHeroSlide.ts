@@ -1,8 +1,30 @@
 import { defaultLayout } from '@/components/admin/HeroCanvasEditor';
 
 export const DEFAULT_HERO_NAME = 'Hero per defecte';
+export const DEFAULT_HERO_OVERRIDES_KEY = 'default_hero_overrides';
 
-export function createDefaultHeroSlide(overrides: Record<string, unknown> = {}) {
+/** Editable content fields of the default hero. Structure/layout never changes. */
+export type DefaultHeroOverrides = {
+  background_image_url?: string | null;
+  background_overlay?: number;
+  badge_text_ca?: string;
+  badge_text_es?: string;
+  title_ca?: string;
+  title_es?: string;
+  subtitle_ca?: string;
+  subtitle_es?: string;
+  button1_text_ca?: string;
+  button1_text_es?: string;
+  button1_url?: string;
+  button1_variant?: string;
+  button2_text_ca?: string;
+  button2_text_es?: string;
+  button2_url?: string;
+  button2_variant?: string;
+};
+
+/** Base template (structure + default content). Structure is fixed. */
+export function baseDefaultHeroSlide() {
   return {
     name: DEFAULT_HERO_NAME,
     is_active: true,
@@ -24,8 +46,37 @@ export function createDefaultHeroSlide(overrides: Record<string, unknown> = {}) 
     button2_variant: 'outline',
     layout: defaultLayout(),
     canvas_heights: { desktop: 600, tablet: 520, mobile: 560 },
-    floating_images: [],
+    floating_images: [] as unknown[],
     sort_order: 0,
-    ...overrides,
   };
+}
+
+/** Build the default slide, merging only allowed content overrides. */
+export function createDefaultHeroSlide(
+  overrides: DefaultHeroOverrides & Record<string, unknown> = {},
+) {
+  const base = baseDefaultHeroSlide();
+  const allowed: (keyof DefaultHeroOverrides)[] = [
+    'background_image_url',
+    'background_overlay',
+    'badge_text_ca', 'badge_text_es',
+    'title_ca', 'title_es',
+    'subtitle_ca', 'subtitle_es',
+    'button1_text_ca', 'button1_text_es', 'button1_url', 'button1_variant',
+    'button2_text_ca', 'button2_text_es', 'button2_url', 'button2_variant',
+  ];
+  const merged: Record<string, unknown> = { ...base };
+  for (const k of allowed) {
+    const v = (overrides as Record<string, unknown>)[k];
+    if (v !== undefined && v !== null && v !== '') merged[k] = v;
+    else if (k === 'background_image_url' && 'background_image_url' in overrides) {
+      // explicit null allowed (image removed)
+      merged[k] = v ?? null;
+    }
+  }
+  // allow caller to override non-content fields like id / is_active for the fallback render
+  for (const k of Object.keys(overrides)) {
+    if (!(allowed as string[]).includes(k)) merged[k] = (overrides as Record<string, unknown>)[k];
+  }
+  return merged;
 }
