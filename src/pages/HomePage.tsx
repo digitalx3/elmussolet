@@ -1,11 +1,11 @@
 import React from 'react';
-import HeroCarousel from '@/components/home/HeroCarousel';
+import DefaultHero from '@/components/home/DefaultHero';
 import HomeBlocks from '@/components/home/HomeBlocks';
 
 const HomePage: React.FC = () => {
   return (
     <div className="bg-background">
-      <HeroCarousel />
+      <DefaultHero />
       <HomeBlocks />
     </div>
   );
