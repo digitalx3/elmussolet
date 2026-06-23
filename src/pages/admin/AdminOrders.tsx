@@ -472,7 +472,20 @@ const AdminOrders: React.FC = () => {
               <Separator />
 
               <div className="py-3">
-                <p className="text-sm font-semibold mb-3">{t('admin.orderItems')}</p>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-semibold">{t('admin.orderItems')}</p>
+                  {isEditable ? (
+                    <Button variant={editing ? 'default' : 'outline'} size="sm" onClick={() => setEditing(e => !e)} className="gap-1">
+                      {editing ? <><Check className="h-3.5 w-3.5" />{t('common.done', 'Fet')}</> : <><Pencil className="h-3.5 w-3.5" />{t('common.edit')}</>}
+                    </Button>
+                  ) : (
+                    selectedOrder.payment_status === 'paid' && (
+                      <span className="text-xs text-muted-foreground italic">
+                        {t('admin.orderPaidNoEdit', 'Comanda pagada · per modificar, crea una comanda nova')}
+                      </span>
+                    )
+                  )}
+                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -482,21 +495,74 @@ const AdminOrders: React.FC = () => {
                       <TableHead className="text-right">{t('account.orderTaxPct')}</TableHead>
                       <TableHead className="text-right">{t('account.orderTaxAmt')}</TableHead>
                       <TableHead className="text-right">{t('admin.orderTotal')}</TableHead>
+                      {editing && <TableHead className="w-10"></TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {orderItems.map(item => (
                       <TableRow key={item.id}>
                         <TableCell className="text-sm">{getProductName(item)}</TableCell>
-                        <TableCell className="text-center">{item.quantity}</TableCell>
+                        <TableCell className="text-center">
+                          {editing ? (
+                            <Input
+                              type="number"
+                              min={1}
+                              value={item.quantity}
+                              onChange={e => {
+                                const q = parseInt(e.target.value) || 1;
+                                if (q !== item.quantity) updateItemQtyMutation.mutate({ item, quantity: q });
+                              }}
+                              className="w-16 h-8 text-center text-sm mx-auto"
+                            />
+                          ) : item.quantity}
+                        </TableCell>
                         <TableCell className="text-right text-sm">{formatPrice(item.base_unit_price ?? item.unit_price)}</TableCell>
                         <TableCell className="text-right text-sm">{item.tax_percentage ?? 0}%</TableCell>
                         <TableCell className="text-right text-sm">{formatPrice(item.tax_amount ?? 0)}</TableCell>
                         <TableCell className="text-right text-sm font-medium">{formatPrice(item.total_price)}</TableCell>
+                        {editing && (
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteItemMutation.mutate(item)}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
+
+                {editing && (
+                  <div className="mt-4 relative">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder={t('admin.searchProductToAdd')}
+                        value={productSearch}
+                        onChange={e => handleProductSearch(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                    {productResults.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-lg shadow-elevated max-h-48 overflow-y-auto">
+                        {productResults.map((p: any) => {
+                          const tr = p.product_translations?.find((t: any) => t.language === lang) || p.product_translations?.[0];
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              className="w-full text-left px-3 py-2 hover:bg-muted/50 flex justify-between items-center text-sm"
+                              onClick={() => addItemMutation.mutate(p)}
+                            >
+                              <span className="flex items-center gap-2"><Plus className="h-3.5 w-3.5" />{tr?.name || p.slug}</span>
+                              <span className="text-muted-foreground">{Number(p.base_price).toFixed(2)} €</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <Separator />
