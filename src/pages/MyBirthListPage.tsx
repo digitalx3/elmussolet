@@ -1138,27 +1138,68 @@ const MyBirthListPage: React.FC = () => {
               {[
                 ...sections.map(s => ({ temp_id: s.temp_id, label: (lang === 'es' ? s.name_es : s.name_ca) || '(?)' })),
                 { temp_id: '__none__', label: t('list.noSection') },
-              ].map(sec => {
+              ].map((sec, secIdx, arr) => {
                 const sectionItems = form.items
                   .map((it, idx) => ({ it, idx }))
                   .filter(({ it }) => sec.temp_id === '__none__' ? !it.section_temp_id : it.section_temp_id === sec.temp_id);
                 if (sec.temp_id === '__none__' && sectionItems.length === 0) return null;
+                const isNone = sec.temp_id === '__none__';
+                const realSectionsCount = arr.length - 1; // exclude __none__
+                const canMoveUp = !isNone && secIdx > 0;
+                const canMoveDown = !isNone && secIdx < realSectionsCount - 1;
                 return (
                   <div key={sec.temp_id} className="space-y-2">
                     <div
-                      onDragOver={sec.temp_id !== '__none__' ? undefined : (e => { e.preventDefault(); })}
-                      onDrop={sec.temp_id !== '__none__' ? undefined : (e => {
+                      onDragOver={e => { e.preventDefault(); }}
+                      onDrop={e => {
                         e.preventDefault();
                         const payload = productDragRef.current;
-                        if (payload?.kind === 'move') assignItemSection(payload.itemIdx, null);
-                        else if (payload?.kind === 'add') addProductToSection(payload.product, null);
+                        const target = isNone ? null : sec.temp_id;
+                        if (payload?.kind === 'move') assignItemSection(payload.itemIdx, target);
+                        else if (payload?.kind === 'add') addProductToSection(payload.product, target);
                         productDragRef.current = null;
-                      })}
+                      }}
                       className="flex items-center gap-2 px-2 py-1.5 border-l-4 border-primary bg-muted/40 rounded"
                     >
                       <FolderOpen className="h-4 w-4 text-primary" />
                       <span className="text-sm font-semibold flex-1 truncate">{sec.label}</span>
-                      <span className="text-xs text-muted-foreground">({sectionItems.length})</span>
+                      <Badge variant="outline" className="text-[10px]">{sectionItems.length}</Badge>
+                      {!isNone && (
+                        <>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            disabled={!canMoveUp}
+                            onClick={() => moveSection(sec.temp_id, 'up')}
+                            title={lang === 'es' ? 'Subir sección' : 'Pujar secció'}
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            disabled={!canMoveDown}
+                            onClick={() => moveSection(sec.temp_id, 'down')}
+                            title={lang === 'es' ? 'Bajar sección' : 'Baixar secció'}
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => removeSection(sec.temp_id)}
+                            title={lang === 'es' ? 'Eliminar sección' : 'Eliminar secció'}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                     {sectionItems.length === 0 ? (
                       <p className="text-xs text-muted-foreground italic pl-3">
