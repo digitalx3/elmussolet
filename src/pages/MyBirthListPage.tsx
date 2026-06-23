@@ -265,6 +265,8 @@ const MyBirthListPage: React.FC = () => {
         items: (existing.items || []).map((item: any) => {
           const tr = item.product?.product_translations?.find((t: any) => t.language === lang)
             || item.product?.product_translations?.[0];
+          const imgs = (item.product?.product_images || []).slice().sort((a: any, b: any) =>
+            (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order || 0) - (b.sort_order || 0));
           return {
             id: item.id,
             product_id: item.product_id,
@@ -274,6 +276,7 @@ const MyBirthListPage: React.FC = () => {
             sort_order: item.sort_order,
             productName: tr?.name || item.product_id,
             price: item.product?.base_price,
+            image_url: imgs[0]?.image_url || null,
             section_id: item.section_id || null,
             section_temp_id: item.section_id || null,
           };
