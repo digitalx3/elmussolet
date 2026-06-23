@@ -818,12 +818,31 @@ const MyBirthListPage: React.FC = () => {
     setView('create-choice');
   };
 
+  const DEFAULT_CUSTOM_SECTIONS: Array<{ name_ca: string; name_es: string }> = [
+    { name_ca: 'Higiene personal', name_es: 'Higiene personal' },
+    { name_ca: 'Dormir', name_es: 'Dormir' },
+    { name_ca: 'Alimentació', name_es: 'Alimentación' },
+    { name_ca: 'Passeig', name_es: 'Paseo' },
+    { name_ca: 'Per a casa', name_es: 'Para casa' },
+    { name_ca: 'Cotxe', name_es: 'Coche' },
+    { name_ca: 'Per a la mare (hospital)', name_es: 'Para la madre (hospital)' },
+    { name_ca: 'Per al bebè (hospital)', name_es: 'Para el bebé (hospital)' },
+    { name_ca: "Per a l'espera (hospital)", name_es: 'Para la espera (hospital)' },
+  ];
+
   const startCustomList = () => {
     if (atLimit) return;
     resetEditor();
     setEditingListId(null);
+    setSections(DEFAULT_CUSTOM_SECTIONS.map((s, i) => ({
+      temp_id: `new-${Date.now()}-${i}`,
+      name_ca: s.name_ca,
+      name_es: s.name_es,
+      sort_order: i,
+    })));
     setView('editor');
   };
+
 
 
   const startFromTemplate = async (tplId: string) => {
