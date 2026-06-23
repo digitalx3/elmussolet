@@ -25,7 +25,7 @@ const AdminHeroForm: React.FC = () => {
   const isNew = !id || id === 'nou';
 
   const [name, setName] = useState('');
-  const [isActive, setIsActive] = useState(true);
+  const [isActive, setIsActive] = useState(false);
   const [bgUrl, setBgUrl] = useState<string | null>(null);
   const [overlay, setOverlay] = useState(0.2);
   const [badgeCa, setBadgeCa] = useState('');
@@ -164,8 +164,13 @@ const AdminHeroForm: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <input type="checkbox" id="active" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-            <Label htmlFor="active" className="cursor-pointer">Actiu al carrusel</Label>
+            <Label htmlFor="active" className="cursor-pointer">Publicar al front-office</Label>
           </div>
+          {isNew && !isActive && (
+            <p className="text-xs text-muted-foreground -mt-3">
+              Els nous heros es desen com a esborrany i no apareixen a la web fins que l'admin els activa manualment.
+            </p>
+          )}
 
           <div className="border-t border-border pt-4">
             <Label className="mb-2 block">Imatge de fons</Label>

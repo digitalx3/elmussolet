@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Device } from '@/components/admin/HeroCanvasEditor';
 import HeroSlideView, { Slide } from '@/components/home/HeroSlideView';
+import { createDefaultHeroSlide } from '@/lib/defaultHeroSlide';
 
 function useDevice(): Device {
   const [d, setD] = useState<Device>(() => {
@@ -29,7 +30,7 @@ const HeroCarousel: React.FC = () => {
   const device = useDevice();
   const [index, setIndex] = useState(0);
 
-  const { data: slides = [] } = useQuery({
+  const { data: dbSlides, isLoading } = useQuery({
     queryKey: ['hero-slides-public'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -42,10 +43,19 @@ const HeroCarousel: React.FC = () => {
     },
   });
 
+  const activeSlides = dbSlides ?? [];
+  const slides = activeSlides.length > 0
+    ? activeSlides
+    : (!isLoading ? [createDefaultHeroSlide({ id: 'fallback-default-hero' }) as unknown as Slide] : []);
+
   useEffect(() => {
     if (slides.length <= 1) return;
     const t = setInterval(() => setIndex((i) => (i + 1) % slides.length), 6000);
     return () => clearInterval(t);
+  }, [slides.length]);
+
+  useEffect(() => {
+    setIndex(0);
   }, [slides.length]);
 
   if (slides.length === 0) return null;

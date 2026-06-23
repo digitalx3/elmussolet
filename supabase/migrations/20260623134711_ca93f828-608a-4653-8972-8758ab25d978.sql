@@ -1,0 +1,1 @@
+ALTER TABLE public.hero_slides ALTER COLUMN is_active SET DEFAULT false;
