@@ -1218,6 +1218,20 @@ const MyBirthListPage: React.FC = () => {
                           const showInsertBelow = isDropTarget && (draggedItemIdx as number) < idx;
                           const itemPurchases = item.id ? (purchasesByItem[item.id] || []) : [];
                           const hasPaid = itemPurchases.some((p: any) => p.payment_status === 'paid');
+                          const notifyLocked = (action: string) => {
+                            const title = lang === 'es' ? 'Producto bloqueado' : 'Producte bloquejat';
+                            const desc = lang === 'es'
+                              ? `No se puede ${action}: este producto ya tiene compras pagadas. Solo se permiten cambios (cantidad, prioridad, sección o eliminar) mientras todas las compras estén pendientes.`
+                              : `No es pot ${action}: aquest producte ja té compres pagades. Només es permeten canvis (quantitat, prioritat, secció o eliminar) mentre totes les compres estiguin pendents.`;
+                            toast.error(title, { description: desc });
+                          };
+                          const lockGuard = (action: string) => (e: React.SyntheticEvent) => {
+                            if (!hasPaid) return false;
+                            e.preventDefault();
+                            e.stopPropagation();
+                            notifyLocked(action);
+                            return true;
+                          };
                           return (
                           <div key={idx} className="relative">
                             {showInsertAbove && (
@@ -1350,9 +1364,10 @@ const MyBirthListPage: React.FC = () => {
                             {sections.length > 0 && (
                               <select
                                 value={item.section_temp_id || ''}
-                                onChange={e => assignItemSection(idx, e.target.value || null)}
-                                disabled={hasPaid}
-                                className="h-8 rounded-md border border-input bg-background px-2 text-xs max-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed"
+                                onChange={e => { if (hasPaid) { notifyLocked(lang === 'es' ? 'reasignar la sección' : 'reassignar la secció'); return; } assignItemSection(idx, e.target.value || null); }}
+                                onMouseDown={e => { if (hasPaid) { e.preventDefault(); notifyLocked(lang === 'es' ? 'reasignar la sección' : 'reassignar la secció'); } }}
+                                aria-disabled={hasPaid}
+                                className={`h-8 rounded-md border border-input bg-background px-2 text-xs max-w-[140px] ${hasPaid ? 'opacity-50 cursor-not-allowed' : ''}`}
                               >
                                 <option value="">— {t('list.noSection')} —</option>
                                 {sections.map(s => (
@@ -1367,26 +1382,29 @@ const MyBirthListPage: React.FC = () => {
                                 type="number"
                                 min={1}
                                 value={item.quantity_desired}
-                                onChange={e => updateItem(idx, 'quantity_desired', parseInt(e.target.value) || 1)}
-                                disabled={hasPaid}
-                                title={hasPaid ? (lang === 'es' ? 'No editable: hay compras pagadas' : 'No editable: hi ha compres pagades') : undefined}
-                                className="h-8"
+                                onChange={e => { if (hasPaid) { notifyLocked(lang === 'es' ? 'cambiar la cantidad' : 'canviar la quantitat'); return; } updateItem(idx, 'quantity_desired', parseInt(e.target.value) || 1); }}
+                                onFocus={e => { if (hasPaid) { (e.target as HTMLInputElement).blur(); notifyLocked(lang === 'es' ? 'cambiar la cantidad' : 'canviar la quantitat'); } }}
+                                readOnly={hasPaid}
+                                className={`h-8 ${hasPaid ? 'opacity-50 cursor-not-allowed' : ''}`}
                               />
                             </div>
-                            <Select value={item.priority} onValueChange={v => updateItem(idx, 'priority', v)} disabled={hasPaid}>
-                              <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="high">{t('list.priorityHigh')}</SelectItem>
-                                <SelectItem value="medium">{t('list.priorityMedium')}</SelectItem>
-                                <SelectItem value="low">{t('list.priorityLow')}</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <div
+                              onPointerDownCapture={e => { if (hasPaid) { e.preventDefault(); e.stopPropagation(); notifyLocked(lang === 'es' ? 'cambiar la prioridad' : 'canviar la prioritat'); } }}
+                              className={hasPaid ? 'opacity-50 cursor-not-allowed' : ''}
+                            >
+                              <Select value={item.priority} onValueChange={v => { if (hasPaid) return; updateItem(idx, 'priority', v); }}>
+                                <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="high">{t('list.priorityHigh')}</SelectItem>
+                                  <SelectItem value="medium">{t('list.priorityMedium')}</SelectItem>
+                                  <SelectItem value="low">{t('list.priorityLow')}</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => removeItem(idx)}
-                              disabled={hasPaid}
-                              title={hasPaid ? (lang === 'es' ? 'No se puede eliminar: hay compras pagadas' : 'No es pot eliminar: hi ha compres pagades') : undefined}
+                              onClick={() => { if (hasPaid) { notifyLocked(lang === 'es' ? 'eliminar el producto' : 'eliminar el producte'); return; } removeItem(idx); }}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
