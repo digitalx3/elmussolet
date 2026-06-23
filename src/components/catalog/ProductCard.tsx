@@ -12,9 +12,12 @@ interface Props {
   view: 'grid' | 'list';
 }
 
-const stockBadge = (status: string, t: (k: string) => string) => {
+const stockBadge = (status: string, quantity: number, t: (k: string) => string) => {
   switch (status) {
     case 'in_stock':
+      if (quantity === 1) {
+        return <Badge variant="secondary" className="bg-last-unit text-last-unit-foreground">{t('products.lastUnit')}</Badge>;
+      }
       return <Badge variant="secondary" className="bg-sage text-sage-foreground">{t('products.inStock')}</Badge>;
     case 'on_order':
       return <Badge variant="secondary" className="bg-warm text-warm-foreground">{t('products.onOrder')}</Badge>;
