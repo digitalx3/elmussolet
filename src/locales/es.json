@@ -70,6 +70,7 @@
     "price": "Precio",
     "availability": "Disponibilidad",
     "inStock": "En stock",
+    "lastUnit": "Última unidad disponible",
     "onOrder": "Bajo pedido",
     "outOfStock": "Agotado",
     "allProducts": "Todos los productos",

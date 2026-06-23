@@ -34,6 +34,8 @@ interface ListItemWithProduct {
     slug: string;
     base_price: number;
     has_variants: boolean;
+    stock_quantity: number;
+    stock_status: string;
     product_translations: Array<{ language: string; name: string; short_description: string | null }>;
     product_images: Array<{ image_url: string; is_primary: boolean; alt_text: string | null }>;
   };
@@ -41,6 +43,7 @@ interface ListItemWithProduct {
     id: string;
     value: string;
     price_override: number | null;
+    stock_quantity: number;
     variant_type_id: string;
   } | null;
 }
@@ -75,7 +78,7 @@ const BirthListViewPage: React.FC = () => {
           .select(`
             id, product_id, variant_id, section_id, quantity_desired, quantity_purchased, priority, sort_order,
             product:products(
-              id, slug, base_price, has_variants,
+              id, slug, base_price, has_variants, stock_quantity, stock_status,
               product_translations(language, name, short_description),
               product_images(image_url, is_primary, alt_text),
               tax_rates(percentage)
@@ -100,7 +103,7 @@ const BirthListViewPage: React.FC = () => {
           if (item.variant_id) {
             const { data: v } = await supabase
               .from('product_variants')
-              .select('id, value, price_override, variant_type_id')
+              .select('id, value, price_override, stock_quantity, variant_type_id')
               .eq('id', item.variant_id)
               .single();
             variant = v;
@@ -281,6 +284,23 @@ const BirthListViewPage: React.FC = () => {
                         </Badge>
                       )}
                       <p className="text-primary font-semibold text-sm mt-1">{getPrice(item).toFixed(2)} €</p>
+                      {(() => {
+                        const stockQty = item.variant ? item.variant.stock_quantity : item.product.stock_quantity;
+                        const stockStatus = item.product.stock_status;
+                        if (stockStatus === 'in_stock' && stockQty === 1) {
+                          return <Badge variant="secondary" className="mt-1 bg-last-unit text-last-unit-foreground">{t('products.lastUnit')}</Badge>;
+                        }
+                        if (stockStatus === 'in_stock') {
+                          return <Badge variant="secondary" className="mt-1 bg-sage text-sage-foreground">{t('products.inStock')}</Badge>;
+                        }
+                        if (stockStatus === 'on_order') {
+                          return <Badge variant="secondary" className="mt-1 bg-warm text-warm-foreground">{t('products.onOrder')}</Badge>;
+                        }
+                        if (stockStatus === 'out_of_stock') {
+                          return <Badge variant="destructive" className="mt-1">{t('products.outOfStock')}</Badge>;
+                        }
+                        return null;
+                      })()}
                     </div>
                     {status === 'purchased' && (
                       <Badge variant="secondary" className="flex-shrink-0 gap-1">

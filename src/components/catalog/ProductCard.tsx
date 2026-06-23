@@ -12,9 +12,12 @@ interface Props {
   view: 'grid' | 'list';
 }
 
-const stockBadge = (status: string, t: (k: string) => string) => {
+const stockBadge = (status: string, quantity: number, t: (k: string) => string) => {
   switch (status) {
     case 'in_stock':
+      if (quantity === 1) {
+        return <Badge variant="secondary" className="bg-last-unit text-last-unit-foreground">{t('products.lastUnit')}</Badge>;
+      }
       return <Badge variant="secondary" className="bg-sage text-sage-foreground">{t('products.inStock')}</Badge>;
     case 'on_order':
       return <Badge variant="secondary" className="bg-warm text-warm-foreground">{t('products.onOrder')}</Badge>;
@@ -79,7 +82,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-2">
               <span className="font-display text-lg font-bold text-foreground">{formatPriceWithTax(product)}</span>
-              {stockBadge(product.stockStatus, t)}
+              {stockBadge(product.stockStatus, product.stockQuantity, t)}
             </div>
             <Button
               size="sm"
@@ -117,7 +120,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
           </div>
         )}
         <div className="absolute top-2 right-2">
-          {stockBadge(product.stockStatus, t)}
+          {stockBadge(product.stockStatus, product.stockQuantity, t)}
         </div>
       </div>
       <div className="flex flex-1 flex-col p-3">

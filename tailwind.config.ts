@@ -69,6 +69,10 @@ export default {
         },
         cream: "hsl(var(--cream))",
         sand: "hsl(var(--sand))",
+        "last-unit": {
+          DEFAULT: "hsl(var(--last-unit))",
+          foreground: "hsl(var(--last-unit-foreground))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

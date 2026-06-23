@@ -70,6 +70,7 @@
     "price": "Preu",
     "availability": "Disponibilitat",
     "inStock": "En estoc",
+    "lastUnit": "Última unitat disponible",
     "onOrder": "Sota comanda",
     "outOfStock": "Exhaurit",
     "allProducts": "Tots els productes",
