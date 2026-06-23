@@ -1,38 +1,49 @@
+## Rediseño de "Mi Lista" en Mi Cuenta
 
-# Feedback al editar productos bloqueados
+Reformular `src/pages/MyBirthListPage.tsx` para que el flujo sea claro y guiado, en tres bloques visibles según el estado del usuario.
 
-## Objetivo
-Cuando el cliente intente modificar un producto bloqueado (con compras pagadas) en `MyBirthListPage`, mostrar un toast claro que explique:
-- Por qué está bloqueado (hay compras pagadas).
-- Qué cambios estarían permitidos si todas las compras estuvieran en estado `pending` (cantidad, prioridad, sección, eliminar).
-- Qué no se puede hacer una vez hay pagos confirmados.
+### Estructura nueva
 
-## Cambios en `src/pages/MyBirthListPage.tsx`
+1. **Información de la lista** (cabecera con icono y descripción corta, sin cambios funcionales).
 
-1. **Importar `toast` de `sonner`** (ya disponible globalmente en el proyecto).
+2. **Grid de mis listas**
+   - Carga todas las listas vinculadas a la cuenta (`list_owners` → `birth_lists`).
+   - Tarjetas visualmente alineadas con el resto de la web (mismo estilo que `ProductCard`: card con padding, título Playfair, badges de estado, código MUSSOLET-…, fecha prevista, número de productos).
+   - Cada tarjeta tiene acciones: **Editar**, **Ver pública**, **Copiar código**, **Eliminar**.
+   - Al final del grid, tarjeta-botón **"Crear una lista nueva"** (estilo dashed border + icono `Plus`) **solo si** `listas.length < 10`.
+   - Si está al máximo (10), se oculta el botón y se muestra un aviso "Has alcanzado el máximo de 10 listas".
 
-2. **Helper `notifyLocked(reason)`** que muestre `toast.error` con:
-   - Título: "Producte bloquejat"
-   - Descripción: "Aquest producte té compres pagades i no es pot {acció}. Només es permeten canvis (quantitat, prioritat, secció, eliminar) mentre totes les compres estiguin pendents."
-   - Versión castellana equivalente vía i18n si la página ya usa `t()`.
+3. **Panel de creación (desplegable inline)**
+   - Al pulsar "Crear una lista nueva", se despliega justo debajo del grid un panel con dos pestañas/tarjetas grandes:
+     - **Plantilla predefinida** → grid de plantillas del admin (`list_templates` activas), cada una como tarjeta clicable con su descripción.
+     - **Lista personalizada** → inputs de nombre en Catalán y Castellano + botón "Empezar".
+   - Tras escoger una opción se entra al editor:
+     - **Plantilla** → editor precargado con sus secciones y productos; el cliente puede eliminar elementos o secciones que no le convenzan, reordenar, y guardar.
+     - **Personalizada** → editor vacío. Primero crea una sección (con nombre CA/ES), luego abre el catálogo de productos (con imágenes) para arrastrar/añadir a esa sección. Repite por sección.
+   - Botón final **"Guardar lista"** que la añade al grid.
 
-3. **Quitar `disabled` puro y añadir handlers** en los controles afectados cuando `hasPaid === true`:
-   - `<select>` de sección → `onMouseDown`/`onClick` que llama `notifyLocked('reassignar de secció')` y previene apertura. Mantener visualmente "deshabilitado" (opacidad) pero interactivo para capturar el click.
-   - `Input` de cantidad → `onFocus`/`onClick` con `notifyLocked('canviar la quantitat')`, `readOnly` en lugar de `disabled`.
-   - `Select` de prioridad → wrapper `div` con `onClickCapture` que dispara toast y `e.preventDefault()`.
-   - Botón eliminar → `onClick` muestra toast en vez de ejecutar la mutación.
-   - `draggable` se mantiene en `false`; añadir `onDragStart` con toast por si el navegador lo intenta.
+### Reglas
 
-4. **Para items pendientes (`!hasPaid`)**: sin cambios de comportamiento. Los controles siguen activos.
+- Productos siempre con miniatura (`product_images` o placeholder).
+- Atributos/variante fijados al crear: cuando una lista pública se consume, el visitante **no** puede cambiar la variante elegida (color, talla, etc.). Aplicar este bloqueo en la vista pública (`BirthListViewPage.tsx` / `PublicListSteps.tsx`): si `list_item.variant_id` no es null, ocultar selector de variantes y mostrar la variante fijada con tag "Configuración escogida por la familia".
+- Mantener todo el backend actual (tablas `birth_lists`, `list_items`, `list_sections`, `list_owners`, `list_templates`). No se requiere migración SQL.
+- Mantener i18n (claves `ca.json` / `es.json`); añadir las nuevas etiquetas.
 
-5. **Mantener** el badge y tooltip existentes ("Bloquejat" / "Editable (pendent)") como refuerzo visual.
+### Archivos a modificar
 
-## Detalles técnicos
-- Un único helper centraliza el mensaje para no duplicar texto.
-- Se usa `sonner` (ya montado en `App.tsx`) → no requiere cambios de providers.
-- No se modifica lógica de BD, RLS ni la query `get_list_purchases`.
-- No se tocan rutas, contextos ni traducciones globales más allá de añadir 2 claves opcionales en `src/locales/ca.json` y `es.json` si la página ya consume `t()` (verificar al implementar).
+- `src/pages/MyBirthListPage.tsx` — reestructura completa de la vista (grid + creador + editor) reutilizando los helpers ya existentes (`persistSectionsOrder`, drag-and-drop, búsqueda de productos, plantillas).
+- `src/pages/BirthListViewPage.tsx` y/o `src/components/list/PublicListSteps.tsx` — bloquear cambio de variante cuando `variant_id` está fijado.
+- `src/locales/ca.json`, `src/locales/es.json` — nuevas etiquetas (`myList.createNew`, `myList.maxReached`, `myList.choosePreset`, `myList.customList`, `myList.nameCa`, `myList.nameEs`, `publicList.variantLocked`, etc.).
 
-## Archivos afectados
-- `src/pages/MyBirthListPage.tsx` (único cambio funcional).
-- Opcional: `src/locales/ca.json`, `src/locales/es.json` (claves de mensaje).
+### Notas técnicas
+
+- El estado `view: 'list' | 'editor'` se amplía con `'list' | 'create-choice' | 'editor'` para soportar el desplegable de elección plantilla/personalizada.
+- Para la card "Crear nueva", reutilizar tokens (`border-dashed border-primary/40`, hover suave).
+- Para el catálogo embebido en modo personalizado, reutilizar la query de búsqueda actual (`productSearch`) y añadir un grid con imagen + nombre + botón "+".
+- Bloqueo de variante en vista pública: en el selector actual, si el item tiene `variant_id` no nulo, renderizar `<Badge>` con el nombre de la variante en vez del `<Select>`.
+
+### Fuera de alcance
+
+- No se cambia el backend ni se añaden migraciones.
+- No se modifica el panel admin de plantillas.
+- No se cambia el checkout ni la lógica de compra.
