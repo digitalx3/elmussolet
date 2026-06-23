@@ -39,6 +39,7 @@ export type DefaultHeroOverrides = {
 
 export const DEFAULT_HERO: Required<Omit<DefaultHeroOverrides,
   'image_url' | 'card_logo_url'>> & { image_url: string | null; card_logo_url: string | null } = {
+  enabled: true,
   eyebrow_ca: 'Puericultura amb cor',
   eyebrow_es: 'Puericultura con corazón',
   title_ca: 'La teva botiga de puericultura de confiança',
