@@ -34,6 +34,8 @@ interface ListItemWithProduct {
     slug: string;
     base_price: number;
     has_variants: boolean;
+    stock_quantity: number;
+    stock_status: string;
     product_translations: Array<{ language: string; name: string; short_description: string | null }>;
     product_images: Array<{ image_url: string; is_primary: boolean; alt_text: string | null }>;
   };
@@ -41,6 +43,7 @@ interface ListItemWithProduct {
     id: string;
     value: string;
     price_override: number | null;
+    stock_quantity: number;
     variant_type_id: string;
   } | null;
 }
