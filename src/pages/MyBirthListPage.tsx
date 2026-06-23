@@ -366,7 +366,7 @@ const MyBirthListPage: React.FC = () => {
           .from('list_template_items')
           .select(`
             section_id, product_id, variant_id, quantity, sort_order,
-            product:products(id, base_price, slug, product_translations(language, name))
+            product:products(id, base_price, slug, product_translations(language, name), product_images(image_url, is_primary, sort_order))
           `)
           .eq('template_id', tplId)
           .order('sort_order', { ascending: true }),
@@ -390,6 +390,7 @@ const MyBirthListPage: React.FC = () => {
           sort_order: idx,
           productName: tr?.name || it.product?.slug || it.product_id,
           price: it.product?.base_price,
+          image_url: pickProductImage(it.product),
           section_temp_id: it.section_id ? `tpl-${it.section_id}` : null,
         };
       });
