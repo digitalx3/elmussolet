@@ -1,73 +1,38 @@
-# Múltiples listas de nacimiento por usuario (máx. 10)
 
-Actualmente `MyBirthListPage` solo carga **una** lista por usuario (la primera que encuentra en `list_owners`). Para soportar hasta 10 listas por cliente, hay que refactorizar la página y añadir un selector.
+# Feedback al editar productos bloqueados
 
-## 1. UI: nueva pantalla "Les meves llistes"
+## Objetivo
+Cuando el cliente intente modificar un producto bloqueado (con compras pagadas) en `MyBirthListPage`, mostrar un toast claro que explique:
+- Por qué está bloqueado (hay compras pagadas).
+- Qué cambios estarían permitidos si todas las compras estuvieran en estado `pending` (cantidad, prioridad, sección, eliminar).
+- Qué no se puede hacer una vez hay pagos confirmados.
 
-En `/compte/llista-naixement` (`MyBirthListPage.tsx`):
+## Cambios en `src/pages/MyBirthListPage.tsx`
 
-- Al entrar, si el usuario tiene **0 listas** → mostrar formulario de creación directamente (como ahora cuando `existing === null`).
-- Si tiene **1 o más** → mostrar al inicio una rejilla de tarjetas con todas sus listas:
-  - Cada tarjeta: nombre del bebé (o código), código de lista, estado (esborrany/activa/tancada), nº de productos, fecha esperada.
-  - Botón "Editar" → abre el editor de esa lista.
-  - Botón "Veure pública" → abre la vista pública.
-- Botón superior "Crear nova llista":
-  - Si `count < 10` (o usuario es admin) → abre el editor en modo creación con un nuevo `list_code`.
-  - Si `count >= 10` y NO es admin → botón deshabilitado + mensaje: "Has arribat al màxim de 10 llistes. Contacta amb l'administrador per crear-ne més." con enlace a `/contacte`.
-- Mientras se está editando/creando una lista concreta, mostrar un botón "← Tornar a les meves llistes" para volver al listado.
+1. **Importar `toast` de `sonner`** (ya disponible globalmente en el proyecto).
 
-## 2. Estado interno
+2. **Helper `notifyLocked(reason)`** que muestre `toast.error` con:
+   - Título: "Producte bloquejat"
+   - Descripción: "Aquest producte té compres pagades i no es pot {acció}. Només es permeten canvis (quantitat, prioritat, secció, eliminar) mentre totes les compres estiguin pendents."
+   - Versión castellana equivalente vía i18n si la página ya usa `t()`.
 
-`MyBirthListPage` añade:
-- `view: 'list' | 'editor'` (por defecto `'list'` si hay listas, `'editor'` si no hay ninguna).
-- `editingListId: string | null` (null = creando nueva).
-- Query `useQuery(['my-birth-lists', user.id])` que devuelve **todas** las listas del usuario (en lugar de `.limit(1)`).
-- La query existente que carga una lista concreta se filtra por `editingListId` cuando `view === 'editor'`.
+3. **Quitar `disabled` puro y añadir handlers** en los controles afectados cuando `hasPaid === true`:
+   - `<select>` de sección → `onMouseDown`/`onClick` que llama `notifyLocked('reassignar de secció')` y previene apertura. Mantener visualmente "deshabilitado" (opacidad) pero interactivo para capturar el click.
+   - `Input` de cantidad → `onFocus`/`onClick` con `notifyLocked('canviar la quantitat')`, `readOnly` en lugar de `disabled`.
+   - `Select` de prioridad → wrapper `div` con `onClickCapture` que dispara toast y `e.preventDefault()`.
+   - Botón eliminar → `onClick` muestra toast en vez de ejecutar la mutación.
+   - `draggable` se mantiene en `false`; añadir `onDragStart` con toast por si el navegador lo intenta.
 
-El flujo de guardado actual ya cubre crear y actualizar; solo hay que asegurar que al pulsar "Crear nova llista" se reseteen `listId`, `form` y `sections`.
+4. **Para items pendientes (`!hasPaid`)**: sin cambios de comportamiento. Los controles siguen activos.
 
-## 3. Lógica de límite (frontend + backend)
+5. **Mantener** el badge y tooltip existentes ("Bloquejat" / "Editable (pendent)") como refuerzo visual.
 
-**Frontend:** desactivar el botón "Crear nova llista" cuando `lists.length >= 10` y el perfil no es admin.
+## Detalles técnicos
+- Un único helper centraliza el mensaje para no duplicar texto.
+- Se usa `sonner` (ya montado en `App.tsx`) → no requiere cambios de providers.
+- No se modifica lógica de BD, RLS ni la query `get_list_purchases`.
+- No se tocan rutas, contextos ni traducciones globales más allá de añadir 2 claves opcionales en `src/locales/ca.json` y `es.json` si la página ya consume `t()` (verificar al implementar).
 
-**Backend (seguridad real):** añadir un trigger `BEFORE INSERT` en `birth_lists` que cuente las listas del `auth.uid()` en `list_owners` (vía función `SECURITY DEFINER`) y lance error si supera 10, excepto si `public.is_admin(auth.uid())` es `true`. Así no se puede saltar el límite por API.
-
-```sql
-CREATE OR REPLACE FUNCTION public.enforce_birth_list_limit()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE
-  uid uuid := auth.uid();
-  cnt int;
-BEGIN
-  IF uid IS NULL OR public.is_admin(uid) THEN
-    RETURN NEW;
-  END IF;
-  SELECT count(*) INTO cnt FROM public.list_owners WHERE user_id = uid;
-  IF cnt >= 10 THEN
-    RAISE EXCEPTION 'BIRTH_LIST_LIMIT_REACHED' USING HINT = 'Max 10 lists per user';
-  END IF;
-  RETURN NEW;
-END $$;
-
-CREATE TRIGGER birth_lists_limit
-BEFORE INSERT ON public.birth_lists
-FOR EACH ROW EXECUTE FUNCTION public.enforce_birth_list_limit();
-```
-
-El frontend captura el error `BIRTH_LIST_LIMIT_REACHED` y muestra el mensaje correspondiente.
-
-## 4. Traducciones
-
-Añadir en `ca.json` / `es.json` bajo `list`:
-- `myLists`, `createNew`, `backToLists`, `limitReached`, `contactAdmin`, `listsCount`, `editList`.
-
-## 5. Fuera de alcance
-
-- No se toca el panel admin (`AdminBirthListList`): el admin sigue creando sin límite desde allí.
-- No se modifica la vista pública ni el carrito.
-
-## Resumen de archivos
-
-- `src/pages/MyBirthListPage.tsx` — refactor a vista lista + editor.
-- `src/locales/ca.json`, `src/locales/es.json` — nuevas claves.
-- Nueva migración SQL: trigger de límite en `birth_lists`.
+## Archivos afectados
+- `src/pages/MyBirthListPage.tsx` (único cambio funcional).
+- Opcional: `src/locales/ca.json`, `src/locales/es.json` (claves de mensaje).
