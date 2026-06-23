@@ -11,6 +11,7 @@ export interface CartItem {
   quantity: number;
   maxQuantity?: number;
   variantLabel?: string;
+  listItemId?: string; // link back to list_items.id when bought as a gift from a registry
 }
 
 interface CartContextType {
