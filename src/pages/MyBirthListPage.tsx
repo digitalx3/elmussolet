@@ -903,48 +903,20 @@ const MyBirthListPage: React.FC = () => {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {lang === 'es'
-                    ? 'Empieza desde cero. Crea tus secciones y añade productos desde el catálogo.'
-                    : 'Comença de zero. Crea les teves seccions i afegeix productes des del catàleg.'}
+                    ? 'Empieza desde cero. Configura la información de la lista y añade tus secciones y productos.'
+                    : 'Comença de zero. Configura la informació de la llista i afegeix les teves seccions i productes.'}
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">{lang === 'es' ? 'Nombre del bebé (opcional)' : 'Nom del nadó (opcional)'}</Label>
-                    <Input
-                      value={customBabyName}
-                      onChange={e => setCustomBabyName(e.target.value)}
-                      placeholder={lang === 'es' ? 'Ej. Júlia' : 'Ex. Júlia'}
-                      className="h-9"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{lang === 'es' ? 'Primera sección (CA)' : 'Primera secció (CA)'}</Label>
-                    <Input
-                      value={customSectionCa}
-                      onChange={e => setCustomSectionCa(e.target.value)}
-                      placeholder={lang === 'es' ? 'Ej. Habitació' : 'Ex. Habitació'}
-                      className="h-9"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{lang === 'es' ? 'Primera sección (ES)' : 'Primera secció (ES)'}</Label>
-                    <Input
-                      value={customSectionEs}
-                      onChange={e => setCustomSectionEs(e.target.value)}
-                      placeholder={lang === 'es' ? 'Ej. Habitación' : 'Ex. Habitación'}
-                      className="h-9"
-                    />
-                  </div>
-                </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="ghost" onClick={() => setView('list')}>
                     {t('common.cancel') !== 'common.cancel' ? t('common.cancel') : (lang === 'es' ? 'Cancelar' : 'Cancel·lar')}
                   </Button>
                   <Button onClick={startCustomList} className="gap-2">
                     <Plus className="h-4 w-4" />
-                    {lang === 'es' ? 'Empezar' : 'Començar'}
+                    {lang === 'es' ? 'Crear lista personalizada' : 'Crear llista personalitzada'}
                   </Button>
                 </div>
               </div>
+
             </CardContent>
           </Card>
         )}
