@@ -619,21 +619,61 @@ const AdminBirthListForm: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             {!isNew && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">{t('common.delete')}</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>{t('admin.deleteList')}</AlertDialogTitle>
-                    <AlertDialogDescription>{t('admin.deleteListConfirm')}</AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>{t('common.delete')}</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <>
+                <Button variant="destructive" size="sm" onClick={openDeleteDialog} disabled={deleting}>
+                  {t('common.delete')}
+                </Button>
+
+                {/* Step 1 (no orders): simple confirmation */}
+                <AlertDialog open={deleteStep === 'first'} onOpenChange={(o) => !o && setDeleteStep('idle')}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t('admin.deleteList')}</AlertDialogTitle>
+                      <AlertDialogDescription>{t('admin.deleteListConfirm')}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                      <AlertDialogAction onClick={performDelete}>{t('common.delete')}</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                {/* Step 1 (with orders): warn that orders will be deleted */}
+                <AlertDialog open={deleteStep === 'orders'} onOpenChange={(o) => !o && setDeleteStep('idle')}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t('admin.deleteListWithOrdersTitle')}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {t('admin.deleteListWithOrdersDesc', { count: ordersCount })}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => setDeleteStep('final')}>
+                        {t('admin.deleteListWithOrdersConfirm')}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                {/* Step 2 (with orders): final confirmation */}
+                <AlertDialog open={deleteStep === 'final'} onOpenChange={(o) => !o && setDeleteStep('idle')}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t('admin.deleteListFinalTitle')}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {t('admin.deleteListFinalDesc', { count: ordersCount })}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                      <AlertDialogAction onClick={performDelete} disabled={deleting}>
+                        {deleting ? t('common.loading') : t('common.delete')}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
             )}
           </div>
           <div className="flex gap-3">
