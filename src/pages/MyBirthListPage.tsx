@@ -431,8 +431,26 @@ const MyBirthListPage: React.FC = () => {
       const next = [...prev];
       const [moved] = next.splice(from, 1);
       next.splice(to, 0, moved);
-      return next.map((x, i) => ({ ...x, sort_order: i }));
+      const reindexed = next.map((x, i) => ({ ...x, sort_order: i }));
+      persistSectionsOrder(reindexed);
+      return reindexed;
     });
+  };
+
+  const persistSectionsOrder = async (next: PendingSection[]) => {
+    if (!listId) return;
+    const updates = next
+      .map((s, i) => ({ id: s.id, sort_order: i }))
+      .filter(u => !!u.id);
+    if (updates.length === 0) return;
+    try {
+      await Promise.all(updates.map(u =>
+        supabase.from('list_sections').update({ sort_order: u.sort_order }).eq('id', u.id!)
+      ));
+      queryClient.invalidateQueries({ queryKey: ['my-birth-list-detail', listId] });
+    } catch (err: any) {
+      toast.error(err.message || t('errors.generic'));
+    }
   };
 
   const moveSection = (tempId: string, direction: 'up' | 'down') => {
@@ -443,9 +461,12 @@ const MyBirthListPage: React.FC = () => {
       if (target < 0 || target >= prev.length) return prev;
       const next = [...prev];
       [next[idx], next[target]] = [next[target], next[idx]];
-      return next.map((x, i) => ({ ...x, sort_order: i }));
+      const reindexed = next.map((x, i) => ({ ...x, sort_order: i }));
+      persistSectionsOrder(reindexed);
+      return reindexed;
     });
   };
+
 
 
   const reorderItem = (fromIdx: number, toIdx: number) => {
@@ -1006,7 +1027,30 @@ const MyBirthListPage: React.FC = () => {
           </div>
 
           {/* Items grouped by section */}
-          {form.items.length === 0 ? (
+          {loadingTemplate ? (
+            <div className="space-y-4" aria-busy="true">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="space-y-2">
+                  <div className="flex items-center gap-2 px-2 py-1.5 border-l-4 border-primary/40 bg-muted/40 rounded">
+                    <div className="h-4 w-4 rounded bg-muted-foreground/20" />
+                    <div className="h-4 flex-1 max-w-[180px] rounded bg-muted-foreground/20 animate-pulse" />
+                    <div className="h-4 w-6 rounded bg-muted-foreground/20" />
+                  </div>
+                  <div className="space-y-2">
+                    {[0, 1].map(j => (
+                      <div key={j} className="h-14 rounded-md border border-border bg-background animate-pulse" />
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-1">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t('list.templateLoading') !== 'list.templateLoading'
+                  ? t('list.templateLoading')
+                  : (lang === 'es' ? 'Cargando plantilla…' : 'Carregant plantilla…')}
+              </div>
+            </div>
+          ) : form.items.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">{t('list.emptyList')}</p>
           ) : (
             <div className="space-y-4">
@@ -1022,20 +1066,44 @@ const MyBirthListPage: React.FC = () => {
                 const realSectionsCount = arr.length - 1; // exclude __none__
                 const canMoveUp = !isNone && secIdx > 0;
                 const canMoveDown = !isNone && secIdx < realSectionsCount - 1;
+                const isSectionDragging = !isNone && draggedSectionId === sec.temp_id;
+                const isSectionDragOver = !isNone && dragOverSectionId === sec.temp_id && draggedSectionId && draggedSectionId !== sec.temp_id;
                 return (
                   <div key={sec.temp_id} className="space-y-2">
                     <div
-                      onDragOver={e => { e.preventDefault(); }}
+                      draggable={!isNone}
+                      onDragStart={e => {
+                        if (isNone) return;
+                        e.stopPropagation();
+                        setDraggedSectionId(sec.temp_id);
+                      }}
+                      onDragEnd={() => { setDraggedSectionId(null); setDragOverSectionId(null); }}
+                      onDragOver={e => {
+                        e.preventDefault();
+                        if (!isNone && draggedSectionId && draggedSectionId !== sec.temp_id) {
+                          setDragOverSectionId(sec.temp_id);
+                        }
+                      }}
+                      onDragLeave={() => setDragOverSectionId(prev => prev === sec.temp_id ? null : prev)}
                       onDrop={e => {
                         e.preventDefault();
+                        if (!isNone && draggedSectionId && draggedSectionId !== sec.temp_id) {
+                          reorderSections(draggedSectionId, sec.temp_id);
+                          setDraggedSectionId(null);
+                          setDragOverSectionId(null);
+                          return;
+                        }
                         const payload = productDragRef.current;
                         const target = isNone ? null : sec.temp_id;
                         if (payload?.kind === 'move') assignItemSection(payload.itemIdx, target);
                         else if (payload?.kind === 'add') addProductToSection(payload.product, target);
                         productDragRef.current = null;
                       }}
-                      className="flex items-center gap-2 px-2 py-1.5 border-l-4 border-primary bg-muted/40 rounded"
+                      className={`flex items-center gap-2 px-2 py-1.5 border-l-4 border-primary bg-muted/40 rounded transition-all ${
+                        isSectionDragOver ? 'ring-2 ring-primary bg-primary/15' : ''
+                      } ${isSectionDragging ? 'opacity-50' : ''} ${!isNone ? 'cursor-grab' : ''}`}
                     >
+                      {!isNone && <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />}
                       <FolderOpen className="h-4 w-4 text-primary" />
                       <span className="text-sm font-semibold flex-1 truncate">{sec.label}</span>
                       <Badge variant="outline" className="text-[10px]">{sectionItems.length}</Badge>
