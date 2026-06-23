@@ -157,22 +157,44 @@ const MyBirthListPage: React.FC = () => {
 
 
   // All lists owned by this user (for the selector)
-  const { data: myLists = [], isLoading: listsLoading } = useQuery({
+  const { data: myLists = [], isLoading: listsLoading, error: listsError } = useQuery({
     queryKey: ['my-birth-lists', user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
       const { data: ownerships, error } = await supabase
         .from('list_owners')
-        .select('list_id, first_name, last_name, birth_lists(id, list_code, baby_name, expected_date, status, created_at)')
+        .select('list_id, first_name, last_name')
         .eq('user_id', user!.id);
       if (error) throw error;
-      const rows = (ownerships || [])
-        .filter((o: any) => o.birth_lists)
-        .map((o: any) => ({
-          ...o.birth_lists,
-          first_name: o.first_name,
-          last_name: o.last_name,
-        }))
+      const ownerByListId = new Map((ownerships || []).map((o: any) => [o.list_id, o]));
+      const ownedIds = Array.from(ownerByListId.keys());
+
+      let ownedLists: any[] = [];
+      if (ownedIds.length > 0) {
+        const { data, error: ownedError } = await supabase
+          .from('birth_lists')
+          .select('id, list_code, baby_name, expected_date, status, created_at')
+          .in('id', ownedIds);
+        if (ownedError) throw ownedError;
+        ownedLists = data || [];
+      }
+
+      const { data: createdLists, error: createdError } = await supabase
+        .from('birth_lists')
+        .select('id, list_code, baby_name, expected_date, status, created_at')
+        .eq('created_by', user!.id);
+      if (createdError) throw createdError;
+
+      const rowsById = new Map<string, any>();
+      [...ownedLists, ...(createdLists || [])].forEach((list: any) => {
+        const owner = ownerByListId.get(list.id) as any;
+        rowsById.set(list.id, {
+          ...list,
+          first_name: owner?.first_name || '',
+          last_name: owner?.last_name || '',
+        });
+      });
+      const rows = Array.from(rowsById.values())
         .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
       // Item counts
       if (rows.length > 0) {
@@ -740,6 +762,18 @@ const MyBirthListPage: React.FC = () => {
 
   if (listsLoading || (view === 'editor' && editingListId && isLoading)) {
     return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  }
+
+  if (listsError) {
+    return (
+      <Card className="border-destructive/40 bg-destructive/5">
+        <CardContent className="py-4 text-sm text-destructive">
+          {lang === 'es'
+            ? 'No se han podido cargar tus listas. Vuelve a intentarlo en unos segundos.'
+            : 'No s\'han pogut carregar les teves llistes. Torna-ho a intentar d\'aquí uns segons.'}
+        </CardContent>
+      </Card>
+    );
   }
 
   const atLimit = !isAdmin && myLists.length >= MAX_LISTS;
