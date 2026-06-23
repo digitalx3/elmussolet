@@ -12,38 +12,58 @@ import DefaultHero from '@/components/home/DefaultHero';
 import {
   DEFAULT_HERO,
   DEFAULT_HERO_OVERRIDES_KEY,
+  DEFAULT_HERO_OVERRIDES_KEY_2,
   DefaultHeroOverrides,
 } from '@/lib/defaultHeroSlide';
 
 const ASPECTS: DefaultHeroOverrides['image_aspect'][] = ['1/1', '4/5', '4/3', '3/4', '16/9'];
 
+type HeroState = Required<typeof DEFAULT_HERO>;
+
+const VARIANTS = [
+  { id: 1 as const, key: DEFAULT_HERO_OVERRIDES_KEY, label: 'Variant 1' },
+  { id: 2 as const, key: DEFAULT_HERO_OVERRIDES_KEY_2, label: 'Variant 2' },
+];
+
 const AdminDefaultHeroForm: React.FC = () => {
   const qc = useQueryClient();
-  const [state, setState] = useState<Required<typeof DEFAULT_HERO>>({ ...DEFAULT_HERO });
+  const [activeVariant, setActiveVariant] = useState<1 | 2>(1);
+  const [states, setStates] = useState<Record<1 | 2, HeroState>>({
+    1: { ...DEFAULT_HERO, enabled: true },
+    2: { ...DEFAULT_HERO, enabled: false },
+  });
   const [uploading, setUploading] = useState<'image' | 'logo' | null>(null);
 
-  const set = <K extends keyof typeof state>(k: K, v: (typeof state)[K]) =>
-    setState((s) => ({ ...s, [k]: v }));
+  const state = states[activeVariant];
+  const set = <K extends keyof HeroState>(k: K, v: HeroState[K]) =>
+    setStates((s) => ({ ...s, [activeVariant]: { ...s[activeVariant], [k]: v } }));
 
   const { data: existing } = useQuery({
-    queryKey: ['default-hero-overrides'],
+    queryKey: ['default-hero-overrides-all'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('site_settings')
-        .select('value')
-        .eq('key', DEFAULT_HERO_OVERRIDES_KEY)
-        .maybeSingle();
+        .select('key, value')
+        .in('key', [DEFAULT_HERO_OVERRIDES_KEY, DEFAULT_HERO_OVERRIDES_KEY_2]);
       if (error) throw error;
-      if (!data?.value) return null;
-      try { return JSON.parse(data.value as unknown as string) as DefaultHeroOverrides; }
-      catch { return null; }
+      const map: Record<string, DefaultHeroOverrides | null> = {};
+      (data ?? []).forEach((row) => {
+        try { map[row.key] = JSON.parse(row.value as unknown as string) as DefaultHeroOverrides; }
+        catch { map[row.key] = null; }
+      });
+      return map;
     },
   });
 
   useEffect(() => {
     if (!existing) return;
-    setState((s) => ({ ...s, ...existing }));
+    setStates((prev) => ({
+      1: { ...prev[1], ...(existing[DEFAULT_HERO_OVERRIDES_KEY] ?? {}) },
+      2: { ...prev[2], ...(existing[DEFAULT_HERO_OVERRIDES_KEY_2] ?? {}) },
+    }));
   }, [existing]);
+
+  const currentKey = activeVariant === 1 ? DEFAULT_HERO_OVERRIDES_KEY : DEFAULT_HERO_OVERRIDES_KEY_2;
 
   const upload = async (kind: 'image' | 'logo', rawFile: File) => {
     setUploading(kind);
@@ -55,7 +75,7 @@ const AdminDefaultHeroForm: React.FC = () => {
             quality: 0.85,
           });
       const ext = file.name.split('.').pop() || 'webp';
-      const path = `hero/default/${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const path = `hero/default-v${activeVariant}/${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error } = await supabase.storage
         .from('site-assets')
         .upload(path, file, { upsert: false, contentType: file.type });
@@ -77,12 +97,12 @@ const AdminDefaultHeroForm: React.FC = () => {
       const value = JSON.stringify(state);
       const { error } = await supabase
         .from('site_settings')
-        .upsert({ key: DEFAULT_HERO_OVERRIDES_KEY, value }, { onConflict: 'key' });
+        .upsert({ key: currentKey, value }, { onConflict: 'key' });
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['default-hero-overrides'] });
-      qc.invalidateQueries({ queryKey: ['default-hero-overrides-public'] });
+      qc.invalidateQueries({ queryKey: ['default-hero-overrides-all'] });
+      qc.invalidateQueries({ queryKey: ['default-hero-variants-public'] });
       toast.success('Portada desada');
     },
     onError: (e) => { console.error(e); toast.error('Error desant'); },
@@ -93,13 +113,16 @@ const AdminDefaultHeroForm: React.FC = () => {
       const { error } = await supabase
         .from('site_settings')
         .delete()
-        .eq('key', DEFAULT_HERO_OVERRIDES_KEY);
+        .eq('key', currentKey);
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['default-hero-overrides'] });
-      qc.invalidateQueries({ queryKey: ['default-hero-overrides-public'] });
-      setState({ ...DEFAULT_HERO });
+      qc.invalidateQueries({ queryKey: ['default-hero-overrides-all'] });
+      qc.invalidateQueries({ queryKey: ['default-hero-variants-public'] });
+      setStates((s) => ({
+        ...s,
+        [activeVariant]: { ...DEFAULT_HERO, enabled: activeVariant === 1 },
+      }));
       toast.success('Portada restaurada als valors originals');
     },
     onError: (e) => { console.error(e); toast.error('Error restaurant'); },
@@ -111,13 +134,13 @@ const AdminDefaultHeroForm: React.FC = () => {
         <div>
           <h1 className="font-display text-3xl font-bold">Portada (Hero)</h1>
           <p className="text-muted-foreground text-sm">
-            Edita els elements de la portada. L'estructura i distribució no es poden modificar.
+            Edita els elements de la portada. Si actives 2 variants, es mostraran alternant-se cada 10 segons.
           </p>
         </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => { if (confirm('Restaurar els valors originals?')) reset.mutate(); }}
+            onClick={() => { if (confirm('Restaurar els valors originals d\'aquesta variant?')) reset.mutate(); }}
             disabled={reset.isPending}
             className="gap-2"
           >
@@ -129,8 +152,54 @@ const AdminDefaultHeroForm: React.FC = () => {
         </div>
       </div>
 
+      {/* Variant tabs */}
+      <div className="flex items-center gap-2 mb-4 border-b border-border">
+        {VARIANTS.map((v) => {
+          const active = v.id === activeVariant;
+          const isEnabled = states[v.id].enabled !== false;
+          return (
+            <button
+              key={v.id}
+              type="button"
+              onClick={() => setActiveVariant(v.id)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${
+                active
+                  ? 'border-primary text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {v.label}
+              <span
+                className={`ml-2 inline-block w-2 h-2 rounded-full ${isEnabled ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`}
+                title={isEnabled ? 'Activa' : 'Desactivada'}
+              />
+            </button>
+          );
+        })}
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6">
         <div className="space-y-6">
+          {/* Enable toggle */}
+          <div className="bg-card border border-border rounded-lg p-4">
+            <label className="flex items-center justify-between gap-3 cursor-pointer">
+              <div>
+                <div className="font-display font-semibold text-sm">Variant activa</div>
+                <div className="text-xs text-muted-foreground">
+                  {activeVariant === 1
+                    ? 'La variant 1 sempre es mostra si està activada.'
+                    : 'Si està activada, s\'alternarà amb la variant 1 cada 10 segons.'}
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={state.enabled !== false}
+                onChange={(e) => set('enabled', e.target.checked)}
+                className="h-5 w-5"
+              />
+            </label>
+          </div>
+
           {/* LEFT BLOCK */}
           <div className="bg-card border border-border rounded-lg p-4 space-y-3">
             <div className="font-display font-semibold">Bloc de l'esquerra</div>
@@ -284,7 +353,9 @@ const AdminDefaultHeroForm: React.FC = () => {
         </div>
 
         <div className="bg-card border border-border rounded-lg overflow-hidden h-fit">
-          <div className="text-sm font-semibold px-4 py-2 border-b border-border">Vista prèvia</div>
+          <div className="text-sm font-semibold px-4 py-2 border-b border-border">
+            Vista prèvia ({VARIANTS.find((v) => v.id === activeVariant)?.label})
+          </div>
           <DefaultHero preview={state} />
         </div>
       </div>
