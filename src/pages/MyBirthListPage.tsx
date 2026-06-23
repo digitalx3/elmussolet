@@ -298,7 +298,7 @@ const MyBirthListPage: React.FC = () => {
     if (query.trim().length < 2) { setSearchResults([]); return; }
     const { data } = await supabase
       .from('products')
-      .select(`id, base_price, slug, product_translations(language, name)`)
+      .select(`id, base_price, slug, product_translations(language, name), product_images(image_url, is_primary, sort_order)`)
       .eq('is_active', true)
       .limit(20);
     const filtered = (data || []).filter(p => {
@@ -307,6 +307,12 @@ const MyBirthListPage: React.FC = () => {
       return tr?.name?.toLowerCase().includes(query.toLowerCase());
     });
     setSearchResults(filtered);
+  };
+
+  const pickProductImage = (product: any): string | null => {
+    const imgs = (product?.product_images || []).slice().sort((a: any, b: any) =>
+      (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order || 0) - (b.sort_order || 0));
+    return imgs[0]?.image_url || null;
   };
 
   const addProduct = (product: any) => {
@@ -326,6 +332,7 @@ const MyBirthListPage: React.FC = () => {
         sort_order: prev.items.length,
         productName: tr?.name || product.slug,
         price: product.base_price,
+        image_url: pickProductImage(product),
       }],
     }));
     setProductSearch('');
