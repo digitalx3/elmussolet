@@ -201,7 +201,7 @@ const MyBirthListPage: React.FC = () => {
           .from('list_items')
           .select(`
             id, product_id, variant_id, section_id, quantity_desired, priority, sort_order,
-            product:products(id, base_price, product_translations(language, name))
+            product:products(id, base_price, product_translations(language, name), product_images(image_url, is_primary, sort_order))
           `)
           .eq('list_id', listIdLocal)
           .order('sort_order', { ascending: true }),
