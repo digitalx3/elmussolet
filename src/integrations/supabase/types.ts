@@ -1262,6 +1262,45 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_movements: {
+        Row: {
+          actor: string | null
+          created_at: string
+          delta: number
+          id: string
+          list_item_id: string | null
+          order_id: string | null
+          order_item_id: string | null
+          product_id: string
+          reason: string
+          variant_id: string | null
+        }
+        Insert: {
+          actor?: string | null
+          created_at?: string
+          delta: number
+          id?: string
+          list_item_id?: string | null
+          order_id?: string | null
+          order_item_id?: string | null
+          product_id: string
+          reason: string
+          variant_id?: string | null
+        }
+        Update: {
+          actor?: string | null
+          created_at?: string
+          delta?: number
+          id?: string
+          list_item_id?: string | null
+          order_id?: string | null
+          order_item_id?: string | null
+          product_id?: string
+          reason?: string
+          variant_id?: string | null
+        }
+        Relationships: []
+      }
       tax_rates: {
         Row: {
           country_code: string
@@ -1348,7 +1387,10 @@ export type Database = {
         Args: {
           _delta: number
           _list_item_id: string
+          _order_id?: string
+          _order_item_id?: string
           _product_id: string
+          _reason?: string
           _variant_id: string
         }
         Returns: undefined
