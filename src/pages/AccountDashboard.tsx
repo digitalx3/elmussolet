@@ -19,6 +19,7 @@ interface OrderItem {
   id: string;
   product_id: string;
   variant_id: string | null;
+  list_item_id: string | null;
   quantity: number;
   unit_price: number;
   base_unit_price: number | null;
@@ -39,6 +40,8 @@ interface Order {
   tax_amount: number | null;
   total: number;
   delivery_method: string | null;
+  list_id: string | null;
+  birth_lists?: { baby_name: string | null; list_code: string } | null;
   order_items: OrderItem[];
 }
 
