@@ -58,7 +58,14 @@ const AdminHeroList: React.FC = () => {
       (async () => {
         const payload = { ...DEFAULT_HERO_TEMPLATE, sort_order: 0 } as never;
         const { error } = await supabase.from('hero_slides').insert(payload);
-        if (!error) qc.invalidateQueries({ queryKey: ['hero-slides-admin'] });
+        if (error) {
+          console.error('Auto-seed hero failed', error);
+          toast.error('No s\'ha pogut crear la plantilla per defecte');
+          seededRef.current = false;
+        } else {
+          qc.invalidateQueries({ queryKey: ['hero-slides-admin'] });
+          qc.invalidateQueries({ queryKey: ['hero-slides-public'] });
+        }
       })();
     }
   }, [isLoading, slides.length, qc]);
