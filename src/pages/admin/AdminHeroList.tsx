@@ -36,6 +36,7 @@ const DEFAULT_HERO_TEMPLATE = {
 const AdminHeroList: React.FC = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const seededRef = React.useRef(false);
 
   const { data: slides = [], isLoading } = useQuery({
     queryKey: ['hero-slides-admin'],
@@ -48,6 +49,19 @@ const AdminHeroList: React.FC = () => {
       return data ?? [];
     },
   });
+
+  // Auto-seed the default hero so admins can edit the fallback shown on the home page.
+  React.useEffect(() => {
+    if (isLoading || seededRef.current) return;
+    if (slides.length === 0) {
+      seededRef.current = true;
+      (async () => {
+        const payload = { ...DEFAULT_HERO_TEMPLATE, sort_order: 0 } as never;
+        const { error } = await supabase.from('hero_slides').insert(payload);
+        if (!error) qc.invalidateQueries({ queryKey: ['hero-slides-admin'] });
+      })();
+    }
+  }, [isLoading, slides.length, qc]);
 
   const nextOrder = async () => {
     const { data: maxRow } = await supabase
