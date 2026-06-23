@@ -35,32 +35,18 @@ SQL
 trap cleanup EXIT
 
 echo "== 1. Seeding test product with stock = 1 =="
-PRODUCT_ID=$(psql -tA <<SQL
-  INSERT INTO public.products (sku, slug, base_price, stock_quantity, stock_status, is_active)
-  VALUES ('TEST-STK-${TS}', 'test-stk-${TS}', 1.00, 1, 'in_stock', true)
-  RETURNING id;
-SQL
-)
+PRODUCT_ID=$(psql -qtAX -c "INSERT INTO public.products (sku, slug, base_price, stock_quantity, stock_status, is_active) VALUES ('TEST-STK-${TS}', 'test-stk-${TS}', 1.00, 1, 'in_stock', true) RETURNING id;")
 echo "product_id=$PRODUCT_ID"
 
 echo "== 2. Creating two pending orders =="
-# Pick any existing user (service-defined data) — required by orders.user_id FK
-USER_ID=$(psql -tA -c "SELECT id FROM public.profiles ORDER BY created_at LIMIT 1;")
+USER_ID=$(psql -qtAX -c "SELECT id FROM public.profiles ORDER BY created_at LIMIT 1;")
 if [ -z "$USER_ID" ]; then
-  echo "No auth.users found — create at least one user first." >&2
+  echo "No profile found — create at least one user first." >&2
   exit 2
 fi
 
-ORDER_A=$(psql -tA <<SQL
-  INSERT INTO public.orders (order_number, user_id, subtotal, total, status, payment_status)
-  VALUES ('TEST-STK-${TS}-A', '${USER_ID}', 1, 1, 'pending', 'pending') RETURNING id;
-SQL
-)
-ORDER_B=$(psql -tA <<SQL
-  INSERT INTO public.orders (order_number, user_id, subtotal, total, status, payment_status)
-  VALUES ('TEST-STK-${TS}-B', '${USER_ID}', 1, 1, 'pending', 'pending') RETURNING id;
-SQL
-)
+ORDER_A=$(psql -qtAX -c "INSERT INTO public.orders (order_number, user_id, subtotal, total, status, payment_status) VALUES ('TEST-STK-${TS}-A', '${USER_ID}', 1, 1, 'pending', 'pending') RETURNING id;")
+ORDER_B=$(psql -qtAX -c "INSERT INTO public.orders (order_number, user_id, subtotal, total, status, payment_status) VALUES ('TEST-STK-${TS}-B', '${USER_ID}', 1, 1, 'pending', 'pending') RETURNING id;")
 echo "order_a=$ORDER_A"
 echo "order_b=$ORDER_B"
 
