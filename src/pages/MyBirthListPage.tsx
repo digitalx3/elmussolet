@@ -1043,20 +1043,44 @@ const MyBirthListPage: React.FC = () => {
                 const realSectionsCount = arr.length - 1; // exclude __none__
                 const canMoveUp = !isNone && secIdx > 0;
                 const canMoveDown = !isNone && secIdx < realSectionsCount - 1;
+                const isSectionDragging = !isNone && draggedSectionId === sec.temp_id;
+                const isSectionDragOver = !isNone && dragOverSectionId === sec.temp_id && draggedSectionId && draggedSectionId !== sec.temp_id;
                 return (
                   <div key={sec.temp_id} className="space-y-2">
                     <div
-                      onDragOver={e => { e.preventDefault(); }}
+                      draggable={!isNone}
+                      onDragStart={e => {
+                        if (isNone) return;
+                        e.stopPropagation();
+                        setDraggedSectionId(sec.temp_id);
+                      }}
+                      onDragEnd={() => { setDraggedSectionId(null); setDragOverSectionId(null); }}
+                      onDragOver={e => {
+                        e.preventDefault();
+                        if (!isNone && draggedSectionId && draggedSectionId !== sec.temp_id) {
+                          setDragOverSectionId(sec.temp_id);
+                        }
+                      }}
+                      onDragLeave={() => setDragOverSectionId(prev => prev === sec.temp_id ? null : prev)}
                       onDrop={e => {
                         e.preventDefault();
+                        if (!isNone && draggedSectionId && draggedSectionId !== sec.temp_id) {
+                          reorderSections(draggedSectionId, sec.temp_id);
+                          setDraggedSectionId(null);
+                          setDragOverSectionId(null);
+                          return;
+                        }
                         const payload = productDragRef.current;
                         const target = isNone ? null : sec.temp_id;
                         if (payload?.kind === 'move') assignItemSection(payload.itemIdx, target);
                         else if (payload?.kind === 'add') addProductToSection(payload.product, target);
                         productDragRef.current = null;
                       }}
-                      className="flex items-center gap-2 px-2 py-1.5 border-l-4 border-primary bg-muted/40 rounded"
+                      className={`flex items-center gap-2 px-2 py-1.5 border-l-4 border-primary bg-muted/40 rounded transition-all ${
+                        isSectionDragOver ? 'ring-2 ring-primary bg-primary/15' : ''
+                      } ${isSectionDragging ? 'opacity-50' : ''} ${!isNone ? 'cursor-grab' : ''}`}
                     >
+                      {!isNone && <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />}
                       <FolderOpen className="h-4 w-4 text-primary" />
                       <span className="text-sm font-semibold flex-1 truncate">{sec.label}</span>
                       <Badge variant="outline" className="text-[10px]">{sectionItems.length}</Badge>
