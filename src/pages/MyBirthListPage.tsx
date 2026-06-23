@@ -431,7 +431,9 @@ const MyBirthListPage: React.FC = () => {
       const next = [...prev];
       const [moved] = next.splice(from, 1);
       next.splice(to, 0, moved);
-      return next.map((x, i) => ({ ...x, sort_order: i }));
+      const reindexed = next.map((x, i) => ({ ...x, sort_order: i }));
+      persistSectionsOrder(reindexed);
+      return reindexed;
     });
   };
 
