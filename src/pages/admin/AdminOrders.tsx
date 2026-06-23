@@ -176,7 +176,7 @@ const AdminOrders: React.FC = () => {
         total_price: totalPrice,
       }).eq('id', item.id);
       if (error) throw error;
-      await recomputeOrderTotals(item.product_id ? selectedOrder!.id : selectedOrder!.id);
+      await recomputeOrderTotals(selectedOrder!.id);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-order-items', selectedOrder?.id] });
