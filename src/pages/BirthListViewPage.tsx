@@ -114,6 +114,14 @@ const BirthListViewPage: React.FC = () => {
       );
 
       setItems(withVariants);
+
+      // Fetch block summary (reserved vs delivered per list_item)
+      const { data: summary } = await supabase.rpc('get_list_block_summary', { _list_id: listId! });
+      const map: Record<string, { reserved: number; delivered: number }> = {};
+      (summary || []).forEach((r: any) => {
+        if (r.list_item_id) map[r.list_item_id] = { reserved: r.reserved_qty ?? 0, delivered: r.delivered_qty ?? 0 };
+      });
+      setBlockSummary(map);
     } catch {
       toast.error(t('errors.generic'));
     } finally {
