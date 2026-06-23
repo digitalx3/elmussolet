@@ -1027,7 +1027,30 @@ const MyBirthListPage: React.FC = () => {
           </div>
 
           {/* Items grouped by section */}
-          {form.items.length === 0 ? (
+          {loadingTemplate ? (
+            <div className="space-y-4" aria-busy="true">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="space-y-2">
+                  <div className="flex items-center gap-2 px-2 py-1.5 border-l-4 border-primary/40 bg-muted/40 rounded">
+                    <div className="h-4 w-4 rounded bg-muted-foreground/20" />
+                    <div className="h-4 flex-1 max-w-[180px] rounded bg-muted-foreground/20 animate-pulse" />
+                    <div className="h-4 w-6 rounded bg-muted-foreground/20" />
+                  </div>
+                  <div className="space-y-2">
+                    {[0, 1].map(j => (
+                      <div key={j} className="h-14 rounded-md border border-border bg-background animate-pulse" />
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-1">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t('list.templateLoading') !== 'list.templateLoading'
+                  ? t('list.templateLoading')
+                  : (lang === 'es' ? 'Cargando plantilla…' : 'Carregant plantilla…')}
+              </div>
+            </div>
+          ) : form.items.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">{t('list.emptyList')}</p>
           ) : (
             <div className="space-y-4">
