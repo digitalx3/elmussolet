@@ -25,6 +25,7 @@ interface ListItem {
   sort_order: number;
   productName?: string;
   price?: number;
+  image_url?: string | null;
   section_id?: string | null;
   section_temp_id?: string | null;
 }
