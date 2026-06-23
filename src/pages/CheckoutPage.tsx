@@ -221,7 +221,20 @@ const CheckoutPage: React.FC = () => {
         .from('order_items')
         .insert(dbItems);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        // Roll back the just-created order so it doesn't linger as an empty pending row.
+        await supabase.from('orders').delete().eq('id', order.id);
+        const msg = String(itemsError.message || '');
+        if (msg.includes('STOCK_INSUFFICIENT')) {
+          toast.error(
+            t('checkout.stockInsufficient') ||
+            'Algun producte s\'ha esgotat mentre completaves la compra. Revisa la cistella.'
+          );
+          navigate('/cistella');
+          return;
+        }
+        throw itemsError;
+      }
 
       // Clear cart
       // Capture total BEFORE clearing the cart so confirmation step shows correct amount
