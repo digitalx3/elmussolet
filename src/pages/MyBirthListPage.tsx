@@ -998,71 +998,13 @@ const MyBirthListPage: React.FC = () => {
               </Button>
             </div>
 
-            {sections.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{t('list.noSections')}</p>
-            ) : (
-              <div className="space-y-1.5">
-                {sections.map(s => {
-                  const itemCount = form.items.filter(it => it.section_temp_id === s.temp_id).length;
-                  const isDragOver = dragOverSectionId === s.temp_id;
-                  const isDragging = draggedSectionId === s.temp_id;
-                  return (
-                    <div
-                      key={s.temp_id}
-                      draggable
-                      onDragStart={() => setDraggedSectionId(s.temp_id)}
-                      onDragEnd={() => { setDraggedSectionId(null); setDragOverSectionId(null); }}
-                      onDragOver={e => { e.preventDefault(); setDragOverSectionId(s.temp_id); }}
-                      onDragLeave={() => setDragOverSectionId(prev => prev === s.temp_id ? null : prev)}
-                      onDrop={e => {
-                        e.preventDefault();
-                        if (draggedSectionId && draggedSectionId !== s.temp_id) {
-                          reorderSections(draggedSectionId, s.temp_id);
-                        } else {
-                          const payload = productDragRef.current;
-                          if (payload?.kind === 'move') {
-                            assignItemSection(payload.itemIdx, s.temp_id);
-                          } else if (payload?.kind === 'add') {
-                            addProductToSection(payload.product, s.temp_id);
-                          }
-                        }
-                        productDragRef.current = null;
-                        setDragOverSectionId(null);
-                      }}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-md border-2 transition-colors ${
-                        isDragOver ? 'border-primary bg-primary/15' : 'border-primary/20 bg-primary/5'
-                      } ${isDragging ? 'opacity-50' : ''}`}
-                    >
-                      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab shrink-0" />
-                      <span className="text-sm font-medium flex-1 truncate">
-                        {(lang === 'es' ? s.name_es : s.name_ca) || '(?)'}
-                        {s.name_ca && s.name_es && s.name_ca !== s.name_es && (
-                          <span className="text-xs text-muted-foreground font-normal ml-2">
-                            / {lang === 'es' ? s.name_ca : s.name_es}
-                          </span>
-                        )}
-                      </span>
-                      <Badge variant="outline" className="text-[10px] shrink-0">{itemCount}</Badge>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0"
-                        onClick={() => removeSection(s.temp_id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                      </Button>
-                    </div>
-                  );
-                })}
-                <p className="text-[11px] text-muted-foreground pt-1">
-                  {lang === 'es'
-                    ? 'Arrastra una sección para reordenarla. Arrastra un producto sobre una sección para asignarlo.'
-                    : 'Arrossega una secció per reordenar-la. Arrossega un producte sobre una secció per assignar-lo.'}
-                </p>
-              </div>
-            )}
+            <p className="text-[11px] text-muted-foreground">
+              {lang === 'es'
+                ? 'Las secciones aparecen abajo con sus productos. Usa las flechas para reordenarlas.'
+                : 'Les seccions apareixen a sota amb els seus productes. Usa les fletxes per reordenar-les.'}
+            </p>
           </div>
+
 
           {/* Product search */}
           <div className="relative">
