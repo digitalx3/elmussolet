@@ -40,13 +40,19 @@ Deno.serve(async (req: Request) => {
 
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace("Bearer ", "");
-    if (!token) return json({ error: "Missing auth" }, 401);
+    if (!token) return json({ error: "Missing auth" }, 200);
 
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: `Bearer ${token}` } },
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData.user) return json({ error: "Unauthorized" }, 401);
+    if (userErr || !userData?.user) {
+      console.error("auth.getUser failed", userErr);
+      return json({
+        error:
+          "La teva sessió ha caducat. Tanca sessió i torna a entrar per continuar.",
+      }, 200);
+    }
 
     const admin = createClient(supabaseUrl, serviceKey);
 
@@ -55,7 +61,7 @@ Deno.serve(async (req: Request) => {
       .select("role")
       .eq("id", userData.user.id)
       .single();
-    if (profile?.role !== "admin") return json({ error: "Forbidden" }, 403);
+    if (profile?.role !== "admin") return json({ error: "Forbidden" }, 200);
 
     const body = (await req.json()) as Body;
 
@@ -145,10 +151,17 @@ Deno.serve(async (req: Request) => {
     if (body.action === "get") {
       if (!body.user_id) return json({ error: "user_id required" }, 400);
       const { data: u, error: gErr } = await admin.auth.admin.getUserById(body.user_id);
-      if (gErr) throw gErr;
-      const { data: prof } = await admin
-        .from("profiles").select("*").eq("id", body.user_id).single();
-      return json({ ok: true, email: u?.user?.email || "", profile: prof });
+      if (gErr) {
+        console.error("auth.admin.getUserById failed", gErr);
+        return json({ error: gErr.message }, 200);
+      }
+      const { data: prof, error: pErr } = await admin
+        .from("profiles").select("*").eq("id", body.user_id).maybeSingle();
+      if (pErr) {
+        console.error("profiles select failed", pErr);
+        return json({ error: pErr.message }, 200);
+      }
+      return json({ ok: true, email: u?.user?.email || "", profile: prof || {} });
     }
 
     if (body.action === "delete") {
@@ -274,16 +287,16 @@ Deno.serve(async (req: Request) => {
       }).eq("id", body.user_id);
       if (profErr) {
         console.error("profile restore failed", profErr);
-        return json({ error: profErr.message }, 500);
+        return json({ error: profErr.message }, 200);
       }
 
       return json({ ok: true });
     }
 
-    return json({ error: "Unknown action" }, 400);
+    return json({ error: "Unknown action" }, 200);
   } catch (e: any) {
     console.error("admin-manage-users error", e);
-    return json({ error: e?.message ?? "Unknown error" }, 500);
+    return json({ error: e?.message ?? "Unknown error" }, 200);
   }
 });
 
