@@ -449,9 +449,35 @@ const AdminOrders: React.FC = () => {
                 </TableCell>
                 <TableCell className="text-right font-medium">{formatPrice(order.total)}</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => setSelectedOrder(order)}>
-                    <Eye className="h-4 w-4" />
-                  </Button>
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => setSelectedOrder(order)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" title={t('admin.deleteOrder', 'Eliminar comanda')}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{t('admin.confirmDeleteOrderTitle', 'Eliminar comanda?')}</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {t('admin.confirmDeleteOrderDesc', 'S\'eliminarà la comanda {{n}} de manera permanent. L\'estoc dels productes es retornarà i, si pertany a una llista, els articles quedaran desbloquejats. Aquesta acció no es pot desfer.', { n: order.order_number })}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel disabled={deleteOrderMutation.isPending}>{t('common.cancel')}</AlertDialogCancel>
+                          <AlertDialogAction
+                            disabled={deleteOrderMutation.isPending}
+                            onClick={() => deleteOrderMutation.mutate(order.id)}
+                          >
+                            {t('common.delete', 'Eliminar')}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
