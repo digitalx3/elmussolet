@@ -18,6 +18,7 @@ interface ListSection {
   name_ca: string;
   name_es: string;
   sort_order: number;
+  translations?: Array<{ language_code: string; name: string }>;
 }
 
 interface ListItemWithProduct {
