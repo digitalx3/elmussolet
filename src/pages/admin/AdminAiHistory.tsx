@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   RefreshCw,
   ArrowLeft,
+  RotateCw,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,8 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { toast } from '@/components/ui/use-toast';
+import { invokeWithRetry, logAiTranslation } from '@/lib/aiTranslationLog';
 
 interface LogRow {
   id: string;
@@ -37,6 +40,7 @@ interface LogRow {
   provider: string | null;
   error_message: string | null;
   duration_ms: number | null;
+  metadata: any | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
