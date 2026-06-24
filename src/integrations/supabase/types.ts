@@ -282,6 +282,63 @@ export type Database = {
         }
         Relationships: []
       }
+      customers: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          auth_user_id: string | null
+          city: string | null
+          company_name: string | null
+          created_at: string
+          deleted_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          nif: string | null
+          phone: string | null
+          postal_code: string | null
+          preferred_language: string
+          province: string | null
+          updated_at: string
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          auth_user_id?: string | null
+          city?: string | null
+          company_name?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          email: string
+          full_name?: string | null
+          id?: string
+          nif?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          preferred_language?: string
+          province?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          auth_user_id?: string | null
+          city?: string | null
+          company_name?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          nif?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          preferred_language?: string
+          province?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hero_slides: {
         Row: {
           background_image_url: string | null
@@ -436,6 +493,7 @@ export type Database = {
       }
       list_owners: {
         Row: {
+          customer_id: string | null
           email: string
           first_name: string
           id: string
@@ -445,6 +503,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          customer_id?: string | null
           email: string
           first_name: string
           id?: string
@@ -454,6 +513,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          customer_id?: string | null
           email?: string
           first_name?: string
           id?: string
@@ -463,6 +523,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "list_owners_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "list_owners_list_id_fkey"
             columns: ["list_id"]
@@ -883,6 +950,7 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
+          customer_id: string
           delivery_method: string | null
           id: string
           list_id: string | null
@@ -898,10 +966,10 @@ export type Database = {
           tax_amount: number | null
           total: number
           updated_at: string
-          user_id: string
         }
         Insert: {
           created_at?: string
+          customer_id: string
           delivery_method?: string | null
           id?: string
           list_id?: string | null
@@ -917,10 +985,10 @@ export type Database = {
           tax_amount?: number | null
           total: number
           updated_at?: string
-          user_id: string
         }
         Update: {
           created_at?: string
+          customer_id?: string
           delivery_method?: string | null
           id?: string
           list_id?: string | null
@@ -936,21 +1004,20 @@ export type Database = {
           tax_amount?: number | null
           total?: number
           updated_at?: string
-          user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_list_id_fkey"
             columns: ["list_id"]
             isOneToOne: false
             referencedRelation: "birth_lists"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
