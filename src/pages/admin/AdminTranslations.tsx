@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, Save, Loader2, Globe } from 'lucide-react';
+import { Search, Save, Loader2, Globe, AlertCircle } from 'lucide-react';
+import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import { useLanguages } from '@/hooks/useLanguages';
+import { useLanguages, useDefaultLanguage } from '@/hooks/useLanguages';
 import LanguageTabs from '@/components/admin/LanguageTabs';
 import AdminDefaultListSections from '@/pages/admin/AdminDefaultListSections';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,16 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+
+const NAME_MAX = 200;
+const SHORT_DESC_MAX = 500;
+const DESC_MAX = 5000;
+
+const translationFieldsSchema = z.object({
+  name: z.string().trim().max(NAME_MAX, `Màx. ${NAME_MAX} caràcters`),
+  short_description: z.string().trim().max(SHORT_DESC_MAX, `Màx. ${SHORT_DESC_MAX} caràcters`),
+  description: z.string().trim().max(DESC_MAX, `Màx. ${DESC_MAX} caràcters`),
+});
 
 interface ProductTranslation {
   language: string;
