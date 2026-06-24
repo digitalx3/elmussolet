@@ -129,6 +129,21 @@ const AdminOrders: React.FC = () => {
     },
   });
 
+  const { data: auditLog = [], isLoading: auditLoading } = useQuery({
+    queryKey: ['admin-order-deletion-audit'],
+    enabled: auditOpen,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('order_deletion_audit')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+
 
 
   const updateStatusMutation = useMutation({
