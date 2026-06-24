@@ -35,6 +35,34 @@ const AdminDefaultHeroForm: React.FC = () => {
   const [uploading, setUploading] = useState<'image' | 'logo' | null>(null);
   const [pending, setPending] = useState<{ image?: { file: File; url: string }; logo?: { file: File; url: string } }>({});
 
+  const { data: existing } = useQuery({
+    queryKey: ['default-hero-overrides-all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('key, value')
+        .in('key', [DEFAULT_HERO_OVERRIDES_KEY, DEFAULT_HERO_OVERRIDES_KEY_2]);
+      if (error) throw error;
+      const map: Record<string, DefaultHeroOverrides | null> = {};
+      (data ?? []).forEach((row) => {
+        try { map[row.key] = JSON.parse(row.value as unknown as string) as DefaultHeroOverrides; }
+        catch { map[row.key] = null; }
+      });
+      return map;
+    },
+  });
+
+  useEffect(() => {
+    if (!existing) return;
+    setStates((prev) => ({
+      1: { ...prev[1], ...(existing[DEFAULT_HERO_OVERRIDES_KEY] ?? {}) },
+      2: { ...prev[2], ...(existing[DEFAULT_HERO_OVERRIDES_KEY_2] ?? {}) },
+    }));
+  }, [existing]);
+
+  const currentKey = activeVariant === 1 ? DEFAULT_HERO_OVERRIDES_KEY : DEFAULT_HERO_OVERRIDES_KEY_2;
+
+
   const state = states[activeVariant];
   const set = <K extends keyof HeroState>(k: K, v: HeroState[K]) =>
     setStates((s) => ({ ...s, [activeVariant]: { ...s[activeVariant], [k]: v } }));
