@@ -219,19 +219,37 @@ const AdminUsers: React.FC = () => {
     setFormOpen(true);
   };
 
-  const openEdit = (u: Profile) => {
+  const openEdit = async (u: Profile) => {
     setEditMode(true);
-    setForm({
-      id: u.id,
-      email: '',
-      password: '',
-      full_name: u.full_name || '',
-      phone: u.phone || '',
-      role: u.role,
-      preferred_language: u.preferred_language,
-      send_welcome_email: false,
-    });
+    setForm({ ...emptyForm, id: u.id, full_name: u.full_name || '', phone: u.phone || '', role: u.role, preferred_language: u.preferred_language });
     setFormOpen(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-manage-users', {
+        body: { action: 'get', user_id: u.id },
+      });
+      if (error) throw error;
+      const p = (data as any)?.profile || {};
+      const email = (data as any)?.email || '';
+      setForm({
+        id: u.id,
+        email,
+        password: '',
+        full_name: p.full_name || '',
+        phone: p.phone || '',
+        role: p.role || u.role,
+        preferred_language: p.preferred_language || 'ca',
+        address_line1: p.address_line1 || '',
+        address_line2: p.address_line2 || '',
+        city: p.city || '',
+        postal_code: p.postal_code || '',
+        province: p.province || '',
+        nif: p.nif || '',
+        company_name: p.company_name || '',
+        send_welcome_email: false,
+      });
+    } catch (e: any) {
+      toast.error(e.message);
+    }
   };
 
   const filtered = users.filter(u => {
