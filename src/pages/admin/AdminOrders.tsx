@@ -484,9 +484,17 @@ const AdminOrders: React.FC = () => {
                               updateStatusMutation.mutate(
                                 { id: selectedOrder.id, status: 'cancelled' },
                                 {
-                                  onSuccess: () => {
-                                    setSelectedOrder(prev => prev ? { ...prev, status: 'cancelled' } : prev);
-                                    qc.invalidateQueries({ queryKey: ['admin-order-items', selectedOrder.id] });
+                                  onSuccess: async () => {
+                                    const { data: fresh } = await supabase
+                                      .from('orders')
+                                      .select('*, profiles(full_name)')
+                                      .eq('id', selectedOrder.id)
+                                      .single();
+                                    if (fresh) setSelectedOrder(fresh as OrderRow);
+                                    await Promise.all([
+                                      qc.refetchQueries({ queryKey: ['admin-order-items', selectedOrder.id] }),
+                                      qc.refetchQueries({ queryKey: ['admin-orders'] }),
+                                    ]);
                                     toast.success(t('admin.stockReleased', 'Estoc alliberat'));
                                   },
                                 }
