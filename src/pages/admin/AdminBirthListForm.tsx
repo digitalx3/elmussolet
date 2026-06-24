@@ -432,6 +432,7 @@ const AdminBirthListForm: React.FC = () => {
 
   const performDelete = async () => {
     if (isNew || !id) return;
+    if (deleting) return; // guard against double click
     setDeleting(true);
     try {
       const { data, error } = await supabase.functions.invoke('admin-delete-birth-list', {
