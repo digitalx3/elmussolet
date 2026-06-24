@@ -253,9 +253,13 @@ Deno.serve(async (req: Request) => {
         error_count: 1,
         status: "error",
         provider,
-        error_message: msg.slice(0, 500),
+      error_message: msg.slice(0, 500),
         duration_ms: Date.now() - started,
-        metadata: { name: body?.name || null, sku: body?.sku || null },
+        metadata: {
+          name: body?.name || null,
+          sku: body?.sku || null,
+          retry_payload: body || null,
+        },
       });
     }
     if (msg === "RATE_LIMIT" || msg.includes("RATE_LIMIT")) return json({ error: "RATE_LIMIT" }, 429);
