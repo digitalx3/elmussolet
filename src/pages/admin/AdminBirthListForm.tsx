@@ -492,8 +492,29 @@ const AdminBirthListForm: React.FC = () => {
         }
       }
 
-      // Upsert items: delete existing + insert new
+      // Sections: resync (delete all + insert with new ids; build temp_id->real id map)
       await supabase.from('list_items').delete().eq('list_id', listId!);
+      await supabase.from('list_sections').delete().eq('list_id', listId!);
+
+      const sectionIdMap = new Map<string, string>(); // temp_id -> real id
+      if (sections.length > 0) {
+        const toInsert = sections.map((s, i) => ({
+          list_id: listId!,
+          name_ca: s.name_ca || s.name_es || '',
+          name_es: s.name_es || s.name_ca || '',
+          sort_order: i,
+        }));
+        const { data: insertedSecs, error: secErr } = await supabase
+          .from('list_sections')
+          .insert(toInsert)
+          .select('id, sort_order');
+        if (secErr) throw secErr;
+        sections.forEach((s, i) => {
+          const match = insertedSecs?.find((x: any) => x.sort_order === i);
+          if (match) sectionIdMap.set(s.temp_id, match.id);
+        });
+      }
+
       if (form.items.length > 0) {
         const itemsToInsert = form.items.map((item, idx) => ({
           list_id: listId!,
@@ -502,6 +523,7 @@ const AdminBirthListForm: React.FC = () => {
           quantity_desired: item.quantity_desired,
           priority: item.priority,
           sort_order: idx,
+          section_id: item.section_temp_id ? (sectionIdMap.get(item.section_temp_id) || null) : null,
         }));
         const { error } = await supabase.from('list_items').insert(itemsToInsert);
         if (error) throw error;
