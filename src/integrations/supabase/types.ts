@@ -1672,6 +1672,30 @@ export type Database = {
           quantity: number
         }[]
       }
+      get_maintenance_settings_admin: {
+        Args: never
+        Returns: {
+          allowed_ips: string[]
+          emergency_token_expires_at: string | null
+          emergency_token_hash: string | null
+          emergency_token_single_use: boolean
+          emergency_token_used_at: string | null
+          enabled: boolean
+          id: string
+          message_ca: string
+          message_es: string
+          show_logo: boolean
+          singleton: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "maintenance_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       user_owns_list: {
         Args: { _list_id: string; _user_id: string }
