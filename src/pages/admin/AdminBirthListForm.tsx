@@ -703,8 +703,8 @@ const AdminBirthListForm: React.FC = () => {
                       <div className="flex justify-between"><span>List owners</span><span className="font-mono">{previewCounts.list_owners}</span></div>
                     </div>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => setDeleteStep('final')}>
+                      <AlertDialogCancel disabled={deleting}>{t('common.cancel')}</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => setDeleteStep('final')} disabled={deleting}>
                         {t('admin.deleteListWithOrdersConfirm')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
