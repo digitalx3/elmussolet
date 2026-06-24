@@ -175,12 +175,58 @@ const CheckoutPage: React.FC = () => {
         province: shippingData.province,
       } : null;
 
+      // Upsert customer record (linked to auth user)
+      let customerId: string | null = null;
+      {
+        const { data: existing } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .maybeSingle();
+
+        if (existing) {
+          customerId = existing.id;
+          if (deliveryMethod === 'shipping' && shippingAddress) {
+            await supabase
+              .from('customers')
+              .update({
+                full_name: shippingAddress.full_name,
+                phone: shippingAddress.phone,
+                address_line1: shippingAddress.address_line1,
+                address_line2: shippingAddress.address_line2,
+                city: shippingAddress.city,
+                postal_code: shippingAddress.postal_code,
+                province: shippingAddress.province,
+              })
+              .eq('id', existing.id);
+          }
+        } else {
+          const { data: created, error: custErr } = await supabase
+            .from('customers')
+            .insert({
+              auth_user_id: user.id,
+              email: user.email ?? `${user.id}@unknown.local`,
+              full_name: shippingAddress?.full_name ?? profile?.full_name ?? '',
+              phone: shippingAddress?.phone ?? null,
+              address_line1: shippingAddress?.address_line1 ?? null,
+              address_line2: shippingAddress?.address_line2 ?? null,
+              city: shippingAddress?.city ?? null,
+              postal_code: shippingAddress?.postal_code ?? null,
+              province: shippingAddress?.province ?? null,
+            })
+            .select('id')
+            .single();
+          if (custErr) throw custErr;
+          customerId = created.id;
+        }
+      }
+
       // Create order
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           order_number: num,
-          user_id: user.id,
+          customer_id: customerId!,
           list_id: activeListId,
           delivery_method: deliveryMethod === 'shipping' ? 'shipping_buyer' : 'pickup',
           payment_method: paymentMethod === 'bizum' ? 'bizum' : 'bank_transfer',
