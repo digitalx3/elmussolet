@@ -9,6 +9,8 @@ import {
   RefreshCw,
   ArrowLeft,
   RotateCw,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -68,6 +70,15 @@ const AdminAiHistory: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | LogRow['status']>('all');
   const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggleExpanded = (id: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const canRetry = (r: LogRow): boolean => {
     if (r.status === 'success') return false;
@@ -223,6 +234,7 @@ const AdminAiHistory: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-8"></TableHead>
               <TableHead>Data</TableHead>
               <TableHead>Funció</TableHead>
               <TableHead>Scope</TableHead>
@@ -239,76 +251,122 @@ const AdminAiHistory: React.FC = () => {
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={11} className="text-center text-muted-foreground py-6">
+                <TableCell colSpan={12} className="text-center text-muted-foreground py-6">
                   Carregant...
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={11} className="text-center text-muted-foreground py-6">
+                <TableCell colSpan={12} className="text-center text-muted-foreground py-6">
                   Sense registres.
                 </TableCell>
               </TableRow>
             )}
-            {rows.map(r => (
-              <TableRow key={r.id}>
-                <TableCell className="whitespace-nowrap text-xs font-mono">
-                  {format(new Date(r.created_at), 'dd/MM/yy HH:mm:ss')}
-                </TableCell>
-                <TableCell className="text-xs font-mono">{r.function_name}</TableCell>
-                <TableCell className="text-xs">{r.scope || '—'}</TableCell>
-                <TableCell className="text-xs">
-                  {r.source_language ? <Badge variant="outline">{r.source_language}</Badge> : '—'}
-                  {' → '}
-                  {r.target_language ? <Badge>{r.target_language}</Badge> : '—'}
-                </TableCell>
-                <TableCell className="text-xs">{r.provider || '—'}</TableCell>
-                <TableCell className="text-right text-xs">{r.items_count}</TableCell>
-                <TableCell className="text-right text-xs">
-                  <span className="text-emerald-700">{r.success_count}</span>
-                  {' / '}
-                  <span className={r.error_count > 0 ? 'text-red-700 font-semibold' : ''}>
-                    {r.error_count}
-                  </span>
-                </TableCell>
-                <TableCell className="text-right text-xs">
-                  {r.duration_ms != null ? `${r.duration_ms} ms` : '—'}
-                </TableCell>
-                <TableCell><StatusBadge status={r.status} /></TableCell>
-                <TableCell className="max-w-xs">
-                  {r.error_message ? (
-                    <span className="text-xs text-red-700 break-words" title={r.error_message}>
-                      {r.error_message.length > 100
-                        ? `${r.error_message.slice(0, 100)}…`
-                        : r.error_message}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
+            {rows.map(r => {
+              const meta = r.metadata || {};
+              const failedItems: string[] = Array.isArray(meta.failed_items) ? meta.failed_items : [];
+              const retriedItems: string[] = Array.isArray(meta.retried_items) ? meta.retried_items : [];
+              const recoveredItems: string[] = Array.isArray(meta.recovered_items) ? meta.recovered_items : [];
+              const seoFields: string[] = Array.isArray(meta.fields)
+                ? meta.fields
+                : (Array.isArray(meta?.retry_payload?.fields) ? meta.retry_payload.fields : []);
+              const seoName: string | null = meta.name || meta?.retry_payload?.name || null;
+              const seoSku: string | null = meta.sku || meta?.retry_payload?.sku || null;
+              const hasDetails =
+                failedItems.length > 0 ||
+                retriedItems.length > 0 ||
+                seoFields.length > 0 ||
+                !!seoName;
+              const isOpen = expanded.has(r.id);
+              return (
+                <React.Fragment key={r.id}>
+                  <TableRow>
+                    <TableCell className="p-1">
+                      {hasDetails && (
+                        <button
+                          onClick={() => toggleExpanded(r.id)}
+                          className="p-1 rounded hover:bg-muted"
+                          aria-label={isOpen ? 'Amaga detalls' : 'Mostra detalls'}
+                        >
+                          {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </button>
+                      )}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-xs font-mono">
+                      {format(new Date(r.created_at), 'dd/MM/yy HH:mm:ss')}
+                    </TableCell>
+                    <TableCell className="text-xs font-mono">{r.function_name}</TableCell>
+                    <TableCell className="text-xs">{r.scope || '—'}</TableCell>
+                    <TableCell className="text-xs">
+                      {r.source_language ? <Badge variant="outline">{r.source_language}</Badge> : '—'}
+                      {' → '}
+                      {r.target_language ? <Badge>{r.target_language}</Badge> : '—'}
+                    </TableCell>
+                    <TableCell className="text-xs">{r.provider || '—'}</TableCell>
+                    <TableCell className="text-right text-xs">{r.items_count}</TableCell>
+                    <TableCell className="text-right text-xs">
+                      <span className="text-emerald-700">{r.success_count}</span>
+                      {' / '}
+                      <span className={r.error_count > 0 ? 'text-red-700 font-semibold' : ''}>
+                        {r.error_count}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right text-xs">
+                      {r.duration_ms != null ? `${r.duration_ms} ms` : '—'}
+                    </TableCell>
+                    <TableCell><StatusBadge status={r.status} /></TableCell>
+                    <TableCell className="max-w-xs">
+                      {r.error_message ? (
+                        <span className="text-xs text-red-700 break-words" title={r.error_message}>
+                          {r.error_message.length > 100
+                            ? `${r.error_message.slice(0, 100)}…`
+                            : r.error_message}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {canRetry(r) ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRetry(r)}
+                          disabled={retryingId === r.id}
+                          title={
+                            r.function_name === 'ai-translate'
+                              ? `Reintenta ${failedItems.length} elements fallits`
+                              : 'Reintenta la generació'
+                          }
+                        >
+                          <RotateCw className={cn('h-3 w-3 mr-1', retryingId === r.id && 'animate-spin')} />
+                          {retryingId === r.id ? 'Reintentant…' : 'Reintentar'}
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                  {hasDetails && isOpen && (
+                    <TableRow className="bg-muted/30 hover:bg-muted/30">
+                      <TableCell />
+                      <TableCell colSpan={11} className="py-3">
+                        <DetailsPanel
+                          functionName={r.function_name}
+                          failedItems={failedItems}
+                          retriedItems={retriedItems}
+                          recoveredItems={recoveredItems}
+                          seoFields={seoFields}
+                          seoName={seoName}
+                          seoSku={seoSku}
+                        />
+                      </TableCell>
+                    </TableRow>
                   )}
-                </TableCell>
-                <TableCell className="text-right">
-                  {canRetry(r) ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleRetry(r)}
-                      disabled={retryingId === r.id}
-                      title={
-                        r.function_name === 'ai-translate'
-                          ? `Reintenta ${r.metadata?.failed_items?.length || 0} elements fallits`
-                          : 'Reintenta la generació'
-                      }
-                    >
-                      <RotateCw className={cn('h-3 w-3 mr-1', retryingId === r.id && 'animate-spin')} />
-                      {retryingId === r.id ? 'Reintentant…' : 'Reintentar'}
-                    </Button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
+                </React.Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
@@ -322,5 +380,85 @@ const StatCard: React.FC<{ label: string; value: number; cls?: string }> = ({ la
     <div className={cn('text-2xl font-bold', cls)}>{value}</div>
   </div>
 );
+
+const DetailsPanel: React.FC<{
+  functionName: string;
+  failedItems: string[];
+  retriedItems: string[];
+  recoveredItems: string[];
+  seoFields: string[];
+  seoName: string | null;
+  seoSku: string | null;
+}> = ({ functionName, failedItems, retriedItems, recoveredItems, seoFields, seoName, seoSku }) => {
+  const recoveredSet = new Set(recoveredItems);
+
+  if (functionName === 'ai-product-seo') {
+    return (
+      <div className="space-y-2 text-xs">
+        {seoName && (
+          <div>
+            <span className="text-muted-foreground">Producte: </span>
+            <span className="font-medium">{seoName}</span>
+            {seoSku && <span className="text-muted-foreground"> · SKU {seoSku}</span>}
+          </div>
+        )}
+        {seoFields.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Camps:</span>
+            {seoFields.map(f => (
+              <Badge key={f} variant="outline">
+                {f === 'short' ? 'descripció curta' : f === 'long' ? 'descripció llarga' : f}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 text-xs">
+      {retriedItems.length > 0 && (
+        <div>
+          <div className="font-medium mb-1">
+            Reintentats: {retriedItems.length} · Recuperats:{' '}
+            <span className="text-emerald-700">{recoveredItems.length}</span> · Encara fallant:{' '}
+            <span className="text-red-700">{retriedItems.length - recoveredItems.length}</span>
+          </div>
+          <ul className="max-h-48 overflow-auto border rounded-md p-2 bg-background space-y-0.5">
+            {retriedItems.map((it, i) => {
+              const ok = recoveredSet.has(it);
+              return (
+                <li key={i} className="flex items-start gap-2">
+                  {ok ? (
+                    <CheckCircle2 className="h-3 w-3 mt-0.5 text-emerald-600 shrink-0" />
+                  ) : (
+                    <XCircle className="h-3 w-3 mt-0.5 text-red-600 shrink-0" />
+                  )}
+                  <code className="break-all">{it}</code>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+      {retriedItems.length === 0 && failedItems.length > 0 && (
+        <div>
+          <div className="font-medium mb-1 text-red-700">
+            {failedItems.length} {failedItems.length === 1 ? 'ítem fallit' : 'ítems fallits'}
+          </div>
+          <ul className="max-h-48 overflow-auto border rounded-md p-2 bg-background space-y-0.5">
+            {failedItems.map((it, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <XCircle className="h-3 w-3 mt-0.5 text-red-600 shrink-0" />
+                <code className="break-all">{it}</code>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default AdminAiHistory;
