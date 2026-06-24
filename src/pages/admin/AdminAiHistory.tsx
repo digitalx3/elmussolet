@@ -381,4 +381,84 @@ const StatCard: React.FC<{ label: string; value: number; cls?: string }> = ({ la
   </div>
 );
 
+const DetailsPanel: React.FC<{
+  functionName: string;
+  failedItems: string[];
+  retriedItems: string[];
+  recoveredItems: string[];
+  seoFields: string[];
+  seoName: string | null;
+  seoSku: string | null;
+}> = ({ functionName, failedItems, retriedItems, recoveredItems, seoFields, seoName, seoSku }) => {
+  const recoveredSet = new Set(recoveredItems);
+
+  if (functionName === 'ai-product-seo') {
+    return (
+      <div className="space-y-2 text-xs">
+        {seoName && (
+          <div>
+            <span className="text-muted-foreground">Producte: </span>
+            <span className="font-medium">{seoName}</span>
+            {seoSku && <span className="text-muted-foreground"> · SKU {seoSku}</span>}
+          </div>
+        )}
+        {seoFields.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Camps:</span>
+            {seoFields.map(f => (
+              <Badge key={f} variant="outline">
+                {f === 'short' ? 'descripció curta' : f === 'long' ? 'descripció llarga' : f}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 text-xs">
+      {retriedItems.length > 0 && (
+        <div>
+          <div className="font-medium mb-1">
+            Reintentats: {retriedItems.length} · Recuperats:{' '}
+            <span className="text-emerald-700">{recoveredItems.length}</span> · Encara fallant:{' '}
+            <span className="text-red-700">{retriedItems.length - recoveredItems.length}</span>
+          </div>
+          <ul className="max-h-48 overflow-auto border rounded-md p-2 bg-background space-y-0.5">
+            {retriedItems.map((it, i) => {
+              const ok = recoveredSet.has(it);
+              return (
+                <li key={i} className="flex items-start gap-2">
+                  {ok ? (
+                    <CheckCircle2 className="h-3 w-3 mt-0.5 text-emerald-600 shrink-0" />
+                  ) : (
+                    <XCircle className="h-3 w-3 mt-0.5 text-red-600 shrink-0" />
+                  )}
+                  <code className="break-all">{it}</code>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+      {retriedItems.length === 0 && failedItems.length > 0 && (
+        <div>
+          <div className="font-medium mb-1 text-red-700">
+            {failedItems.length} {failedItems.length === 1 ? 'ítem fallit' : 'ítems fallits'}
+          </div>
+          <ul className="max-h-48 overflow-auto border rounded-md p-2 bg-background space-y-0.5">
+            {failedItems.map((it, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <XCircle className="h-3 w-3 mt-0.5 text-red-600 shrink-0" />
+                <code className="break-all">{it}</code>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default AdminAiHistory;
