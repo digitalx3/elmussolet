@@ -59,24 +59,24 @@ const AdminMaintenance: React.FC = () => {
   const load = React.useCallback(async () => {
     setLoading(true);
     const { data, error } = await (supabase as any)
-      .from('maintenance_settings')
-      .select('enabled, show_logo, message_ca, message_es, allowed_ips, emergency_token_hash, emergency_token_expires_at, emergency_token_single_use, emergency_token_used_at')
-      .limit(1)
-      .maybeSingle();
+      .rpc('get_maintenance_settings_admin');
     if (error) {
       toast.error('Error carregant la configuració');
     } else if (data) {
-      setState({
-        enabled: data.enabled,
-        show_logo: data.show_logo,
-        message_ca: data.message_ca ?? '',
-        message_es: data.message_es ?? '',
-        allowed_ips: data.allowed_ips ?? [],
-        emergency_token_hash: data.emergency_token_hash ?? null,
-        emergency_token_expires_at: data.emergency_token_expires_at ?? null,
-        emergency_token_single_use: !!data.emergency_token_single_use,
-        emergency_token_used_at: data.emergency_token_used_at ?? null,
-      });
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row) {
+        setState({
+          enabled: row.enabled,
+          show_logo: row.show_logo,
+          message_ca: row.message_ca ?? '',
+          message_es: row.message_es ?? '',
+          allowed_ips: row.allowed_ips ?? [],
+          emergency_token_hash: row.emergency_token_hash ?? null,
+          emergency_token_expires_at: row.emergency_token_expires_at ?? null,
+          emergency_token_single_use: !!row.emergency_token_single_use,
+          emergency_token_used_at: row.emergency_token_used_at ?? null,
+        });
+      }
     }
     setLoading(false);
   }, []);
