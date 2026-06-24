@@ -61,7 +61,16 @@ const BirthListViewPage: React.FC = () => {
   const [blockSummary, setBlockSummary] = useState<Record<string, { reserved: number; delivered: number }>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const lang = i18n.language === 'es' ? 'es' : 'ca';
+  const lang = i18n.language === 'es' ? 'es' : i18n.language === 'ca' ? 'ca' : i18n.language || 'ca';
+
+  const resolveSectionName = (sec: ListSection): string => {
+    const tr = sec.translations?.find(t => t.language_code === lang)?.name;
+    if (tr && tr.trim()) return tr;
+    if (lang === 'es' && sec.name_es) return sec.name_es;
+    if (lang === 'ca' && sec.name_ca) return sec.name_ca;
+    const anyTr = sec.translations?.find(t => t.name && t.name.trim())?.name;
+    return anyTr || sec.name_ca || sec.name_es || '';
+  };
 
   useEffect(() => {
     if (!hasAccess || !listId) {
