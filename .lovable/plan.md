@@ -1,103 +1,104 @@
-# Pla: Reorganització de menú + sistema d'idiomes
+## Funcionalitats sol·licitades
 
-## 1. Moure "Servidor SMTP" a Configuració
+1. **Traducció automàtica amb IA per a idiomes nous** — quan l'admin afegeix un idioma, ha de poder traduir manualment cada cadena i, alternativament, prémer "Traduir amb IA" perquè es tradueixin totes les cadenes i continguts d'una vegada. El botó queda desactivat si no s'ha configurat cap API key d'IA.
+2. **Generació de descripcions SEO amb IA** a la fitxa del producte (descripció curta + descripció llarga optimitzades per SEO/GEO).
 
-A `src/components/admin/AdminLayout.tsx`:
-- Treure l'ítem `smtp` del grup `communication`.
-- Afegir-lo al grup `config` (just abans de `settings`).
-- Si el grup `communication` queda només amb `messages`, mantenir-lo igualment (té sentit semàntic).
+---
 
-## 2. Sistema d'idiomes dinàmics (BD)
+## 1. Proveïdor d'IA: dues opcions
 
-### Esquema nou
+Lovable ja inclou un **AI Gateway** (sense que l'admin hagi de gestionar cap clau) que dóna accés a models Gemini, GPT-5, Claude, etc. Tot i així, demanes "API key d'OpenAI o Claude que afegeix l'administrador". Et proposo aquest enfocament híbrid:
 
-**`languages`** — idiomes que existeixen al sistema
-- `code` (PK, text, ex: `ca`, `es`, `en`)
-- `name` (text, ex: "Català")
-- `native_name` (text, ex: "Català")
-- `is_enabled` (bool) — visible al frontend
-- `is_default` (bool) — un sol idioma per defecte
-- `sort_order` (int)
+- **Pantalla `/admin/configuracio/ia`** nova amb tres opcions seleccionables:
+  - *Lovable AI (recomanat)* — actiu per defecte, no requereix clau.
+  - *OpenAI* — l'admin enganxa la seva `OPENAI_API_KEY` (es desa com a secret de Supabase).
+  - *Anthropic / Claude* — `ANTHROPIC_API_KEY` (secret).
+- Es desa quin proveïdor està actiu a `site_settings` (camp `ai_provider`: `lovable | openai | anthropic`).
+- Els botons "Traduir amb IA" i "Generar descripció SEO" estaran **deshabilitats només si el proveïdor seleccionat és OpenAI/Anthropic i la seva clau no està present**. Si el proveïdor és Lovable, sempre estan actius.
 
-GRANTs: `SELECT` a `anon`+`authenticated` (cal a tot arreu); escriptura només admin via RLS amb `is_admin()`.
+---
 
-Sembrar amb `ca` (default, enabled) i `es` (enabled).
+## 2. Traducció d'idiomes nous
 
-### UI admin — nova pàgina
+### 2.1 Cadenes d'interfície (`src/locales/*.json`)
+Avui ca i es estan compilades dins el bundle. Per a idiomes nous afegits a l'admin necessitem desar les traduccions a la BD:
 
-`/admin/idiomes` dins el grup **Configuració**:
-- Llistar idiomes, activar/desactivar, marcar per defecte, afegir-ne (codi ISO + nom).
-- Eliminar només si no és el default i no té contingut traduït referenciat.
+- Nova taula `ui_translations(language_code, key, value)`.
+- A l'arrencada, després de carregar `useLanguages`, es fan `addResourceBundle` a i18next amb les files trobades per a cada idioma habilitat (overlay sobre el JSON estàtic per a ca/es).
 
-### Frontend — càrrega dinàmica
+### 2.2 Pantalla d'edició per idioma (`/admin/idiomes/:code/traduccions`)
+- Llista totes les claus aplanades de `ca.json` (idioma per defecte) com a referència.
+- Per cada clau: input editable amb el valor en aquest idioma (manual).
+- Cerca/filtre per clau o text.
+- Botó **"Traduir amb IA"** dalt — omple en lot totes les claus encara buides traduint des de l'idioma per defecte. Mostra progrés i permet revisar abans de desar.
+- Botó "Desa" per persistir a `ui_translations`.
 
-- Nou hook `useLanguages()` que llegeix `languages` actius (cache via React Query).
-- `src/i18n.ts`: després de detectar idiomes, validar contra la llista activa; fallback al default de la BD.
-- Selector d'idioma a `Header` (públic) i a `AdminLayout` header (admin), poblat des de `useLanguages()`.
+### 2.3 Continguts dinàmics ja existents
+Quan s'activa un idioma nou, també es poden traduir per IA en lot els valors de:
+- `product_translations` (nom, descripció curta, descripció llarga)
+- `category_translations`, `brand_translations`
+- `list_section_translations`, `default_list_section_translations`
+- `cms_block_translations`, `hero_slide_translations`, `variant_type_translations`, `order_status_translations`
 
-## 3. Traduccions UI (JSON al codi)
+Mateix botó "Traduir amb IA" a la pantalla de l'idioma fa un job per omplir tot el que falti, agafant com a origen el text de l'idioma per defecte.
 
-- Auditar `src/locales/ca.json` i `es.json`: ja existeix una clau `admin` però **les pàgines admin no usen `useTranslation` consistentment**. Hi ha labels durs (`'General'`, `'Catàleg'`, `'Aparença'`, etc.) a `AdminLayout` i moltes pàgines.
-- Extreure tots els textos hardcodejats de:
-  - `AdminLayout` (labels de grups + items que no tenen `label` traduït)
-  - Totes les pàgines `src/pages/admin/*.tsx` (títols, botons, missatges toast, columnes de taula)
-  - Components admin compartits
-- Ampliar `ca.json` i `es.json` amb namespaces: `admin.nav.*`, `admin.groups.*`, `admin.pages.<page>.*`, `admin.actions.*`, `admin.toasts.*`.
-- Quan s'afegeix un idioma nou a la BD però encara no hi ha fitxer JSON: fallback automàtic al default (i18next ho fa per defecte amb `fallbackLng`).
-- Documentar al README com afegir un fitxer `locales/<code>.json` quan s'habilita un idioma nou.
+### 2.4 Edge function `ai-translate`
+- Rep: `{ provider, items: [{ source_text, context? }], target_language, source_language }`.
+- Tria proveïdor segons `site_settings.ai_provider` (o el que rebi).
+- Llegeix la clau (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) o usa `LOVABLE_API_KEY`.
+- Tradueix en lots de ~50 strings amb un únic prompt JSON per minimitzar cost.
+- Retorna `{ translations: [...] }` en el mateix ordre.
+- Validació, control d'errors 402/429, missatges clars al client.
 
-## 4. Traduccions de contingut (BD)
+---
 
-Patró existent: taules `<entity>_translations` amb `(entity_id, language_code, ...)`. Replicar-ho a:
+## 3. Descripcions SEO amb IA al producte
 
-### Noves taules de traducció
+- Botó **"Generar amb IA"** dins la targeta "Traduccions" de la fitxa de producte, just sota cada pestanya d'idioma (o un únic botó que actua sobre l'idioma actiu).
+- En clicar: invoca edge function `ai-product-seo` amb `{ sku, name, current_short, current_long, language, brand?, category? }`.
+- L'edge function demana al model dues cadenes optimitzades per SEO + GEO (paraules clau locals, intent comercial) amb estructura JSON `{ short_description, description }`.
+- El resultat omple els camps de l'idioma actiu (l'admin pot editar abans de desar).
+- Funciona amb el mateix proveïdor configurat al pas 1; deshabilitat amb la mateixa lògica.
 
-- **`brand_translations`**: `brand_id`, `language_code`, `name`, `description`
-- **`list_section_translations`**: `section_id`, `language_code`, `title`
-- **`cms_block_translations`**: `block_id`, `language_code`, `title`, `subtitle`, `body`, `cta_label`  
-  (Avui `cms_blocks` té camps `*_ca`/`*_es` durs — migrar-los a la nova taula i deprecar els camps suffix.)
-- **`hero_slide_translations`**: `slide_id`, `language_code`, `title`, `subtitle`, `cta_label`  
-  (Mateix patró: migrar dades dels camps `*_ca`/`*_es` actuals.)
+---
 
-Cada taula:
-1. PK composta `(entity_id, language_code)` + FK a `languages(code)` i a l'entitat amb `ON DELETE CASCADE`.
-2. GRANTs: `SELECT` a `anon`+`authenticated`, escriptura via RLS (només admin).
-3. RLS: lectura pública; escriptura `is_admin(auth.uid())`.
+## 4. Detalls tècnics
 
-### Cobertura ja existent (verificar)
+```text
+DB
+├─ ui_translations (language_code FK, key, value, updated_at)  RLS: admin write, anon read
+├─ site_settings: nou camp `ai_provider text default 'lovable'`
+└─ secrets: OPENAI_API_KEY, ANTHROPIC_API_KEY (opcionals, via add_secret)
 
-- `product_translations`, `category_translations`, `variant_type_translations`, `list_template_translations`, `order_status_translations`, `order_status_email_templates` — comprovar que tenen FK a `languages` o convertir `language_code` a referenciar la nova taula.
+Edge functions
+├─ ai-translate         (batch translate strings)
+└─ ai-product-seo       (per producte)
 
-### UI admin per editar
+Frontend
+├─ src/i18n.ts          → carregar overlay de ui_translations
+├─ src/pages/admin/AdminAiSettings.tsx           (nou)
+├─ src/pages/admin/AdminLanguageTranslations.tsx (nou, per idioma)
+├─ src/pages/admin/AdminLanguages.tsx            (afegir enllaç "Traduir")
+├─ src/pages/admin/AdminProductForm.tsx          (botó SEO per idioma)
+└─ src/hooks/useAiProvider.ts                    (estat del proveïdor + disponibilitat)
+```
 
-A cada formulari (producte, categoria, marca, slide, bloc CMS, secció de llista, plantilla, estat):
-- Tabs per idioma (poblats des de `useLanguages()`).
-- Camps tradu\u00efbles per tab; persistir a `<entity>_translations`.
-- Quan s'afegeix un idioma nou, els tabs apareixen buits automàticament.
+---
 
-### Lectura al frontend
+## 5. Què faré primer (en aquest ordre)
 
-- Hooks existents (`useTranslatedProducts`, etc.) ja seleccionen `language_code = currentLang`. Estendre patró als hooks/components que llegeixen brands, hero_slides, cms_blocks, list_sections.
+1. Migració: `ui_translations` + camp `ai_provider` a `site_settings`.
+2. Pantalla `/admin/configuracio/ia` (seleccionar proveïdor, demanar secrets si cal, indicador d'estat).
+3. Edge function `ai-translate` + hook `useAiProvider`.
+4. Pantalla per idioma amb edició manual + botó "Traduir amb IA" (cobreix UI strings + continguts dinàmics).
+5. Overlay de `ui_translations` a i18next.
+6. Edge function `ai-product-seo` + botó a `AdminProductForm`.
 
-## 5. Detalls tècnics
+---
 
-- **Migració de dades CMS/Hero**: copiar `title_ca`→row `language_code=ca`, `title_es`→row `language_code=es`, mantenir columnes `*_ca`/`*_es` un temps (deprecades) i fer un PR posterior per eliminar-les un cop el frontend ja llegeixi de les noves taules.
-- **Cap canvi a `auth`/`storage`** schemas.
-- **Sense `ALTER DATABASE`**.
-- Selector d'idioma persisteix a `localStorage` (clau `i18nextLng`), igual que avui.
-- Edge functions que enviin correus llegiran l'idioma de la comanda/client (camp `language_code` ja present a `orders`?) — verificar i estendre si cal.
+## Preguntes abans de començar
 
-## Ordre d'execució
+- Confirmes que vols mantenir l'opció **OpenAI/Anthropic amb clau pròpia** o prefereixes anar directament amb **Lovable AI Gateway** (més senzill, sense que hagis de gestionar cap clau)?
+- Quan generem descripcions SEO amb IA al producte, vols que **sobreescrigui** sempre el contingut actual o que només ompli si està buit (i mostri preview abans de desar)?
 
-1. Migració BD: crear `languages`, sembrar `ca`/`es`, crear 4 noves taules `*_translations`, migrar dades de `cms_blocks` i `hero_slides`.
-2. Moure ítem SMTP al grup Configuració.
-3. Pàgina admin `/admin/idiomes` + hook `useLanguages` + selector a headers.
-4. Refactor `i18n.ts` per fer servir idiomes dinàmics.
-5. Ampliar `ca.json`/`es.json` i substituir strings hardcodejats a admin.
-6. Afegir tabs d'idioma als formularis d'entitats noves (brands, hero, cms, list sections).
-7. Actualitzar lectures de frontend (Footer, Home, llistes) per llegir de les noves taules de traducció.
-
-## Què no inclou
-
-- No es tradueix automàticament res (sense crida a IA de traducció). Es deixa preparat un punt clar on afegir-ho més endavant si vols.
-- No es canvia la URL per idioma (`/es/...`). Es manté un sol arbre de rutes amb idioma a `localStorage`.
+Si confirmes, començo per la migració i la pantalla de configuració d'IA.

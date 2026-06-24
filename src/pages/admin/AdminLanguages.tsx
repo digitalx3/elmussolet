@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Check, Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, Trash2, Check, Star, Languages as LanguagesIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguages } from '@/hooks/useLanguages';
 import { Button } from '@/components/ui/button';
@@ -130,6 +131,11 @@ const AdminLanguages: React.FC = () => {
                   )}
                 </TableCell>
                 <TableCell className="text-right">
+                  <Button asChild size="sm" variant="ghost" title={t('admin.aiTrTitle', 'Traduccions')}>
+                    <Link to={`/admin/idiomes/${l.code}/traduccions`}>
+                      <LanguagesIcon className="h-4 w-4" />
+                    </Link>
+                  </Button>
                   <Button size="sm" variant="ghost" disabled={l.is_default} onClick={() => remove(l.code)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>

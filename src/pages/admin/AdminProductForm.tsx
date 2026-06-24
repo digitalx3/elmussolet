@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, GripVertical, Upload, Star, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, GripVertical, Upload, Star, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +21,7 @@ import { useActiveTaxRates, priceWithTax } from '@/hooks/useTaxRates';
 import { optimizeImage } from '@/lib/optimizeImage';
 import { useLanguages, useDefaultLanguage } from '@/hooks/useLanguages';
 import LanguageTabs from '@/components/admin/LanguageTabs';
+import { useAiProvider, isAiReady } from '@/hooks/useAiProvider';
 
 const emptyTranslation = { name: '', short_description: '', description: '' };
 
@@ -79,6 +80,58 @@ const AdminProductForm: React.FC = () => {
 
   const [translationErrors, setTranslationErrors] = useState<TranslationErrors>({});
   const [activeLang, setActiveLang] = useState<string | undefined>(undefined);
+  const [seoGenerating, setSeoGenerating] = useState<string | null>(null);
+  const { data: aiStatus } = useAiProvider();
+  const aiReady = isAiReady(aiStatus);
+
+  const generateSeoDescriptions = async (lang: string) => {
+    const tr = form.translations[lang] ?? emptyTranslation;
+    const defaultTr = form.translations[defaultCode] ?? emptyTranslation;
+    const productName = tr.name?.trim() || defaultTr.name?.trim();
+    if (!productName) {
+      toast.error('Cal omplir el nom del producte abans de generar la descripció');
+      return;
+    }
+    if (!aiReady) {
+      toast.error("Configura un proveïdor d'IA a /admin/ia abans d'utilitzar aquesta funció");
+      return;
+    }
+    const language = languages.find(l => l.code === lang);
+    const brand = brands.find((b: any) => b.id === form.brand_id);
+    const category = categories.find((c: any) => c.id === form.category_id);
+    setSeoGenerating(lang);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-product-seo', {
+        body: {
+          name: productName,
+          sku: form.sku || undefined,
+          brand: brand?.name || undefined,
+          category: (category as any)?.name || undefined,
+          language: lang,
+          language_name: language?.native_name || lang,
+          current_short: tr.short_description || '',
+          current_long: tr.description || '',
+        },
+      });
+      if (error) throw error;
+      setForm(prev => ({
+        ...prev,
+        translations: {
+          ...prev.translations,
+          [lang]: {
+            ...(prev.translations[lang] ?? emptyTranslation),
+            short_description: String(data?.short_description || ''),
+            description: String(data?.description || ''),
+          },
+        },
+      }));
+      toast.success(`Descripcions generades amb IA per ${language?.native_name || lang}`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Error generant descripcions');
+    } finally {
+      setSeoGenerating(null);
+    }
+  };
 
   // Ensure an entry exists for every enabled language
   useEffect(() => {
@@ -303,6 +356,28 @@ const AdminProductForm: React.FC = () => {
               const errs = translationErrors[lang] ?? {};
               return (
                 <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-2 pb-2 border-b">
+                    <div className="text-xs text-muted-foreground">
+                      {aiReady
+                        ? "Genera la descripció curta i llarga optimitzades per SEO/GEO amb IA."
+                        : "Configura un proveïdor d'IA per habilitar la generació amb IA."}
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={!aiReady || seoGenerating === lang || !(tr.name?.trim() || (form.translations[defaultCode]?.name?.trim()))}
+                      onClick={() => generateSeoDescriptions(lang)}
+                      title={!aiReady ? "Cal configurar un proveïdor d'IA a /admin/ia" : 'Generar descripcions amb IA'}
+                    >
+                      {seoGenerating === lang ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 mr-2" />
+                      )}
+                      Generar descripció amb IA
+                    </Button>
+                  </div>
                   <div>
                     <Label>Nom *</Label>
                     <Input

@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   Package, LayoutDashboard, Tags, Bookmark, ListChecks,
   FileText, ShoppingCart, Users, Truck, Settings, ArrowLeft, SlidersHorizontal, Image as ImageIcon,
-  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database, Power, Languages as LanguagesIcon, Globe,
+  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database, Power, Languages as LanguagesIcon, Globe, Sparkles,
 } from 'lucide-react';
 import AdminLanguageSwitcher from '@/components/admin/AdminLanguageSwitcher';
 import {
@@ -73,6 +73,7 @@ const groups: NavGroup[] = [
       { key: 'shipping', path: '/admin/enviaments', icon: Truck },
       { key: 'languages', path: '/admin/idiomes', icon: LanguagesIcon },
       { key: 'translations', path: '/admin/traduccions', icon: Globe },
+      { key: 'aiSettings', path: '/admin/ia', icon: Sparkles, label: "IA" },
       { key: 'smtp', path: '/admin/smtp', icon: Server },
       { key: 'backups', path: '/admin/backups', icon: Database },
       { key: 'maintenance', path: '/admin/manteniment', icon: Power },
