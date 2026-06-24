@@ -746,6 +746,25 @@ const MyBirthListPage: React.FC = () => {
           const match = (insertedSecs || []).find(is => is.sort_order === i);
           if (match) sectionIdMap.set(s.temp_id, match.id);
         });
+
+        // Mirror ca/es names into list_section_translations so the dynamic
+        // language system can resolve section names by language_code.
+        const trRows: Array<{ section_id: string; language_code: string; name: string }> = [];
+        sections.forEach((s) => {
+          const realId = sectionIdMap.get(s.temp_id);
+          if (!realId) return;
+          if (s.name_ca && s.name_ca.trim()) {
+            trRows.push({ section_id: realId, language_code: 'ca', name: s.name_ca.trim() });
+          }
+          if (s.name_es && s.name_es.trim()) {
+            trRows.push({ section_id: realId, language_code: 'es', name: s.name_es.trim() });
+          }
+        });
+        if (trRows.length > 0) {
+          await supabase
+            .from('list_section_translations')
+            .upsert(trRows, { onConflict: 'section_id,language_code' });
+        }
       }
 
       if (form.items.length > 0) {

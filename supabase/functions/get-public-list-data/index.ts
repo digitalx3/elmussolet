@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
         .order("sort_order", { ascending: true }),
       supabase
         .from("list_sections")
-        .select("id, name_ca, name_es, sort_order")
+        .select("id, name_ca, name_es, sort_order, list_section_translations(language_code, name)")
         .eq("list_id", listId)
         .order("sort_order", { ascending: true }),
       supabase.rpc("get_list_block_summary", { _list_id: listId }),
@@ -110,10 +110,21 @@ Deno.serve(async (req) => {
       variant: i.variant_id ? variantsById[i.variant_id] || null : null,
     }));
 
+    const normalizedSections = (sectionsRes.data ?? []).map((s: any) => ({
+      id: s.id,
+      name_ca: s.name_ca,
+      name_es: s.name_es,
+      sort_order: s.sort_order,
+      translations: (s.list_section_translations ?? []).map((t: any) => ({
+        language_code: t.language_code,
+        name: t.name,
+      })),
+    }));
+
     return json({
       ok: true,
       items: enrichedItems,
-      sections: sectionsRes.data ?? [],
+      sections: normalizedSections,
       blockSummary: summaryRes.data ?? [],
     });
   } catch (err) {

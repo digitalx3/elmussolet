@@ -18,6 +18,7 @@ interface ListSection {
   name_ca: string;
   name_es: string;
   sort_order: number;
+  translations?: Array<{ language_code: string; name: string }>;
 }
 
 interface ListItemWithProduct {
@@ -60,7 +61,16 @@ const BirthListViewPage: React.FC = () => {
   const [blockSummary, setBlockSummary] = useState<Record<string, { reserved: number; delivered: number }>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const lang = i18n.language === 'es' ? 'es' : 'ca';
+  const lang = i18n.language === 'es' ? 'es' : i18n.language === 'ca' ? 'ca' : i18n.language || 'ca';
+
+  const resolveSectionName = (sec: ListSection): string => {
+    const tr = sec.translations?.find(t => t.language_code === lang)?.name;
+    if (tr && tr.trim()) return tr;
+    if (lang === 'es' && sec.name_es) return sec.name_es;
+    if (lang === 'ca' && sec.name_ca) return sec.name_ca;
+    const anyTr = sec.translations?.find(t => t.name && t.name.trim())?.name;
+    return anyTr || sec.name_ca || sec.name_es || '';
+  };
 
   useEffect(() => {
     if (!hasAccess || !listId) {
@@ -354,7 +364,7 @@ const BirthListViewPage: React.FC = () => {
               {grouped.map(g => g.items.length > 0 && (
                 <section key={g.section.id}>
                   <h2 className="font-display text-xl font-semibold mb-3 pb-2 border-b border-border">
-                    {lang === 'es' ? g.section.name_es : g.section.name_ca}
+                    {resolveSectionName(g.section)}
                     <span className="ml-2 text-xs font-normal text-muted-foreground">({g.items.length})</span>
                   </h2>
                   <div className="space-y-3">{g.items.map(renderItem)}</div>
