@@ -451,6 +451,24 @@ const AdminBirthListForm: React.FC = () => {
       toast.error('Mínim un propietari'); return;
     }
 
+    // Validate every section has at least the default-language name filled
+    // so the public list never renders a blank family header.
+    const defaultCode = (enabledLanguages.find(l => l.is_default)?.code) || enabledLanguages[0]?.code || 'ca';
+    const invalidSection = sections.find(s => {
+      const value = s.translations?.[defaultCode]
+        ?? (defaultCode === 'ca' ? s.name_ca : defaultCode === 'es' ? s.name_es : '');
+      return !value || !value.trim();
+    });
+    if (invalidSection) {
+      toast.error(
+        lang === 'es'
+          ? `Una familia no tiene nombre en el idioma principal (${defaultCode.toUpperCase()}). Edita sus traducciones antes de guardar.`
+          : `Una família no té nom en l'idioma principal (${defaultCode.toUpperCase()}). Edita'n les traduccions abans de desar.`,
+      );
+      setTranslatingTempId(invalidSection.temp_id);
+      return;
+    }
+
     setSaving(true);
     try {
       let listId = id;
@@ -581,7 +599,12 @@ const AdminBirthListForm: React.FC = () => {
       toast.success(t('common.success'));
       navigate('/admin/llistes');
     } catch (err: any) {
-      toast.error(err.message || t('errors.generic'));
+      const detail = err?.message || err?.error_description || t('errors.generic');
+      toast.error(
+        lang === 'es'
+          ? `No se ha podido guardar la lista: ${detail}`
+          : `No s'ha pogut desar la llista: ${detail}`,
+      );
     } finally {
       setSaving(false);
     }
@@ -1239,29 +1262,68 @@ const AdminBirthListForm: React.FC = () => {
                 return next;
               }));
             };
+            const defaultCode = (enabledLanguages.find(l => l.is_default)?.code) || enabledLanguages[0]?.code || 'ca';
+            const tryClose = () => {
+              const defaultValue = (sec.translations[defaultCode] ?? (defaultCode === 'ca' ? sec.name_ca : defaultCode === 'es' ? sec.name_es : '') ?? '').trim();
+              if (!defaultValue) {
+                toast.error(
+                  lang === 'es'
+                    ? `El nombre en el idioma principal (${defaultCode.toUpperCase()}) no puede estar vacío`
+                    : `El nom en l'idioma principal (${defaultCode.toUpperCase()}) no pot estar buit`,
+                );
+                return;
+              }
+              setTranslatingTempId(null);
+            };
             return (
-              <LanguageTabs>
-                {(code) => {
-                  const fallback = code === 'ca' ? sec.name_ca : code === 'es' ? sec.name_es : '';
-                  const value = sec.translations[code] ?? fallback ?? '';
-                  return (
-                    <div className="space-y-2">
-                      <Label className="text-xs">{lang === 'es' ? 'Nombre' : 'Nom'}</Label>
-                      <Input value={value} onChange={e => setName(code, e.target.value)} />
-                      <p className="text-[11px] text-muted-foreground">
-                        {lang === 'es'
-                          ? 'Se mostrará en la vista pública cuando el visitante use este idioma.'
-                          : 'Es mostrarà a la vista pública quan el visitant utilitzi aquest idioma.'}
-                      </p>
-                    </div>
-                  );
-                }}
-              </LanguageTabs>
+              <>
+                <LanguageTabs>
+                  {(code) => {
+                    const fallback = code === 'ca' ? sec.name_ca : code === 'es' ? sec.name_es : '';
+                    const value = sec.translations[code] ?? fallback ?? '';
+                    const isDefault = code === defaultCode;
+                    const isEmpty = !value.trim();
+                    const tooLong = value.length > 120;
+                    const showError = (isDefault && isEmpty) || tooLong;
+                    return (
+                      <div className="space-y-2">
+                        <Label className="text-xs flex items-center gap-1">
+                          {lang === 'es' ? 'Nombre' : 'Nom'}
+                          {isDefault && <span className="text-destructive">*</span>}
+                          <span className="text-muted-foreground ml-auto text-[10px]">{value.length}/120</span>
+                        </Label>
+                        <Input
+                          value={value}
+                          maxLength={120}
+                          aria-invalid={showError}
+                          className={showError ? 'border-destructive focus-visible:ring-destructive' : ''}
+                          onChange={e => setName(code, e.target.value)}
+                        />
+                        {showError ? (
+                          <p className="text-[11px] text-destructive">
+                            {tooLong
+                              ? (lang === 'es' ? 'Máx. 120 caracteres' : 'Màx. 120 caràcters')
+                              : (lang === 'es'
+                                  ? 'Obligatorio en el idioma principal'
+                                  : "Obligatori en l'idioma principal")}
+                          </p>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground">
+                            {lang === 'es'
+                              ? 'Se mostrará en la vista pública cuando el visitante use este idioma.'
+                              : 'Es mostrarà a la vista pública quan el visitant utilitzi aquest idioma.'}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  }}
+                </LanguageTabs>
+                <DialogFooter>
+                  <Button onClick={tryClose}>{t('common.close', 'Tancar')}</Button>
+                </DialogFooter>
+              </>
             );
           })()}
-          <DialogFooter>
-            <Button onClick={() => setTranslatingTempId(null)}>{t('common.close', 'Tancar')}</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

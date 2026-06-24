@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, Save, Loader2, Globe } from 'lucide-react';
+import { Search, Save, Loader2, Globe, AlertCircle } from 'lucide-react';
+import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import { useLanguages } from '@/hooks/useLanguages';
+import { useLanguages, useDefaultLanguage } from '@/hooks/useLanguages';
 import LanguageTabs from '@/components/admin/LanguageTabs';
 import AdminDefaultListSections from '@/pages/admin/AdminDefaultListSections';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,16 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+
+const NAME_MAX = 200;
+const SHORT_DESC_MAX = 500;
+const DESC_MAX = 5000;
+
+const translationFieldsSchema = z.object({
+  name: z.string().trim().max(NAME_MAX, `Màx. ${NAME_MAX} caràcters`),
+  short_description: z.string().trim().max(SHORT_DESC_MAX, `Màx. ${SHORT_DESC_MAX} caràcters`),
+  description: z.string().trim().max(DESC_MAX, `Màx. ${DESC_MAX} caràcters`),
+});
 
 interface ProductTranslation {
   language: string;
@@ -38,12 +49,16 @@ const ProductsTranslationsPanel: React.FC = () => {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { data: languages = [] } = useLanguages({ onlyEnabled: true });
+  const { data: defaultLang } = useDefaultLanguage();
+  const primaryCode = defaultLang?.code || languages[0]?.code || 'ca';
   const lang = (i18n.language || 'ca').slice(0, 2);
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [drafts, setDrafts] = useState<DraftMap>({});
   const [savingId, setSavingId] = useState<string | null>(null);
+  // productId -> { code -> { field -> message } }
+  const [fieldErrors, setFieldErrors] = useState<Record<string, Record<string, Record<string, string>>>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-translations-products', { search, page }],
@@ -88,32 +103,88 @@ const ProductsTranslationsPanel: React.FC = () => {
         [code]: { ...(d[productId]?.[code] || { name: '', short_description: '', description: '' }), [field]: value },
       },
     }));
+    // Clear the specific field error as the user edits.
+    setFieldErrors(prev => {
+      const langErrs = prev[productId]?.[code];
+      if (!langErrs || !langErrs[field]) return prev;
+      const { [field]: _, ...restFields } = langErrs;
+      const nextLangErrs = Object.keys(restFields).length > 0 ? restFields : undefined;
+      const productErrs = { ...prev[productId] };
+      if (nextLangErrs) productErrs[code] = nextLangErrs; else delete productErrs[code];
+      const next = { ...prev };
+      if (Object.keys(productErrs).length > 0) next[productId] = productErrs; else delete next[productId];
+      return next;
+    });
   };
 
   const saveProduct = async (p: ProductRow) => {
+    const productDrafts = drafts[p.id] || {};
+    const rows: Array<{ product_id: string; language: string; name: string; short_description: string | null; description: string | null }> = [];
+    const deletes: string[] = [];
+    const errors: Record<string, Record<string, string>> = {};
+
+    const resolved = languages.map(l => {
+      const cur = productDrafts[l.code] ?? (() => {
+        const tr = p.product_translations.find(x => x.language === l.code);
+        return tr
+          ? { name: tr.name ?? '', short_description: tr.short_description ?? '', description: tr.description ?? '' }
+          : { name: '', short_description: '', description: '' };
+      })();
+      return { code: l.code, cur };
+    });
+
+    // Validate per-language fields against schema and enforce the primary
+    // language has a non-empty name so the catalog never falls back to a slug.
+    resolved.forEach(({ code, cur }) => {
+      const parsed = translationFieldsSchema.safeParse(cur);
+      if (!parsed.success) {
+        const langErrors: Record<string, string> = {};
+        parsed.error.issues.forEach(iss => {
+          const key = iss.path[0] as string;
+          if (key) langErrors[key] = iss.message;
+        });
+        errors[code] = langErrors;
+      }
+    });
+
+    const primaryDraft = resolved.find(r => r.code === primaryCode)?.cur;
+    if (!primaryDraft || !primaryDraft.name.trim()) {
+      errors[primaryCode] = {
+        ...(errors[primaryCode] || {}),
+        name: t(
+          'admin.translationPrimaryRequired',
+          `Cal omplir el nom en l'idioma principal (${primaryCode.toUpperCase()})`,
+        ),
+      };
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(prev => ({ ...prev, [p.id]: errors }));
+      const firstLang = Object.keys(errors)[0];
+      const firstField = Object.keys(errors[firstLang])[0];
+      toast({
+        title: t('admin.validationFailed', 'Revisa els camps marcats'),
+        description: `${firstLang.toUpperCase()} · ${errors[firstLang][firstField]}`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setFieldErrors(prev => { const { [p.id]: _, ...rest } = prev; return rest; });
     setSavingId(p.id);
     try {
-      const productDrafts = drafts[p.id] || {};
-      const rows: Array<{ product_id: string; language: string; name: string; short_description: string | null; description: string | null }> = [];
-      const deletes: string[] = [];
-
-      languages.forEach(l => {
-        const cur = productDrafts[l.code] ?? (() => {
-          const tr = p.product_translations.find(x => x.language === l.code);
-          return tr ? { name: tr.name, short_description: tr.short_description ?? '', description: tr.description ?? '' } : null;
-        })();
-        if (!cur) return;
+      resolved.forEach(({ code, cur }) => {
         const name = cur.name.trim();
         if (name) {
           rows.push({
             product_id: p.id,
-            language: l.code,
+            language: code,
             name,
             short_description: cur.short_description.trim() || null,
             description: cur.description.trim() || null,
           });
-        } else if (p.product_translations.some(x => x.language === l.code)) {
-          deletes.push(l.code);
+        } else if (p.product_translations.some(x => x.language === code)) {
+          deletes.push(code);
         }
       });
 
@@ -136,7 +207,12 @@ const ProductsTranslationsPanel: React.FC = () => {
       await qc.invalidateQueries({ queryKey: ['admin-translations-products'] });
       toast({ title: t('common.success', 'Desat correctament') });
     } catch (e: any) {
-      toast({ title: e.message || 'Error', variant: 'destructive' });
+      const msg = e?.message || e?.error_description || 'Error desconegut';
+      toast({
+        title: t('admin.saveFailed', 'No s’han pogut desar les traduccions'),
+        description: msg,
+        variant: 'destructive',
+      });
     } finally {
       setSavingId(null);
     }
@@ -209,30 +285,72 @@ const ProductsTranslationsPanel: React.FC = () => {
                   <LanguageTabs>
                     {(code) => {
                       const cur = getDraft(p, code);
+                      const errs = fieldErrors[p.id]?.[code] || {};
+                      const isPrimary = code === primaryCode;
                       return (
                         <div className="space-y-3">
                           <div>
-                            <Label className="text-xs">{t('admin.name', 'Nom')}</Label>
+                            <Label className="text-xs flex items-center gap-1">
+                              {t('admin.name', 'Nom')}
+                              {isPrimary && <span className="text-destructive">*</span>}
+                              <span className="text-muted-foreground ml-auto text-[10px]">
+                                {cur.name.length}/{NAME_MAX}
+                              </span>
+                            </Label>
                             <Input
                               value={cur.name}
+                              maxLength={NAME_MAX}
+                              aria-invalid={!!errs.name}
+                              className={errs.name ? 'border-destructive focus-visible:ring-destructive' : ''}
                               onChange={e => updateDraft(p.id, code, 'name', e.target.value)}
                             />
+                            {errs.name && (
+                              <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
+                                <AlertCircle className="h-3 w-3" /> {errs.name}
+                              </p>
+                            )}
                           </div>
                           <div>
-                            <Label className="text-xs">{t('admin.shortDescription', 'Descripció curta')}</Label>
+                            <Label className="text-xs flex items-center gap-1">
+                              {t('admin.shortDescription', 'Descripció curta')}
+                              <span className="text-muted-foreground ml-auto text-[10px]">
+                                {cur.short_description.length}/{SHORT_DESC_MAX}
+                              </span>
+                            </Label>
                             <Textarea
                               rows={2}
                               value={cur.short_description}
+                              maxLength={SHORT_DESC_MAX}
+                              aria-invalid={!!errs.short_description}
+                              className={errs.short_description ? 'border-destructive focus-visible:ring-destructive' : ''}
                               onChange={e => updateDraft(p.id, code, 'short_description', e.target.value)}
                             />
+                            {errs.short_description && (
+                              <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
+                                <AlertCircle className="h-3 w-3" /> {errs.short_description}
+                              </p>
+                            )}
                           </div>
                           <div>
-                            <Label className="text-xs">{t('admin.description', 'Descripció')}</Label>
+                            <Label className="text-xs flex items-center gap-1">
+                              {t('admin.description', 'Descripció')}
+                              <span className="text-muted-foreground ml-auto text-[10px]">
+                                {cur.description.length}/{DESC_MAX}
+                              </span>
+                            </Label>
                             <Textarea
                               rows={4}
                               value={cur.description}
+                              maxLength={DESC_MAX}
+                              aria-invalid={!!errs.description}
+                              className={errs.description ? 'border-destructive focus-visible:ring-destructive' : ''}
                               onChange={e => updateDraft(p.id, code, 'description', e.target.value)}
                             />
+                            {errs.description && (
+                              <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
+                                <AlertCircle className="h-3 w-3" /> {errs.description}
+                              </p>
+                            )}
                           </div>
                         </div>
                       );
