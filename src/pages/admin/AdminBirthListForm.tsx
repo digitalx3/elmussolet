@@ -521,8 +521,8 @@ const AdminBirthListForm: React.FC = () => {
       if (sections.length > 0) {
         const toInsert = sections.map((s, i) => ({
           list_id: listId!,
-          name_ca: s.name_ca || s.name_es || '',
-          name_es: s.name_es || s.name_ca || '',
+          name_ca: (s.translations?.ca || s.name_ca || s.name_es || '').trim(),
+          name_es: (s.translations?.es || s.name_es || s.name_ca || '').trim(),
           sort_order: i,
         }));
         const { data: insertedSecs, error: secErr } = await supabase
@@ -534,6 +534,30 @@ const AdminBirthListForm: React.FC = () => {
           const match = insertedSecs?.find((x: any) => x.sort_order === i);
           if (match) sectionIdMap.set(s.temp_id, match.id);
         });
+
+        // Sync per-language translations
+        const trRows: Array<{ section_id: string; language_code: string; name: string }> = [];
+        sections.forEach((s) => {
+          const realId = sectionIdMap.get(s.temp_id);
+          if (!realId) return;
+          Object.entries(s.translations || {}).forEach(([code, name]) => {
+            const trimmed = (name || '').trim();
+            if (trimmed) trRows.push({ section_id: realId, language_code: code, name: trimmed });
+          });
+          // Make sure legacy ca/es are also mirrored if not in translations
+          if (!s.translations?.ca && s.name_ca?.trim()) {
+            trRows.push({ section_id: realId, language_code: 'ca', name: s.name_ca.trim() });
+          }
+          if (!s.translations?.es && s.name_es?.trim()) {
+            trRows.push({ section_id: realId, language_code: 'es', name: s.name_es.trim() });
+          }
+        });
+        if (trRows.length > 0) {
+          const { error: trErr } = await supabase
+            .from('list_section_translations')
+            .upsert(trRows, { onConflict: 'section_id,language_code' });
+          if (trErr) throw trErr;
+        }
       }
 
       if (form.items.length > 0) {
