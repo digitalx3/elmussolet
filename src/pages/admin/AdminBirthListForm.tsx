@@ -824,34 +824,135 @@ const AdminBirthListForm: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Products */}
+        {/* Products + Sections */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{t('admin.listProducts')}</CardTitle>
+            <Button variant="outline" size="sm" onClick={addSection} className="gap-1">
+              <Plus className="h-4 w-4" /> {lang === 'es' ? 'Nueva familia' : 'Nova família'}
+            </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Product search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t('admin.searchProductToAdd')}
-                value={productSearch}
-                onChange={e => handleProductSearch(e.target.value)}
-                className="pl-10"
-              />
-              {searchResults.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-lg shadow-elevated max-h-48 overflow-y-auto">
-                  {searchResults.map(p => {
+          <CardContent className="space-y-5">
+            {/* Sections strip */}
+            {sections.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-xs">{lang === 'es' ? 'Familias' : 'Famílies'}</Label>
+                <div className="flex flex-wrap gap-2">
+                  {sections.map((s, idx) => {
+                    const isActive = activeSectionTempId === s.temp_id;
+                    const count = form.items.filter(it => it.section_temp_id === s.temp_id).length;
+                    return (
+                      <div
+                        key={s.temp_id}
+                        className={`group flex items-center gap-1 pl-2 pr-1 py-1 rounded-md border text-xs transition-colors ${
+                          isActive ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background hover:border-primary/40'
+                        }`}
+                      >
+                        <button type="button" onClick={() => setActiveSectionTempId(s.temp_id)} className="flex items-center gap-1.5">
+                          <FolderOpen className="h-3.5 w-3.5" />
+                          <span className="font-medium">{(lang === 'es' ? s.name_es : s.name_ca) || s.name_ca || s.name_es}</span>
+                          <Badge variant="outline" className="text-[10px] h-4 px-1">{count}</Badge>
+                        </button>
+                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" disabled={idx === 0} onClick={() => moveSection(s.temp_id, 'up')}>
+                          <ChevronUp className="h-3 w-3" />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" disabled={idx === sections.length - 1} onClick={() => moveSection(s.temp_id, 'down')}>
+                          <ChevronDown className="h-3 w-3" />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" onClick={() => removeSection(s.temp_id)}>
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => setActiveSectionTempId(null)}
+                    className={`px-2 py-1 rounded-md border text-xs ${activeSectionTempId === null ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background hover:border-primary/40'}`}
+                  >
+                    {lang === 'es' ? 'Sin familia' : 'Sense família'}
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {lang === 'es'
+                    ? 'Selecciona una familia y haz clic en un producto del catálogo para añadirlo a esa familia.'
+                    : 'Selecciona una família i fes clic en un producte del catàleg per afegir-lo a aquesta família.'}
+                </p>
+              </div>
+            )}
+
+            {/* Browse catalog (grid like client view) */}
+            <div className="space-y-3">
+              <Label className="text-xs">{lang === 'es' ? 'Catálogo de productos' : 'Catàleg de productes'}</Label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Select value={browseCategory} onValueChange={setBrowseCategory}>
+                  <SelectTrigger className="w-full sm:w-64">
+                    <SelectValue placeholder={lang === 'es' ? 'Todas las categorías' : 'Totes les categories'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{lang === 'es' ? 'Todas las categorías' : 'Totes les categories'}</SelectItem>
+                    {browseCategories.map((c: any) => {
+                      const ctr = c.category_translations?.find((t: any) => t.language === lang)
+                        || c.category_translations?.[0];
+                      return (
+                        <SelectItem key={c.id} value={c.id}>{ctr?.name || c.slug}</SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder={lang === 'es' ? 'Buscar producto...' : 'Cercar producte...'}
+                    value={browseSearch}
+                    onChange={e => setBrowseSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {browseLoading ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map(i => (
+                    <div key={i} className="h-40 rounded-md border border-border bg-muted/30 animate-pulse" />
+                  ))}
+                </div>
+              ) : filteredBrowse.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  {lang === 'es' ? 'No hay productos.' : 'No hi ha productes.'}
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {filteredBrowse.map((p: any) => {
                     const tr = p.product_translations?.find((t: any) => t.language === lang)
                       || p.product_translations?.[0];
+                    const img = pickProductImage(p);
+                    const inList = form.items.some(it => it.product_id === p.id);
                     return (
                       <button
                         key={p.id}
-                        className="w-full text-left px-3 py-2 hover:bg-muted/50 flex justify-between items-center text-sm"
+                        type="button"
                         onClick={() => addProduct(p)}
+                        className={`group text-left flex flex-col rounded-md border bg-background overflow-hidden hover:border-primary hover:shadow-sm transition-all ${
+                          inList ? 'border-primary/60 ring-1 ring-primary/30' : 'border-border'
+                        }`}
                       >
-                        <span>{tr?.name || p.slug}</span>
-                        <span className="text-muted-foreground">{p.base_price.toFixed(2)} €</span>
+                        <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
+                          {img ? (
+                            <img src={img} alt={tr?.name || p.slug} loading="lazy" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+                          ) : (
+                            <Package className="h-8 w-8 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="p-2 space-y-0.5">
+                          <p className="text-xs font-medium line-clamp-2">{tr?.name || p.slug}</p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-[11px] text-muted-foreground">{p.base_price?.toFixed(2)} €</p>
+                            {inList && (
+                              <Badge variant="outline" className="text-[9px] h-4 px-1 border-primary text-primary">✓</Badge>
+                            )}
+                          </div>
+                        </div>
                       </button>
                     );
                   })}
@@ -859,50 +960,102 @@ const AdminBirthListForm: React.FC = () => {
               )}
             </div>
 
-            {/* Items list */}
+            <Separator />
+
+            {/* Items grouped by section */}
             {form.items.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">{t('list.emptyList')}</p>
             ) : (
-              <div className="space-y-2">
-                {form.items.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.productName}</p>
-                      {item.price != null && (
-                        <p className="text-xs text-muted-foreground">{item.price.toFixed(2)} €</p>
+              <div className="space-y-4">
+                {[
+                  ...sections.map(s => ({ temp_id: s.temp_id, label: (lang === 'es' ? s.name_es : s.name_ca) || s.name_ca })),
+                  { temp_id: '__none__', label: lang === 'es' ? 'Sin familia' : 'Sense família' },
+                ].map((sec) => {
+                  const sectionItems = form.items
+                    .map((it, idx) => ({ it, idx }))
+                    .filter(({ it }) => sec.temp_id === '__none__' ? !it.section_temp_id : it.section_temp_id === sec.temp_id);
+                  if (sec.temp_id === '__none__' && sectionItems.length === 0) return null;
+                  return (
+                    <div key={sec.temp_id} className="space-y-2">
+                      <div className="flex items-center gap-2 px-2 py-1.5 border-l-4 border-primary bg-muted/40 rounded">
+                        <FolderOpen className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-semibold flex-1 truncate">{sec.label}</span>
+                        <Badge variant="outline" className="text-[10px]">{sectionItems.length}</Badge>
+                      </div>
+                      {sectionItems.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic pl-3">
+                          {lang === 'es' ? 'Sin productos en esta familia.' : 'Sense productes en aquesta família.'}
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {sectionItems.map(({ it: item, idx }) => (
+                            <div key={idx} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                              <div className="h-10 w-10 shrink-0 rounded-md overflow-hidden bg-muted flex items-center justify-center border border-border">
+                                {item.image_url ? (
+                                  <img src={item.image_url} alt={item.productName} className="h-full w-full object-cover" loading="lazy" />
+                                ) : (
+                                  <Package className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{item.productName}</p>
+                                {item.price != null && (
+                                  <p className="text-xs text-muted-foreground">{item.price.toFixed(2)} €</p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Select
+                                  value={item.section_temp_id || '__none__'}
+                                  onValueChange={v => assignItemToSection(idx, v === '__none__' ? null : v)}
+                                >
+                                  <SelectTrigger className="w-32 h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__none__">{lang === 'es' ? 'Sin familia' : 'Sense família'}</SelectItem>
+                                    {sections.map(s => (
+                                      <SelectItem key={s.temp_id} value={s.temp_id}>
+                                        {(lang === 'es' ? s.name_es : s.name_ca) || s.name_ca}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  value={item.quantity_desired}
+                                  onChange={e => updateItem(idx, 'quantity_desired', parseInt(e.target.value) || 1)}
+                                  className="w-14 h-8 text-center text-sm"
+                                />
+                                <Select
+                                  value={item.priority}
+                                  onValueChange={v => updateItem(idx, 'priority', v)}
+                                >
+                                  <SelectTrigger className="w-20 h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="high">{t('list.priorityHigh')}</SelectItem>
+                                    <SelectItem value="medium">{t('list.priorityMedium')}</SelectItem>
+                                    <SelectItem value="low">{t('list.priorityLow')}</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <Button variant="ghost" size="sm" onClick={() => removeItem(idx)}>
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        min={1}
-                        value={item.quantity_desired}
-                        onChange={e => updateItem(idx, 'quantity_desired', parseInt(e.target.value) || 1)}
-                        className="w-16 h-8 text-center text-sm"
-                      />
-                      <Select
-                        value={item.priority}
-                        onValueChange={v => updateItem(idx, 'priority', v)}
-                      >
-                        <SelectTrigger className="w-24 h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="high">{t('list.priorityHigh')}</SelectItem>
-                          <SelectItem value="medium">{t('list.priorityMedium')}</SelectItem>
-                          <SelectItem value="low">{t('list.priorityLow')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button variant="ghost" size="sm" onClick={() => removeItem(idx)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
         </Card>
+
 
         {/* Actions */}
         <div className="flex items-center justify-between">
