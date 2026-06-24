@@ -78,6 +78,46 @@ const groups: NavGroup[] = [
 const SIDEBAR_STORAGE_KEY = 'admin.sidebar.open';
 const GROUPS_STORAGE_KEY = 'admin.sidebar.groups';
 
+const VALID_GROUP_IDS = new Set(groups.map(g => g.id));
+
+function readStoredSidebarOpen(): boolean | null {
+  try {
+    const raw = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    if (raw === 'true') return true;
+    if (raw === 'false') return false;
+    if (raw !== null) localStorage.removeItem(SIDEBAR_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function readStoredGroups(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(GROUPS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      localStorage.removeItem(GROUPS_STORAGE_KEY);
+      return {};
+    }
+    const sanitized: Record<string, boolean> = {};
+    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+      if (VALID_GROUP_IDS.has(key) && typeof value === 'boolean') {
+        sanitized[key] = value;
+      }
+    }
+    return sanitized;
+  } catch {
+    try {
+      localStorage.removeItem(GROUPS_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    return {};
+  }
+}
+
 function MenuLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
   const { t } = useTranslation();
 
