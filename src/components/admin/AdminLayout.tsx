@@ -37,13 +37,12 @@ const groups: NavGroup[] = [
     ],
   },
   {
-    id: 'sales',
-    label: 'Vendes',
+    id: 'orders',
+    label: 'Comandes',
     items: [
       { key: 'orders', path: '/admin/comandes', icon: ShoppingCart },
       { key: 'lists', path: '/admin/llistes', icon: ListChecks },
       { key: 'templates', path: '/admin/plantilles', icon: FileText },
-      { key: 'shipping', path: '/admin/enviaments', icon: Truck },
     ],
   },
   {
@@ -70,6 +69,7 @@ const groups: NavGroup[] = [
     label: 'Configuració',
     items: [
       { key: 'users', path: '/admin/usuaris', icon: Users },
+      { key: 'shipping', path: '/admin/enviaments', icon: Truck },
       { key: 'settings', path: '/admin/configuracio', icon: Settings },
     ],
   },
