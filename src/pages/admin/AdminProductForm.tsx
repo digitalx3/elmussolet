@@ -195,8 +195,9 @@ const AdminProductForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.translations.ca.name || !form.slug || !form.sku) {
-      toast.error('Omple els camps obligatoris: nom (CA), slug i SKU');
+    const defaultName = form.translations[defaultCode]?.name?.trim();
+    if (!defaultName || !form.slug || !form.sku) {
+      toast.error(`Omple els camps obligatoris: nom (${defaultCode.toUpperCase()}), slug i SKU`);
       return;
     }
     try {
