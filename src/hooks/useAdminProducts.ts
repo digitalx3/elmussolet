@@ -81,10 +81,7 @@ export interface ProductFormData {
   category_id: string | null;
   brand_id: string | null;
   tax_rate_id: string | null;
-  translations: {
-    ca: { name: string; short_description: string; description: string };
-    es: { name: string; short_description: string; description: string };
-  };
+  translations: Record<string, { name: string; short_description: string; description: string }>;
   images: { id?: string; image_url: string; alt_text: string; is_primary: boolean; sort_order: number }[];
   variants: {
     id?: string; value: string; price_override: number | null;
