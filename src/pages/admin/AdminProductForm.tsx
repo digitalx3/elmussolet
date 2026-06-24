@@ -139,7 +139,7 @@ const AdminProductForm: React.FC = () => {
   const updateField = <K extends keyof ProductFormData>(key: K, value: ProductFormData[K]) =>
     setForm(prev => ({ ...prev, [key]: value }));
 
-  const updateTranslation = (lang: string, field: string, value: string) =>
+  const updateTranslation = (lang: string, field: string, value: string) => {
     setForm(prev => ({
       ...prev,
       translations: {
@@ -147,6 +147,14 @@ const AdminProductForm: React.FC = () => {
         [lang]: { ...(prev.translations[lang] ?? emptyTranslation), [field]: value },
       },
     }));
+    // Clear the specific field error as the user edits it
+    setTranslationErrors(prev => {
+      if (!prev[lang]?.[field as keyof TranslationFieldErrors]) return prev;
+      const langErrs = { ...prev[lang] };
+      delete langErrs[field as keyof TranslationFieldErrors];
+      return { ...prev, [lang]: langErrs };
+    });
+  };
 
   // Auto-generate slug from the default language name
   const autoSlug = () => {
