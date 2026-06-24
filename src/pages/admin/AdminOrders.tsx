@@ -702,7 +702,61 @@ const AdminOrders: React.FC = () => {
                   <span>{formatPrice(selectedOrder.total)}</span>
                 </div>
               </div>
+
+              <Separator />
+
+              <div className="py-3">
+                <p className="text-sm font-semibold mb-2">
+                  {t('admin.stockMovements', 'Moviments d\'estoc')}
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">({stockMovements.length})</span>
+                </p>
+                {stockMovements.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">
+                    {t('admin.noStockMovements', 'Encara no hi ha moviments d\'estoc per a aquesta comanda.')}
+                  </p>
+                ) : (
+                  <div className="rounded-md border border-border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">{t('admin.movementDate', 'Data')}</TableHead>
+                          <TableHead className="text-xs">{t('account.orderProduct')}</TableHead>
+                          <TableHead className="text-xs">{t('admin.movementReason', 'Motiu')}</TableHead>
+                          <TableHead className="text-xs text-right">{t('admin.movementDelta', 'Delta')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {stockMovements.map((mv: any) => {
+                          const translations = mv.products?.product_translations || [];
+                          const tr = translations.find((t: any) => t.language === lang) || translations[0];
+                          const name = tr?.name || '—';
+                          const variant = mv.product_variants?.value ? ` (${mv.product_variants.value})` : '';
+                          const delta = Number(mv.delta);
+                          const isConsume = delta > 0;
+                          return (
+                            <TableRow key={mv.id}>
+                              <TableCell className="text-xs whitespace-nowrap">
+                                {format(new Date(mv.created_at), 'dd/MM/yy HH:mm:ss', { locale: dateFnsLocale })}
+                              </TableCell>
+                              <TableCell className="text-xs">{name}{variant}</TableCell>
+                              <TableCell className="text-xs">
+                                <Badge variant="outline" className="text-[10px] font-mono">{mv.reason}</Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Badge className={`text-[10px] border ${isConsume ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-green-100 text-green-800 border-green-200'}`}>
+                                  {isConsume ? '+' : ''}{delta}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
             </>
+
           )}
         </DialogContent>
       </Dialog>
