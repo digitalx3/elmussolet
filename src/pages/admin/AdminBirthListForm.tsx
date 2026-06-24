@@ -373,9 +373,10 @@ const AdminBirthListForm: React.FC = () => {
     if (!ca) return;
     const es = window.prompt(lang === 'es' ? 'Nombre de la familia (castellano)' : 'Nom de la família (castellà)')?.trim() || ca;
     setSections(prev => {
-      const next = [...prev, {
+      const next: PendingSection[] = [...prev, {
         temp_id: `new-${Date.now()}-${prev.length}`,
         name_ca: ca, name_es: es, sort_order: prev.length,
+        translations: { ca, es },
       }];
       if (!activeSectionTempId) setActiveSectionTempId(next[next.length - 1].temp_id);
       return next;
