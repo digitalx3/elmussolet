@@ -238,40 +238,40 @@ const AdminProductForm: React.FC = () => {
       <Card>
         <CardHeader><CardTitle>Traduccions</CardTitle></CardHeader>
         <CardContent>
-          <Tabs defaultValue="ca">
-            <TabsList>
-              <TabsTrigger value="ca">Català</TabsTrigger>
-              <TabsTrigger value="es">Castellano</TabsTrigger>
-            </TabsList>
-            {(['ca', 'es'] as const).map(lang => (
-              <TabsContent key={lang} value={lang} className="space-y-4 mt-4">
-                <div>
-                  <Label>Nom *</Label>
-                  <Input
-                    value={form.translations[lang].name}
-                    onChange={e => updateTranslation(lang, 'name', e.target.value)}
-                    onBlur={lang === 'ca' ? autoSlug : undefined}
-                    placeholder={lang === 'ca' ? 'Nom del producte' : 'Nombre del producto'}
-                  />
+          <LanguageTabs>
+            {(lang) => {
+              const tr = form.translations[lang] ?? emptyTranslation;
+              const isDefault = lang === defaultCode;
+              return (
+                <div className="space-y-4">
+                  <div>
+                    <Label>Nom {isDefault && '*'}</Label>
+                    <Input
+                      value={tr.name}
+                      onChange={e => updateTranslation(lang, 'name', e.target.value)}
+                      onBlur={isDefault ? autoSlug : undefined}
+                      placeholder={`Nom (${lang.toUpperCase()})`}
+                    />
+                  </div>
+                  <div>
+                    <Label>Descripció curta</Label>
+                    <Input
+                      value={tr.short_description}
+                      onChange={e => updateTranslation(lang, 'short_description', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Descripció</Label>
+                    <Textarea
+                      value={tr.description}
+                      onChange={e => updateTranslation(lang, 'description', e.target.value)}
+                      rows={5}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label>Descripció curta</Label>
-                  <Input
-                    value={form.translations[lang].short_description}
-                    onChange={e => updateTranslation(lang, 'short_description', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Descripció</Label>
-                  <Textarea
-                    value={form.translations[lang].description}
-                    onChange={e => updateTranslation(lang, 'description', e.target.value)}
-                    rows={5}
-                  />
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
+              );
+            }}
+          </LanguageTabs>
         </CardContent>
       </Card>
 
