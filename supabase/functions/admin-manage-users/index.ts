@@ -145,10 +145,17 @@ Deno.serve(async (req: Request) => {
     if (body.action === "get") {
       if (!body.user_id) return json({ error: "user_id required" }, 400);
       const { data: u, error: gErr } = await admin.auth.admin.getUserById(body.user_id);
-      if (gErr) throw gErr;
-      const { data: prof } = await admin
-        .from("profiles").select("*").eq("id", body.user_id).single();
-      return json({ ok: true, email: u?.user?.email || "", profile: prof });
+      if (gErr) {
+        console.error("auth.admin.getUserById failed", gErr);
+        return json({ error: gErr.message }, 200);
+      }
+      const { data: prof, error: pErr } = await admin
+        .from("profiles").select("*").eq("id", body.user_id).maybeSingle();
+      if (pErr) {
+        console.error("profiles select failed", pErr);
+        return json({ error: pErr.message }, 200);
+      }
+      return json({ ok: true, email: u?.user?.email || "", profile: prof || {} });
     }
 
     if (body.action === "delete") {
