@@ -21,6 +21,7 @@ import { useActiveTaxRates, priceWithTax } from '@/hooks/useTaxRates';
 import { optimizeImage } from '@/lib/optimizeImage';
 import { useLanguages, useDefaultLanguage } from '@/hooks/useLanguages';
 import LanguageTabs from '@/components/admin/LanguageTabs';
+import { useAiProvider, isAiReady } from '@/hooks/useAiProvider';
 
 const emptyTranslation = { name: '', short_description: '', description: '' };
 
