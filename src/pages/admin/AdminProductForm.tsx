@@ -84,7 +84,9 @@ const AdminProductForm: React.FC = () => {
   const { data: aiStatus } = useAiProvider();
   const aiReady = isAiReady(aiStatus);
 
-  const generateSeoDescriptions = async (lang: string) => {
+  type SeoField = 'short' | 'long';
+
+  const generateSeoDescriptions = async (lang: string, fields: SeoField[] = ['short', 'long']) => {
     const tr = form.translations[lang] ?? emptyTranslation;
     const defaultTr = form.translations[defaultCode] ?? emptyTranslation;
     const productName = tr.name?.trim() || defaultTr.name?.trim();
@@ -96,36 +98,44 @@ const AdminProductForm: React.FC = () => {
       toast.error("Configura un proveïdor d'IA a /admin/ia abans d'utilitzar aquesta funció");
       return;
     }
+    if (fields.length === 0) {
+      toast.error('Selecciona almenys un camp per generar');
+      return;
+    }
     const language = languages.find(l => l.code === lang);
     const brand = brands.find((b: any) => b.id === form.brand_id);
     const category = categories.find((c: any) => c.id === form.category_id);
     setSeoGenerating(lang);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-product-seo', {
-        body: {
-          name: productName,
-          sku: form.sku || undefined,
-          brand: brand?.name || undefined,
-          category: (category as any)?.name || undefined,
-          language: lang,
-          language_name: language?.native_name || lang,
-          current_short: tr.short_description || '',
-          current_long: tr.description || '',
-        },
+      const { invokeWithRetry } = await import('@/lib/aiTranslationLog');
+      const data: any = await invokeWithRetry('ai-product-seo', {
+        product_id: id,
+        name: productName,
+        sku: form.sku || undefined,
+        brand: brand?.name || undefined,
+        category: (category as any)?.name || undefined,
+        language: lang,
+        language_name: language?.native_name || lang,
+        current_short: tr.short_description || '',
+        current_long: tr.description || '',
+        fields,
       });
-      if (error) throw error;
-      setForm(prev => ({
-        ...prev,
-        translations: {
-          ...prev.translations,
-          [lang]: {
-            ...(prev.translations[lang] ?? emptyTranslation),
-            short_description: String(data?.short_description || ''),
-            description: String(data?.description || ''),
+      setForm(prev => {
+        const prevTr = prev.translations[lang] ?? emptyTranslation;
+        return {
+          ...prev,
+          translations: {
+            ...prev.translations,
+            [lang]: {
+              ...prevTr,
+              ...(fields.includes('short') ? { short_description: String(data?.short_description ?? prevTr.short_description) } : {}),
+              ...(fields.includes('long') ? { description: String(data?.description ?? prevTr.description) } : {}),
+            },
           },
-        },
-      }));
-      toast.success(`Descripcions generades amb IA per ${language?.native_name || lang}`);
+        };
+      });
+      const labels = fields.map(f => (f === 'short' ? 'curta' : 'llarga')).join(' + ');
+      toast.success(`Descripció ${labels} generada amb IA (${language?.native_name || lang})`);
     } catch (e: any) {
       toast.error(e?.message || 'Error generant descripcions');
     } finally {
