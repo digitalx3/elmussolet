@@ -88,7 +88,7 @@ const AdminBirthListForm: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('birth_lists')
-        .select('*')
+        .select('id, list_code, status, baby_name, expected_date, template_id, notes, created_by, created_at, updated_at')
         .eq('id', id!)
         .single();
       if (error) throw error;
