@@ -1239,29 +1239,68 @@ const AdminBirthListForm: React.FC = () => {
                 return next;
               }));
             };
+            const defaultCode = (enabledLanguages.find(l => l.is_default)?.code) || enabledLanguages[0]?.code || 'ca';
+            const tryClose = () => {
+              const defaultValue = (sec.translations[defaultCode] ?? (defaultCode === 'ca' ? sec.name_ca : defaultCode === 'es' ? sec.name_es : '') ?? '').trim();
+              if (!defaultValue) {
+                toast.error(
+                  lang === 'es'
+                    ? `El nombre en el idioma principal (${defaultCode.toUpperCase()}) no puede estar vacío`
+                    : `El nom en l'idioma principal (${defaultCode.toUpperCase()}) no pot estar buit`,
+                );
+                return;
+              }
+              setTranslatingTempId(null);
+            };
             return (
-              <LanguageTabs>
-                {(code) => {
-                  const fallback = code === 'ca' ? sec.name_ca : code === 'es' ? sec.name_es : '';
-                  const value = sec.translations[code] ?? fallback ?? '';
-                  return (
-                    <div className="space-y-2">
-                      <Label className="text-xs">{lang === 'es' ? 'Nombre' : 'Nom'}</Label>
-                      <Input value={value} onChange={e => setName(code, e.target.value)} />
-                      <p className="text-[11px] text-muted-foreground">
-                        {lang === 'es'
-                          ? 'Se mostrará en la vista pública cuando el visitante use este idioma.'
-                          : 'Es mostrarà a la vista pública quan el visitant utilitzi aquest idioma.'}
-                      </p>
-                    </div>
-                  );
-                }}
-              </LanguageTabs>
+              <>
+                <LanguageTabs>
+                  {(code) => {
+                    const fallback = code === 'ca' ? sec.name_ca : code === 'es' ? sec.name_es : '';
+                    const value = sec.translations[code] ?? fallback ?? '';
+                    const isDefault = code === defaultCode;
+                    const isEmpty = !value.trim();
+                    const tooLong = value.length > 120;
+                    const showError = (isDefault && isEmpty) || tooLong;
+                    return (
+                      <div className="space-y-2">
+                        <Label className="text-xs flex items-center gap-1">
+                          {lang === 'es' ? 'Nombre' : 'Nom'}
+                          {isDefault && <span className="text-destructive">*</span>}
+                          <span className="text-muted-foreground ml-auto text-[10px]">{value.length}/120</span>
+                        </Label>
+                        <Input
+                          value={value}
+                          maxLength={120}
+                          aria-invalid={showError}
+                          className={showError ? 'border-destructive focus-visible:ring-destructive' : ''}
+                          onChange={e => setName(code, e.target.value)}
+                        />
+                        {showError ? (
+                          <p className="text-[11px] text-destructive">
+                            {tooLong
+                              ? (lang === 'es' ? 'Máx. 120 caracteres' : 'Màx. 120 caràcters')
+                              : (lang === 'es'
+                                  ? 'Obligatorio en el idioma principal'
+                                  : "Obligatori en l'idioma principal")}
+                          </p>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground">
+                            {lang === 'es'
+                              ? 'Se mostrará en la vista pública cuando el visitante use este idioma.'
+                              : 'Es mostrarà a la vista pública quan el visitant utilitzi aquest idioma.'}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  }}
+                </LanguageTabs>
+                <DialogFooter>
+                  <Button onClick={tryClose}>{t('common.close', 'Tancar')}</Button>
+                </DialogFooter>
+              </>
             );
           })()}
-          <DialogFooter>
-            <Button onClick={() => setTranslatingTempId(null)}>{t('common.close', 'Tancar')}</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
