@@ -379,7 +379,7 @@ const AdminBirthListForm: React.FC = () => {
     }
     const n = count ?? 0;
     setOrdersCount(n);
-    setDeleteStep(n > 0 ? 'orders' : 'first');
+    setDeleteStep(n > 0 ? 'orders' : 'final');
   };
 
   const performDelete = async () => {
