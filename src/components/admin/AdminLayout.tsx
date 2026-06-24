@@ -144,6 +144,7 @@ function MenuLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
 
 function AdminSidebar() {
   const { state } = useSidebar();
+  const { t } = useTranslation();
   const collapsed = state === 'collapsed';
   const { pathname } = useLocation();
 
@@ -223,7 +224,7 @@ function AdminSidebar() {
                     <CollapsibleTrigger asChild>
                       <SidebarGroupLabel className="cursor-pointer hover:bg-muted/50 rounded-md group/label">
                         <span className="flex-1 text-xs font-semibold uppercase tracking-wider">
-                          {group.label}
+                          {t(`admin.groups.${group.id}`, group.label)}
                         </span>
                         <ChevronDown
                           className={`h-3.5 w-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -273,9 +274,12 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <Link to="/">
               <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
                 <ArrowLeft className="h-4 w-4" />
-                Botiga
+                <BackToStoreLabel />
               </Button>
             </Link>
+            <div className="ml-auto">
+              <AdminLanguageSwitcher />
+            </div>
           </header>
           <main className="flex-1 p-6 overflow-auto">
             {children}
@@ -285,5 +289,9 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     </SidebarProvider>
   );
 };
+function BackToStoreLabel() {
+  const { t } = useTranslation();
+  return <>{t('admin.backToStore', 'Botiga')}</>;
+}
 
 export default AdminLayout;
