@@ -20,7 +20,7 @@ interface Props {
 const DefaultHero: React.FC<Props> = ({ preview }) => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
-  const lang = i18n.language?.startsWith('es') ? 'es' : 'ca';
+  const lang = (i18n.language || 'ca').split('-')[0];
 
   const { data: dbVariants } = useQuery({
     queryKey: ['default-hero-variants-public'],
@@ -64,15 +64,13 @@ const DefaultHero: React.FC<Props> = ({ preview }) => {
   const current = safeVariants[Math.min(index, safeVariants.length - 1)];
   const h = mergeHeroOverrides(current);
 
-  const pick = (ca: string, es: string) => (lang === 'es' ? es || ca : ca || es);
-
-  const eyebrow = pick(h.eyebrow_ca, h.eyebrow_es);
-  const title = pick(h.title_ca, h.title_es);
-  const subtitle = pick(h.subtitle_ca, h.subtitle_es);
-  const b1 = pick(h.button1_text_ca, h.button1_text_es);
-  const b2 = pick(h.button2_text_ca, h.button2_text_es);
-  const cardTitle = pick(h.card_title_ca, h.card_title_es);
-  const cardSubtitle = pick(h.card_subtitle_ca, h.card_subtitle_es);
+  const eyebrow = pickHeroText(current, 'eyebrow', lang);
+  const title = pickHeroText(current, 'title', lang);
+  const subtitle = pickHeroText(current, 'subtitle', lang);
+  const b1 = pickHeroText(current, 'button1_text', lang);
+  const b2 = pickHeroText(current, 'button2_text', lang);
+  const cardTitle = pickHeroText(current, 'card_title', lang);
+  const cardSubtitle = pickHeroText(current, 'card_subtitle', lang);
 
   const sizeStyle = (px?: number) => (px && px > 0 ? { fontSize: `${px}px`, lineHeight: 1.2 } : undefined);
   const btnPadStyle = (px?: number) =>
