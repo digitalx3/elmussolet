@@ -77,6 +77,9 @@ const AdminProductForm: React.FC = () => {
     variants: [],
   });
 
+  const [translationErrors, setTranslationErrors] = useState<TranslationErrors>({});
+  const [activeLang, setActiveLang] = useState<string | undefined>(undefined);
+
   // Ensure an entry exists for every enabled language
   useEffect(() => {
     if (!languages.length) return;
