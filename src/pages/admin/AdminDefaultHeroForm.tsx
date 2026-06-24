@@ -208,15 +208,30 @@ const AdminDefaultHeroForm: React.FC = () => {
               <div><Label className="text-xs">Eyebrow (CA)</Label><Input value={state.eyebrow_ca} onChange={(e) => set('eyebrow_ca', e.target.value)} /></div>
               <div><Label className="text-xs">Eyebrow (ES)</Label><Input value={state.eyebrow_es} onChange={(e) => set('eyebrow_es', e.target.value)} /></div>
             </div>
+            <div>
+              <Label className="text-xs">Mida eyebrow (px) · 0 = per defecte</Label>
+              <Input type="number" min={0} max={120} value={state.eyebrow_size}
+                onChange={(e) => set('eyebrow_size', Number(e.target.value) || 0)} />
+            </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div><Label className="text-xs">Títol (CA)</Label><Textarea rows={2} value={state.title_ca} onChange={(e) => set('title_ca', e.target.value)} /></div>
               <div><Label className="text-xs">Títol (ES)</Label><Textarea rows={2} value={state.title_es} onChange={(e) => set('title_es', e.target.value)} /></div>
             </div>
+            <div>
+              <Label className="text-xs">Mida títol (px) · 0 = per defecte</Label>
+              <Input type="number" min={0} max={160} value={state.title_size}
+                onChange={(e) => set('title_size', Number(e.target.value) || 0)} />
+            </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div><Label className="text-xs">Subtítol (CA)</Label><Textarea rows={3} value={state.subtitle_ca} onChange={(e) => set('subtitle_ca', e.target.value)} /></div>
               <div><Label className="text-xs">Subtítol (ES)</Label><Textarea rows={3} value={state.subtitle_es} onChange={(e) => set('subtitle_es', e.target.value)} /></div>
+            </div>
+            <div>
+              <Label className="text-xs">Mida subtítol (px) · 0 = per defecte</Label>
+              <Input type="number" min={0} max={80} value={state.subtitle_size}
+                onChange={(e) => set('subtitle_size', Number(e.target.value) || 0)} />
             </div>
 
             <div className="border-t border-border pt-3 space-y-2">
@@ -226,6 +241,11 @@ const AdminDefaultHeroForm: React.FC = () => {
                 <div><Label className="text-xs">Text (ES)</Label><Input value={state.button1_text_es} onChange={(e) => set('button1_text_es', e.target.value)} /></div>
               </div>
               <div><Label className="text-xs">Enllaç</Label><Input value={state.button1_url} onChange={(e) => set('button1_url', e.target.value)} placeholder="/cataleg" /></div>
+              <div>
+                <Label className="text-xs">Mida botó (px) · 0 = per defecte</Label>
+                <Input type="number" min={0} max={60} value={state.button1_size}
+                  onChange={(e) => set('button1_size', Number(e.target.value) || 0)} />
+              </div>
             </div>
 
             <div className="border-t border-border pt-3 space-y-2">
@@ -235,6 +255,11 @@ const AdminDefaultHeroForm: React.FC = () => {
                 <div><Label className="text-xs">Text (ES)</Label><Input value={state.button2_text_es} onChange={(e) => set('button2_text_es', e.target.value)} /></div>
               </div>
               <div><Label className="text-xs">Enllaç</Label><Input value={state.button2_url} onChange={(e) => set('button2_url', e.target.value)} placeholder="/llista-naixement" /></div>
+              <div>
+                <Label className="text-xs">Mida botó (px) · 0 = per defecte</Label>
+                <Input type="number" min={0} max={60} value={state.button2_size}
+                  onChange={(e) => set('button2_size', Number(e.target.value) || 0)} />
+              </div>
             </div>
           </div>
 
@@ -347,6 +372,18 @@ const AdminDefaultHeroForm: React.FC = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div><Label className="text-xs">Subtítol (CA)</Label><Input value={state.card_subtitle_ca} onChange={(e) => set('card_subtitle_ca', e.target.value)} /></div>
                 <div><Label className="text-xs">Subtítol (ES)</Label><Input value={state.card_subtitle_es} onChange={(e) => set('card_subtitle_es', e.target.value)} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Mida títol targeta (px)</Label>
+                  <Input type="number" min={0} max={60} value={state.card_title_size}
+                    onChange={(e) => set('card_title_size', Number(e.target.value) || 0)} />
+                </div>
+                <div>
+                  <Label className="text-xs">Mida subtítol targeta (px)</Label>
+                  <Input type="number" min={0} max={60} value={state.card_subtitle_size}
+                    onChange={(e) => set('card_subtitle_size', Number(e.target.value) || 0)} />
+                </div>
               </div>
             </div>
           </div>

@@ -73,6 +73,10 @@ const DefaultHero: React.FC<Props> = ({ preview }) => {
   const cardTitle = pick(h.card_title_ca, h.card_title_es);
   const cardSubtitle = pick(h.card_subtitle_ca, h.card_subtitle_es);
 
+  const sizeStyle = (px?: number) => (px && px > 0 ? { fontSize: `${px}px`, lineHeight: 1.2 } : undefined);
+  const btnPadStyle = (px?: number) =>
+    px && px > 0 ? { fontSize: `${px}px`, lineHeight: 1.2, height: 'auto', paddingTop: `${Math.round(px * 0.6)}px`, paddingBottom: `${Math.round(px * 0.6)}px` } : undefined;
+
   return (
     <section className="bg-background">
       <div className="container mx-auto px-4 py-12 md:py-20">
@@ -80,17 +84,26 @@ const DefaultHero: React.FC<Props> = ({ preview }) => {
           {/* LEFT BLOCK */}
           <div className="space-y-5 md:space-y-6">
             {eyebrow && (
-              <span className="inline-block px-4 py-1.5 rounded-full bg-secondary text-secondary-foreground text-sm font-medium">
+              <span
+                className="inline-block px-4 py-1.5 rounded-full bg-secondary text-secondary-foreground text-sm font-medium"
+                style={sizeStyle(h.eyebrow_size)}
+              >
                 {eyebrow}
               </span>
             )}
             {title && (
-              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] text-foreground">
+              <h1
+                className={`font-display font-bold leading-[1.1] text-foreground ${h.title_size > 0 ? '' : 'text-4xl md:text-5xl lg:text-6xl'}`}
+                style={sizeStyle(h.title_size)}
+              >
                 {title}
               </h1>
             )}
             {subtitle && (
-              <p className="text-base md:text-lg text-muted-foreground max-w-xl leading-relaxed">
+              <p
+                className={`text-muted-foreground max-w-xl leading-relaxed ${h.subtitle_size > 0 ? '' : 'text-base md:text-lg'}`}
+                style={sizeStyle(h.subtitle_size)}
+              >
                 {subtitle}
               </p>
             )}
@@ -99,6 +112,7 @@ const DefaultHero: React.FC<Props> = ({ preview }) => {
                 <Button
                   size="lg"
                   className="rounded-full px-7"
+                  style={btnPadStyle(h.button1_size)}
                   onClick={() => h.button1_url && navigate(h.button1_url)}
                 >
                   {b1}
@@ -109,6 +123,7 @@ const DefaultHero: React.FC<Props> = ({ preview }) => {
                   size="lg"
                   variant="outline"
                   className="rounded-full px-7"
+                  style={btnPadStyle(h.button2_size)}
                   onClick={() => h.button2_url && navigate(h.button2_url)}
                 >
                   {b2}
@@ -153,12 +168,18 @@ const DefaultHero: React.FC<Props> = ({ preview }) => {
                   )}
                   <div className="min-w-0">
                     {cardTitle && (
-                      <div className="font-display font-semibold text-sm text-foreground truncate">
+                      <div
+                        className={`font-display font-semibold text-foreground truncate ${h.card_title_size > 0 ? '' : 'text-sm'}`}
+                        style={sizeStyle(h.card_title_size)}
+                      >
                         {cardTitle}
                       </div>
                     )}
                     {cardSubtitle && (
-                      <div className="text-xs text-muted-foreground truncate">
+                      <div
+                        className={`text-muted-foreground truncate ${h.card_subtitle_size > 0 ? '' : 'text-xs'}`}
+                        style={sizeStyle(h.card_subtitle_size)}
+                      >
                         {cardSubtitle}
                       </div>
                     )}

@@ -21,6 +21,15 @@ export type DefaultHeroOverrides = {
   button2_text_es?: string;
   button2_url?: string;
 
+  // Text sizes (px). Per-variant overrides. 0 / undefined = use default styles.
+  eyebrow_size?: number;
+  title_size?: number;
+  subtitle_size?: number;
+  button1_size?: number;
+  button2_size?: number;
+  card_title_size?: number;
+  card_subtitle_size?: number;
+
   // Right block - image
   image_url?: string | null;
   image_aspect?: '1/1' | '4/5' | '4/3' | '3/4' | '16/9';
@@ -52,6 +61,14 @@ export const DEFAULT_HERO: Required<Omit<DefaultHeroOverrides,
   button2_text_ca: 'Accedir a una llista',
   button2_text_es: 'Acceder a una lista',
   button2_url: '/llista-naixement',
+
+  eyebrow_size: 0,
+  title_size: 0,
+  subtitle_size: 0,
+  button1_size: 0,
+  button2_size: 0,
+  card_title_size: 0,
+  card_subtitle_size: 0,
 
   image_url: null,
   image_aspect: '4/5',
