@@ -24,6 +24,33 @@ import LanguageTabs from '@/components/admin/LanguageTabs';
 
 const emptyTranslation = { name: '', short_description: '', description: '' };
 
+const MAX_NAME = 200;
+const MAX_SHORT = 500;
+const MAX_DESC = 5000;
+
+type TranslationFieldErrors = { name?: string; short_description?: string; description?: string };
+type TranslationErrors = Record<string, TranslationFieldErrors>;
+
+function validateTranslation(
+  tr: { name: string; short_description: string; description: string },
+  opts: { requireName: boolean; langLabel: string }
+): TranslationFieldErrors {
+  const errs: TranslationFieldErrors = {};
+  const name = (tr.name ?? '').trim();
+  if (opts.requireName && !name) {
+    errs.name = `El nom és obligatori (${opts.langLabel})`;
+  } else if (name.length > MAX_NAME) {
+    errs.name = `Màx. ${MAX_NAME} caràcters`;
+  }
+  if ((tr.short_description ?? '').length > MAX_SHORT) {
+    errs.short_description = `Màx. ${MAX_SHORT} caràcters`;
+  }
+  if ((tr.description ?? '').length > MAX_DESC) {
+    errs.description = `Màx. ${MAX_DESC} caràcters`;
+  }
+  return errs;
+}
+
 const AdminProductForm: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
