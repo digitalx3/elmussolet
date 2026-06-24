@@ -373,6 +373,18 @@ const AdminDefaultHeroForm: React.FC = () => {
                 <div><Label className="text-xs">Subtítol (CA)</Label><Input value={state.card_subtitle_ca} onChange={(e) => set('card_subtitle_ca', e.target.value)} /></div>
                 <div><Label className="text-xs">Subtítol (ES)</Label><Input value={state.card_subtitle_es} onChange={(e) => set('card_subtitle_es', e.target.value)} /></div>
               </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Mida títol targeta (px)</Label>
+                  <Input type="number" min={0} max={60} value={state.card_title_size}
+                    onChange={(e) => set('card_title_size', Number(e.target.value) || 0)} />
+                </div>
+                <div>
+                  <Label className="text-xs">Mida subtítol targeta (px)</Label>
+                  <Input type="number" min={0} max={60} value={state.card_subtitle_size}
+                    onChange={(e) => set('card_subtitle_size', Number(e.target.value) || 0)} />
+                </div>
+              </div>
             </div>
           </div>
         </div>
