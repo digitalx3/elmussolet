@@ -667,6 +667,63 @@ export type Database = {
         }
         Relationships: []
       }
+      order_deletion_audit: {
+        Row: {
+          created_at: string
+          deleted_by: string | null
+          deleted_by_email: string | null
+          id: string
+          items_snapshot: Json | null
+          list_id: string | null
+          list_items_affected: number
+          order_id: string | null
+          order_items_deleted: number
+          order_number: string | null
+          order_snapshot: Json | null
+          order_status: string | null
+          payment_status: string | null
+          stock_movements_created: number
+          total: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          deleted_by?: string | null
+          deleted_by_email?: string | null
+          id?: string
+          items_snapshot?: Json | null
+          list_id?: string | null
+          list_items_affected?: number
+          order_id?: string | null
+          order_items_deleted?: number
+          order_number?: string | null
+          order_snapshot?: Json | null
+          order_status?: string | null
+          payment_status?: string | null
+          stock_movements_created?: number
+          total?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          deleted_by?: string | null
+          deleted_by_email?: string | null
+          id?: string
+          items_snapshot?: Json | null
+          list_id?: string | null
+          list_items_affected?: number
+          order_id?: string | null
+          order_items_deleted?: number
+          order_number?: string | null
+          order_snapshot?: Json | null
+          order_status?: string | null
+          payment_status?: string | null
+          stock_movements_created?: number
+          total?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           base_unit_price: number | null
