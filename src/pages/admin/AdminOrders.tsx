@@ -113,6 +113,22 @@ const AdminOrders: React.FC = () => {
     },
   });
 
+  const { data: stockMovements = [] } = useQuery({
+    queryKey: ['admin-stock-movements', selectedOrder?.id],
+    enabled: !!selectedOrder,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('stock_movements')
+        .select('id, created_at, delta, reason, product_id, variant_id, list_item_id, order_item_id, actor, products(product_translations(name, language)), product_variants(value)')
+        .eq('order_id', selectedOrder!.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+
+
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase.from('orders').update({ status }).eq('id', id);
