@@ -354,6 +354,18 @@ const AdminBirthListForm: React.FC = () => {
   const [deleteStep, setDeleteStep] = useState<'idle' | 'first' | 'orders' | 'final'>('idle');
   const [ordersCount, setOrdersCount] = useState(0);
   const [deleting, setDeleting] = useState(false);
+  const [confirmChecked, setConfirmChecked] = useState(false);
+  const [confirmPhrase, setConfirmPhrase] = useState('');
+  const REQUIRED_PHRASE = 'ELIMINAR';
+  const canConfirmDelete = confirmChecked && confirmPhrase.trim().toUpperCase() === REQUIRED_PHRASE;
+
+  // Reset confirmation state whenever the final dialog opens/closes
+  useEffect(() => {
+    if (deleteStep !== 'final') {
+      setConfirmChecked(false);
+      setConfirmPhrase('');
+    }
+  }, [deleteStep]);
 
   const openDeleteDialog = async () => {
     if (isNew || !id) return;
