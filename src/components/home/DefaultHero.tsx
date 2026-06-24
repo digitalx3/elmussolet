@@ -9,6 +9,7 @@ import {
   HERO_ROTATION_MS,
   HERO_VARIANT_KEYS,
   mergeHeroOverrides,
+  pickHeroText,
 } from '@/lib/defaultHeroSlide';
 
 interface Props {
