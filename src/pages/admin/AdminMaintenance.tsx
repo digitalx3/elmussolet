@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Plus, Trash2, MapPin, Save, KeyRound, Copy, RefreshCw, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Plus, Trash2, MapPin, Save, KeyRound, Copy, RefreshCw, ShieldCheck, Link2 } from 'lucide-react';
 import RichTextEditor from '@/components/ui/rich-text-editor';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -148,6 +148,58 @@ const AdminMaintenance: React.FC = () => {
     }));
     toast.info(`Token generat (vàlid ${hours}h). Recorda Desar canvis — el token només es mostra ara.`);
   };
+
+  const [regenCopying, setRegenCopying] = React.useState(false);
+
+  const regenerateAndCopy = async () => {
+    setRegenCopying(true);
+    try {
+      const hours = Math.max(1, Math.min(720, Number(tokenHours) || 24));
+      const expires = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+      const plain = generatePlainToken();
+      const hash = await sha256Hex(plain);
+      const url = `${window.location.origin}/?mt_token=${encodeURIComponent(plain)}`;
+
+      // Copy first (must be in the same user-gesture stack for some browsers)
+      let copied = false;
+      try {
+        await navigator.clipboard.writeText(url);
+        copied = true;
+      } catch { /* fall through */ }
+
+      // Persist hash + expiry + reset used_at to DB immediately
+      const { error } = await (supabase as any)
+        .from('maintenance_settings')
+        .update({
+          emergency_token_hash: hash,
+          emergency_token_expires_at: expires,
+          emergency_token_used_at: null,
+          updated_by: (await supabase.auth.getUser()).data.user?.id ?? null,
+        })
+        .eq('id', '00000000-0000-0000-0000-000000000001');
+
+      if (error) {
+        toast.error('Error generant el token: ' + error.message);
+        return;
+      }
+
+      setPlainToken(plain);
+      setState((s) => ({
+        ...s,
+        emergency_token_hash: hash,
+        emergency_token_expires_at: expires,
+        emergency_token_used_at: null,
+      }));
+      try { sessionStorage.removeItem('maintenance.state.v1'); } catch { /* ignore */ }
+
+      toast.success(copied
+        ? `Token regenerat i enllaç copiat al porta-retalls (vàlid ${hours}h).`
+        : `Token regenerat (vàlid ${hours}h). Copia l'enllaç manualment.`);
+    } finally {
+      setRegenCopying(false);
+    }
+  };
+
 
   const clearToken = () => {
     setPlainToken(null);
@@ -293,8 +345,8 @@ const AdminMaintenance: React.FC = () => {
             </AlertDescription>
           </Alert>
 
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="flex-1 min-w-[160px]">
               <Label className="mb-1 block">Vàlid durant (hores)</Label>
               <Input
                 type="number" min={1} max={720}
@@ -302,9 +354,13 @@ const AdminMaintenance: React.FC = () => {
                 onChange={(e) => setTokenHours(Number(e.target.value))}
               />
             </div>
-            <Button type="button" onClick={regenerateToken}>
+            <Button type="button" onClick={regenerateAndCopy} disabled={regenCopying}>
+              <Link2 className="h-4 w-4 mr-2" />
+              {regenCopying ? 'Generant...' : 'Regenerar i copiar enllaç'}
+            </Button>
+            <Button type="button" variant="outline" onClick={regenerateToken}>
               <RefreshCw className="h-4 w-4 mr-2" />
-              {state.emergency_token_hash ? 'Regenerar token' : 'Generar token'}
+              {state.emergency_token_hash ? 'Regenerar' : 'Generar'}
             </Button>
             {state.emergency_token_hash && (
               <Button type="button" variant="outline" onClick={clearToken}>
@@ -313,6 +369,7 @@ const AdminMaintenance: React.FC = () => {
               </Button>
             )}
           </div>
+
 
           <div className="flex items-center justify-between rounded-md border p-3">
             <div>
