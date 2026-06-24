@@ -27,6 +27,7 @@ import CmsPagePage from "@/pages/CmsPagePage";
 import ContactPage from "@/pages/ContactPage";
 import AppearanceInjector from "@/components/AppearanceInjector";
 import MediaConfigLoader from "@/components/MediaConfigLoader";
+import MaintenanceGate from "@/components/MaintenanceGate";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
               <AppearanceInjector />
               <MediaConfigLoader />
               <BrowserRouter>
+                <MaintenanceGate>
                 <Routes>
                   {/* Public routes */}
                   <Route path="/" element={<PublicLayout><HomePage /></PublicLayout>} />
@@ -70,6 +72,7 @@ const App = () => (
 
                   <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
                 </Routes>
+                </MaintenanceGate>
               </BrowserRouter>
             </TooltipProvider>
           </ListAccessProvider>
