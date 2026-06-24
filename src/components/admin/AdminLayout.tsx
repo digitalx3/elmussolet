@@ -103,23 +103,43 @@ function AdminSidebar() {
     path === '/admin' ? pathname === '/admin' : pathname === path || pathname.startsWith(path + '/');
 
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>(() => {
+    let saved: Record<string, boolean> = {};
+    try {
+      const raw = localStorage.getItem(GROUPS_STORAGE_KEY);
+      if (raw) saved = JSON.parse(raw) ?? {};
+    } catch {
+      /* ignore */
+    }
     const initial: Record<string, boolean> = {};
     groups.forEach(g => {
-      initial[g.id] = g.items.some(i => isItemActive(i.path));
+      initial[g.id] = saved[g.id] ?? g.items.some(i => isItemActive(i.path));
     });
     return initial;
   });
 
   React.useEffect(() => {
+    try {
+      localStorage.setItem(GROUPS_STORAGE_KEY, JSON.stringify(openGroups));
+    } catch {
+      /* ignore */
+    }
+  }, [openGroups]);
+
+  React.useEffect(() => {
     setOpenGroups(prev => {
       const next = { ...prev };
+      let changed = false;
       groups.forEach(g => {
-        if (g.items.some(i => isItemActive(i.path))) next[g.id] = true;
+        if (g.items.some(i => isItemActive(i.path)) && !next[g.id]) {
+          next[g.id] = true;
+          changed = true;
+        }
       });
-      return next;
+      return changed ? next : prev;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
+
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
