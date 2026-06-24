@@ -84,9 +84,6 @@ const AdminProductForm: React.FC = () => {
   const { data: aiStatus } = useAiProvider();
   const aiReady = isAiReady(aiStatus);
 
-  const { data: brandList = [] } = useBrands();
-  const { data: categoryList = [] } = useCategories();
-
   const generateSeoDescriptions = async (lang: string) => {
     const tr = form.translations[lang] ?? emptyTranslation;
     const defaultTr = form.translations[defaultCode] ?? emptyTranslation;
@@ -100,8 +97,8 @@ const AdminProductForm: React.FC = () => {
       return;
     }
     const language = languages.find(l => l.code === lang);
-    const brand = brandList.find(b => b.id === form.brand_id);
-    const category = categoryList.find(c => c.id === form.category_id);
+    const brand = brands.find((b: any) => b.id === form.brand_id);
+    const category = categories.find((c: any) => c.id === form.category_id);
     setSeoGenerating(lang);
     try {
       const { data, error } = await supabase.functions.invoke('ai-product-seo', {
