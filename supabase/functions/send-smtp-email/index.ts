@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import nodemailer from "npm:nodemailer@6.9.16";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,15 +34,43 @@ Deno.serve(async (req: Request) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, serviceKey);
+
+  let recipientForLog = "";
+  let subjectForLog = "";
+  let hostForLog: string | null = null;
+  let testModeForLog = false;
+
+  const logAttempt = async (success: boolean, errorMessage: string | null) => {
+    try {
+      await supabase.from("smtp_send_log").insert({
+        recipient: recipientForLog || "(unknown)",
+        subject: subjectForLog || "(unknown)",
+        smtp_host: hostForLog,
+        test_mode: testModeForLog,
+        success,
+        error_message: errorMessage,
+      });
+    } catch (e) {
+      console.error("Failed to write smtp_send_log:", e);
+    }
+  };
+
   try {
     const body = (await req.json()) as SendBody;
-    if (!body?.to || !body?.subject || (!body.html && !body.text)) {
-      return json({ error: "Missing required fields (to, subject, html/text)" }, 400);
-    }
+    subjectForLog = body?.subject ?? "";
+    recipientForLog = Array.isArray(body?.to)
+      ? body.to.join(", ")
+      : (body?.to as string) ?? "";
+    testModeForLog = !!body?.testMode;
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceKey);
+    if (!body?.to || !body?.subject || (!body.html && !body.text)) {
+      const msg = "Missing required fields (to, subject, html/text)";
+      await logAttempt(false, msg);
+      return json({ error: msg }, 400);
+    }
 
     let cfg = body.override;
     if (!cfg) {
@@ -55,7 +83,9 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
       if (error) throw error;
       if (!data) {
-        return json({ error: "No active SMTP configuration found" }, 400);
+        const msg = "No active SMTP configuration found";
+        await logAttempt(false, msg);
+        return json({ error: msg }, 400);
       }
       cfg = {
         host: data.host,
@@ -68,43 +98,70 @@ Deno.serve(async (req: Request) => {
       };
     }
 
+    hostForLog = cfg.host ?? null;
+
     if (!cfg.host || !cfg.from_email) {
-      return json({ error: "SMTP not configured (missing host or from_email)" }, 400);
+      const msg = "SMTP not configured (missing host or from_email)";
+      await logAttempt(false, msg);
+      return json({ error: msg }, 400);
     }
 
-    const useTls = cfg.security === "ssl" || cfg.security === "tls";
-    const client = new SMTPClient({
-      connection: {
-        hostname: cfg.host,
-        port: cfg.port,
-        tls: useTls,
-        auth: cfg.username
-          ? { username: cfg.username, password: cfg.password }
-          : undefined,
+    // SSL = implicit TLS (typically port 465)
+    // STARTTLS / TLS = upgrade plain connection (typically 587)
+    // NONE = plain
+    const isImplicitTls = cfg.security === "ssl";
+    const isStartTls = cfg.security === "starttls" || cfg.security === "tls";
+
+    const transporter = nodemailer.createTransport({
+      host: cfg.host,
+      port: Number(cfg.port),
+      secure: isImplicitTls, // true => implicit TLS (465)
+      requireTLS: isStartTls, // upgrade with STARTTLS
+      auth: cfg.username
+        ? { user: cfg.username, pass: cfg.password }
+        : undefined,
+      tls: {
+        // many shared hosts use self-signed/intermediate certs; let it connect
+        rejectUnauthorized: false,
       },
+      connectionTimeout: 15000,
+      greetingTimeout: 10000,
+      socketTimeout: 20000,
     });
 
+    // Surface SMTP-level errors early
+    try {
+      await transporter.verify();
+    } catch (verifyErr: any) {
+      const msg = `SMTP verify failed: ${verifyErr?.message ?? verifyErr}`;
+      console.error(msg, verifyErr);
+      await logAttempt(false, msg);
+      return json({ error: msg }, 502);
+    }
+
     const fromHeader = cfg.from_name
-      ? `${cfg.from_name} <${cfg.from_email}>`
+      ? `"${cfg.from_name}" <${cfg.from_email}>`
       : cfg.from_email;
 
     const recipients = Array.isArray(body.to) ? body.to : [body.to];
 
-    await client.send({
+    const info = await transporter.sendMail({
       from: fromHeader,
       to: recipients,
       replyTo: body.replyTo,
       subject: body.subject,
-      content: body.text ?? body.html?.replace(/<[^>]+>/g, " ") ?? "",
+      text: body.text ?? body.html?.replace(/<[^>]+>/g, " ") ?? "",
       html: body.html,
     });
 
-    await client.close();
+    await logAttempt(true, null);
 
-    return json({ ok: true });
+    return json({ ok: true, messageId: info?.messageId ?? null });
   } catch (e: any) {
+    const msg = e?.message ?? String(e) ?? "Unknown error";
     console.error("send-smtp-email error", e);
-    return json({ error: e?.message ?? "Unknown error" }, 500);
+    await logAttempt(false, msg);
+    return json({ error: msg }, 500);
   }
 });
 

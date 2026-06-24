@@ -1220,6 +1220,39 @@ export type Database = {
         }
         Relationships: []
       }
+      smtp_send_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          recipient: string
+          smtp_host: string | null
+          subject: string
+          success: boolean
+          test_mode: boolean
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          recipient: string
+          smtp_host?: string | null
+          subject: string
+          success: boolean
+          test_mode?: boolean
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          recipient?: string
+          smtp_host?: string | null
+          subject?: string
+          success?: boolean
+          test_mode?: boolean
+        }
+        Relationships: []
+      }
       smtp_settings: {
         Row: {
           created_at: string
