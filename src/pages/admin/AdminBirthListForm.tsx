@@ -226,10 +226,11 @@ const AdminBirthListForm: React.FC = () => {
       const { data, error } = await supabase
         .from('list_items')
         .select(`
-          id, product_id, variant_id, quantity_desired, quantity_purchased, priority, sort_order,
+          id, product_id, variant_id, section_id, quantity_desired, quantity_purchased, priority, sort_order,
           product:products(
             id, base_price,
-            product_translations(language, name)
+            product_translations(language, name),
+            product_images(image_url, is_primary, sort_order)
           )
         `)
         .eq('list_id', id!)
@@ -284,6 +285,8 @@ const AdminBirthListForm: React.FC = () => {
             sort_order: item.sort_order,
             productName: tr?.name || item.product_id,
             price: item.product?.base_price,
+            image_url: pickProductImage(item.product),
+            section_temp_id: item.section_id ? `ex-${item.section_id}` : null,
           };
         }),
       }));
@@ -310,9 +313,18 @@ const AdminBirthListForm: React.FC = () => {
     setSearchResults(filtered);
   };
 
-  const addProduct = (product: any) => {
-    const alreadyAdded = form.items.some(i => i.product_id === product.id);
-    if (alreadyAdded) { toast.info('Producte ja afegit'); return; }
+  const addProduct = (product: any, sectionTempId?: string | null) => {
+    const targetSection = sectionTempId !== undefined ? sectionTempId : activeSectionTempId;
+    const existingIdx = form.items.findIndex(i => i.product_id === product.id);
+    if (existingIdx >= 0) {
+      // Already added — reassign section to the target one.
+      setForm(prev => ({
+        ...prev,
+        items: prev.items.map((it, i) => i === existingIdx ? { ...it, section_temp_id: targetSection } : it),
+      }));
+      toast.success(lang === 'es' ? 'Producto reasignado' : 'Producte reassignat');
+      return;
+    }
 
     const tr = product.product_translations?.find((t: any) => t.language === lang)
       || product.product_translations?.[0];
@@ -327,10 +339,56 @@ const AdminBirthListForm: React.FC = () => {
         sort_order: prev.items.length,
         productName: tr?.name || product.slug,
         price: product.base_price,
+        image_url: pickProductImage(product),
+        section_temp_id: targetSection,
       }],
     }));
     setProductSearch('');
     setSearchResults([]);
+  };
+
+  // Section management
+  const addSection = () => {
+    const ca = window.prompt(lang === 'es' ? 'Nombre de la familia (catalán)' : 'Nom de la família (català)')?.trim();
+    if (!ca) return;
+    const es = window.prompt(lang === 'es' ? 'Nombre de la familia (castellano)' : 'Nom de la família (castellà)')?.trim() || ca;
+    setSections(prev => {
+      const next = [...prev, {
+        temp_id: `new-${Date.now()}-${prev.length}`,
+        name_ca: ca, name_es: es, sort_order: prev.length,
+      }];
+      if (!activeSectionTempId) setActiveSectionTempId(next[next.length - 1].temp_id);
+      return next;
+    });
+  };
+
+  const removeSection = (tempId: string) => {
+    if (!confirm(lang === 'es' ? 'Eliminar esta familia? Los productos asignados quedarán sin familia.' : 'Eliminar aquesta família? Els productes assignats quedaran sense família.')) return;
+    setSections(prev => prev.filter(s => s.temp_id !== tempId).map((x, i) => ({ ...x, sort_order: i })));
+    setForm(prev => ({
+      ...prev,
+      items: prev.items.map(it => it.section_temp_id === tempId ? { ...it, section_temp_id: null } : it),
+    }));
+    setActiveSectionTempId(prev => prev === tempId ? null : prev);
+  };
+
+  const moveSection = (tempId: string, dir: 'up' | 'down') => {
+    setSections(prev => {
+      const idx = prev.findIndex(s => s.temp_id === tempId);
+      if (idx < 0) return prev;
+      const target = dir === 'up' ? idx - 1 : idx + 1;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next.map((x, i) => ({ ...x, sort_order: i }));
+    });
+  };
+
+  const assignItemToSection = (idx: number, sectionTempId: string | null) => {
+    setForm(prev => ({
+      ...prev,
+      items: prev.items.map((it, i) => i === idx ? { ...it, section_temp_id: sectionTempId } : it),
+    }));
   };
 
   const removeItem = (idx: number) => {
