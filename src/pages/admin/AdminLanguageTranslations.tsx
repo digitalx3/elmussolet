@@ -469,6 +469,18 @@ const AdminLanguageTranslations: React.FC = () => {
             </Button>
           </div>
 
+          {uiProgress && (
+            <ProgressCard
+              label={t('admin.aiTrTabUi', 'Interfície')}
+              done={uiProgress.done}
+              total={uiProgress.total}
+              errors={uiProgress.errors}
+            />
+          )}
+          {lastSummary && lastSummary.scope === 'ui' && (
+            <SummaryCard s={lastSummary} />
+          )}
+
           <div className="text-xs text-muted-foreground">
             {filteredKeys.length} {t('admin.aiTrShowing', 'de')} {sourceKeys.length} {t('admin.aiTrKeys', 'claus')}
           </div>
