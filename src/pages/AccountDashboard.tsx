@@ -104,11 +104,21 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
 
   // Auth credentials state
   const [currentEmail, setCurrentEmail] = useState('');
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [newEmail, setNewEmail] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
+
+  const loadAuthUser = async () => {
+    const { data } = await supabase.auth.getUser();
+    const em = data.user?.email || '';
+    const pending = (data.user as any)?.new_email || null;
+    setCurrentEmail(em);
+    setPendingEmail(pending && pending !== em ? pending : null);
+    setNewEmail(em);
+  };
 
   useEffect(() => {
     if (profile) {
@@ -125,11 +135,7 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
         company_name: profile.company_name || '',
       });
     }
-    supabase.auth.getUser().then(({ data }) => {
-      const em = data.user?.email || '';
-      setCurrentEmail(em);
-      setNewEmail(em);
-    });
+    loadAuthUser();
   }, [profile]);
 
   const handleSave = async () => {
@@ -147,13 +153,24 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
 
   const handleUpdateEmail = async () => {
     if (!newEmail || newEmail === currentEmail) return;
+    // Basic email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      toast.error('Format de correu invàlid');
+      return;
+    }
     setSavingEmail(true);
-    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    const { error } = await supabase.auth.updateUser(
+      { email: newEmail },
+      { emailRedirectTo: `${window.location.origin}/account` },
+    );
     setSavingEmail(false);
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success(t('account.emailUpdateRequested') || 'Revisa el teu correu per confirmar el canvi');
+      toast.success('Revisa el teu correu actual i el nou per confirmar el canvi');
+      setPendingEmail(newEmail);
+      // Refresh from auth after a short delay to pick up new_email field
+      setTimeout(loadAuthUser, 800);
     }
   };
 
@@ -235,9 +252,14 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
         {/* Email change */}
         <div className="pt-6 border-t">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Correu electrònic</h3>
+          {pendingEmail && (
+            <div className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              Canvi pendent de confirmació: <strong>{pendingEmail}</strong>. Revisa la safata d'entrada (i la carpeta de correu brossa) per acabar el canvi. Fins llavors continuaràs entrant amb <strong>{currentEmail}</strong>.
+            </div>
+          )}
           <div className="grid sm:grid-cols-[1fr_auto] gap-3 items-end">
             <div>
-              <Label>Email</Label>
+              <Label>Email actual: <span className="font-mono text-foreground">{currentEmail}</span></Label>
               <Input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
               <p className="text-xs text-muted-foreground mt-1">Hauràs de confirmar el canvi des del nou correu.</p>
             </div>
@@ -246,6 +268,7 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
             </Button>
           </div>
         </div>
+
 
         {/* Password change */}
         <div className="pt-6 border-t">

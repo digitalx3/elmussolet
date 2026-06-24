@@ -143,6 +143,12 @@ const AdminUsers: React.FC = () => {
   const saveUser = useMutation({
     mutationFn: async () => {
       const action = editMode ? 'update' : 'create';
+      if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+        throw new Error("Format de correu invàlid");
+      }
+      if (form.password && form.password.length < 6) {
+        throw new Error("La contrasenya ha de tenir almenys 6 caràcters");
+      }
       const body: any = {
         action,
         full_name: form.full_name,
@@ -169,14 +175,18 @@ const AdminUsers: React.FC = () => {
       const { data, error } = await supabase.functions.invoke('admin-manage-users', { body });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
+      return { emailChanged: !!(editMode && form.email), passwordChanged: !!form.password };
     },
-    onSuccess: () => {
+    onSuccess: (info) => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success(editMode ? 'Usuari actualitzat' : 'Usuari creat');
+      const parts = [editMode ? 'Usuari actualitzat' : 'Usuari creat'];
+      if (info?.emailChanged) parts.push('email actualitzat');
+      if (info?.passwordChanged) parts.push('contrasenya actualitzada');
+      toast.success(parts.join(' · '));
       setFormOpen(false);
       setForm(emptyForm);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message || 'Error desant l\'usuari'),
   });
 
   const deleteUser = useMutation({
