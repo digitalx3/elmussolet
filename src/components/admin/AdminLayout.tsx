@@ -4,8 +4,9 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   Package, LayoutDashboard, Tags, Bookmark, ListChecks,
   FileText, ShoppingCart, Users, Truck, Settings, ArrowLeft, SlidersHorizontal, Image as ImageIcon,
-  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database, Power,
+  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database, Power, Languages as LanguagesIcon,
 } from 'lucide-react';
+import AdminLanguageSwitcher from '@/components/admin/AdminLanguageSwitcher';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel,
   SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
@@ -49,19 +50,18 @@ const groups: NavGroup[] = [
     id: 'appearance',
     label: 'Aparença',
     items: [
-      { key: 'appearance', path: '/admin/aparenca', icon: Palette, label: 'Aparença' },
+      { key: 'appearance', path: '/admin/aparenca', icon: Palette },
       { key: 'heros', path: '/admin/heros', icon: ImageIcon },
-      { key: 'homeContent', path: '/admin/home', icon: Home, label: "Pàgina d'inici" },
-      { key: 'pages', path: '/admin/pagines', icon: FileEdit, label: 'Pàgines' },
-      { key: 'footerContact', path: '/admin/peu-contacte', icon: Mail, label: 'Peu i contacte' },
+      { key: 'homeContent', path: '/admin/home', icon: Home },
+      { key: 'pages', path: '/admin/pagines', icon: FileEdit },
+      { key: 'footerContact', path: '/admin/peu-contacte', icon: Mail },
     ],
   },
   {
     id: 'communication',
     label: 'Comunicació',
     items: [
-      { key: 'messages', path: '/admin/missatges', icon: Inbox, label: 'Missatges' },
-      { key: 'smtp', path: '/admin/smtp', icon: Server, label: 'Servidor SMTP' },
+      { key: 'messages', path: '/admin/missatges', icon: Inbox },
     ],
   },
   {
@@ -70,8 +70,10 @@ const groups: NavGroup[] = [
     items: [
       { key: 'users', path: '/admin/usuaris', icon: Users },
       { key: 'shipping', path: '/admin/enviaments', icon: Truck },
-      { key: 'backups', path: '/admin/backups', icon: Database, label: 'Còpies de seguretat' },
-      { key: 'maintenance', path: '/admin/manteniment', icon: Power, label: 'Mode manteniment' },
+      { key: 'languages', path: '/admin/idiomes', icon: LanguagesIcon },
+      { key: 'smtp', path: '/admin/smtp', icon: Server },
+      { key: 'backups', path: '/admin/backups', icon: Database },
+      { key: 'maintenance', path: '/admin/manteniment', icon: Power },
       { key: 'settings', path: '/admin/configuracio', icon: Settings },
     ],
   },
@@ -142,6 +144,7 @@ function MenuLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
 
 function AdminSidebar() {
   const { state } = useSidebar();
+  const { t } = useTranslation();
   const collapsed = state === 'collapsed';
   const { pathname } = useLocation();
 
@@ -221,7 +224,7 @@ function AdminSidebar() {
                     <CollapsibleTrigger asChild>
                       <SidebarGroupLabel className="cursor-pointer hover:bg-muted/50 rounded-md group/label">
                         <span className="flex-1 text-xs font-semibold uppercase tracking-wider">
-                          {group.label}
+                          {t(`admin.groups.${group.id}`, group.label)}
                         </span>
                         <ChevronDown
                           className={`h-3.5 w-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -271,9 +274,12 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <Link to="/">
               <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
                 <ArrowLeft className="h-4 w-4" />
-                Botiga
+                <BackToStoreLabel />
               </Button>
             </Link>
+            <div className="ml-auto">
+              <AdminLanguageSwitcher />
+            </div>
           </header>
           <main className="flex-1 p-6 overflow-auto">
             {children}
@@ -283,5 +289,9 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     </SidebarProvider>
   );
 };
+function BackToStoreLabel() {
+  const { t } = useTranslation();
+  return <>{t('admin.backToStore', 'Botiga')}</>;
+}
 
 export default AdminLayout;

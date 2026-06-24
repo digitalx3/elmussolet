@@ -28,6 +28,7 @@ import ContactPage from "@/pages/ContactPage";
 import AppearanceInjector from "@/components/AppearanceInjector";
 import MediaConfigLoader from "@/components/MediaConfigLoader";
 import MaintenanceGate from "@/components/MaintenanceGate";
+import LanguageReconciler from "@/components/LanguageReconciler";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
               <Sonner />
               <AppearanceInjector />
               <MediaConfigLoader />
+              <LanguageReconciler />
               <BrowserRouter>
                 <MaintenanceGate>
                 <Routes>

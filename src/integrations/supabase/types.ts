@@ -122,6 +122,48 @@ export type Database = {
           },
         ]
       }
+      brand_translations: {
+        Row: {
+          brand_id: string
+          created_at: string
+          description: string | null
+          language_code: string
+          name: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string
+          description?: string | null
+          language_code: string
+          name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string
+          description?: string | null
+          language_code?: string
+          name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_translations_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_translations_language_code_fkey"
+            columns: ["language_code"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       brands: {
         Row: {
           id: string
@@ -210,6 +252,54 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      cms_block_translations: {
+        Row: {
+          block_id: string
+          content: string | null
+          created_at: string
+          cta_label: string | null
+          language_code: string
+          subtitle: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          block_id: string
+          content?: string | null
+          created_at?: string
+          cta_label?: string | null
+          language_code: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          block_id?: string
+          content?: string | null
+          created_at?: string
+          cta_label?: string | null
+          language_code?: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cms_block_translations_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "cms_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cms_block_translations_language_code_fkey"
+            columns: ["language_code"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
           },
         ]
       }
@@ -390,6 +480,57 @@ export type Database = {
         }
         Relationships: []
       }
+      hero_slide_translations: {
+        Row: {
+          badge_text: string | null
+          button1_text: string | null
+          button2_text: string | null
+          created_at: string
+          language_code: string
+          slide_id: string
+          subtitle: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          badge_text?: string | null
+          button1_text?: string | null
+          button2_text?: string | null
+          created_at?: string
+          language_code: string
+          slide_id: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          badge_text?: string | null
+          button1_text?: string | null
+          button2_text?: string | null
+          created_at?: string
+          language_code?: string
+          slide_id?: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hero_slide_translations_language_code_fkey"
+            columns: ["language_code"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "hero_slide_translations_slide_id_fkey"
+            columns: ["slide_id"]
+            isOneToOne: false
+            referencedRelation: "hero_slides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hero_slides: {
         Row: {
           background_image_url: string | null
@@ -470,6 +611,39 @@ export type Database = {
           subtitle_es?: string | null
           title_ca?: string | null
           title_es?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      languages: {
+        Row: {
+          code: string
+          created_at: string
+          is_default: boolean
+          is_enabled: boolean
+          name: string
+          native_name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          is_default?: boolean
+          is_enabled?: boolean
+          name: string
+          native_name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          is_default?: boolean
+          is_enabled?: boolean
+          name?: string
+          native_name?: string
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
@@ -593,6 +767,45 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      list_section_translations: {
+        Row: {
+          created_at: string
+          language_code: string
+          name: string | null
+          section_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          language_code: string
+          name?: string | null
+          section_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          language_code?: string
+          name?: string | null
+          section_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_section_translations_language_code_fkey"
+            columns: ["language_code"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "list_section_translations_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "list_sections"
             referencedColumns: ["id"]
           },
         ]
