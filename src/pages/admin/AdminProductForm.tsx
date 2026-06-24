@@ -68,8 +68,19 @@ const AdminProductForm: React.FC = () => {
 
   useEffect(() => {
     if (product && !isNew) {
-      const ca = product.product_translations.find(t => t.language === 'ca');
-      const es = product.product_translations.find(t => t.language === 'es');
+      const translations: ProductFormData['translations'] = {};
+      // Seed every enabled language with empty values
+      for (const lng of languages) {
+        translations[lng.code] = { ...emptyTranslation };
+      }
+      // Fill in stored values (also keeps codes that exist in DB but aren't enabled)
+      for (const tr of product.product_translations || []) {
+        translations[tr.language] = {
+          name: tr.name || '',
+          short_description: tr.short_description || '',
+          description: tr.description || '',
+        };
+      }
       setForm({
         slug: product.slug,
         sku: product.sku,
@@ -82,10 +93,7 @@ const AdminProductForm: React.FC = () => {
         category_id: product.category_id,
         brand_id: product.brand_id,
         tax_rate_id: (product as any).tax_rate_id ?? null,
-        translations: {
-          ca: { name: ca?.name || '', short_description: ca?.short_description || '', description: ca?.description || '' },
-          es: { name: es?.name || '', short_description: es?.short_description || '', description: es?.description || '' },
-        },
+        translations,
         images: (product.product_images || []).sort((a, b) => a.sort_order - b.sort_order).map(img => ({
           id: img.id, image_url: img.image_url, alt_text: img.alt_text || '', is_primary: img.is_primary, sort_order: img.sort_order,
         })),
@@ -96,23 +104,23 @@ const AdminProductForm: React.FC = () => {
         })),
       });
     }
-  }, [product, isNew]);
+  }, [product, isNew, languages]);
 
   const updateField = <K extends keyof ProductFormData>(key: K, value: ProductFormData[K]) =>
     setForm(prev => ({ ...prev, [key]: value }));
 
-  const updateTranslation = (lang: 'ca' | 'es', field: string, value: string) =>
+  const updateTranslation = (lang: string, field: string, value: string) =>
     setForm(prev => ({
       ...prev,
       translations: {
         ...prev.translations,
-        [lang]: { ...prev.translations[lang], [field]: value },
+        [lang]: { ...(prev.translations[lang] ?? emptyTranslation), [field]: value },
       },
     }));
 
-  // Auto-generate slug from CA name
+  // Auto-generate slug from the default language name
   const autoSlug = () => {
-    const name = form.translations.ca.name;
+    const name = form.translations[defaultCode]?.name ?? '';
     if (name && !form.slug) {
       updateField('slug', name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
     }
