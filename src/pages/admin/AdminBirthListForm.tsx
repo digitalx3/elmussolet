@@ -373,13 +373,12 @@ const AdminBirthListForm: React.FC = () => {
     if (isNew || !id) return;
     setDeleting(true);
     try {
-      if (ordersCount > 0) {
-        // Delete orders first (cascades order_items), then the list cascades the rest.
-        const { error: ordErr } = await supabase.from('orders').delete().eq('list_id', id);
-        if (ordErr) throw ordErr;
-      }
-      const { error } = await supabase.from('birth_lists').delete().eq('id', id);
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('admin-delete-birth-list', {
+        body: { list_id: id },
+      });
+      if (error) throw new Error(error.message || 'Edge function error');
+      if (data?.error) throw new Error(data.error);
+      if (!data?.success) throw new Error('No s\'ha pogut eliminar la llista');
       queryClient.invalidateQueries({ queryKey: ['admin-birth-lists'] });
       toast.success(t('common.success'));
       navigate('/admin/llistes');
