@@ -504,6 +504,34 @@ const AdminOrders: React.FC = () => {
                 </DialogDescription>
               </DialogHeader>
 
+              <div className="flex justify-end -mt-2">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" className="gap-1">
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {t('admin.deleteOrder', 'Eliminar comanda')}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t('admin.confirmDeleteOrderTitle', 'Eliminar comanda?')}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {t('admin.confirmDeleteOrderDesc', 'S\'eliminarà la comanda {{n}} de manera permanent. L\'estoc dels productes es retornarà i, si pertany a una llista, els articles quedaran desbloquejats. Aquesta acció no es pot desfer.', { n: selectedOrder.order_number })}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={deleteOrderMutation.isPending}>{t('common.cancel')}</AlertDialogCancel>
+                      <AlertDialogAction
+                        disabled={deleteOrderMutation.isPending}
+                        onClick={() => deleteOrderMutation.mutate(selectedOrder.id)}
+                      >
+                        {t('common.delete', 'Eliminar')}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">{t('admin.customer')}</p>
