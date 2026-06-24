@@ -9,11 +9,13 @@ import { Save, Upload, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { optimizeImage } from '@/lib/optimizeImage';
 import DefaultHero from '@/components/home/DefaultHero';
+import LanguageTabs from '@/components/admin/LanguageTabs';
 import {
   DEFAULT_HERO,
   DEFAULT_HERO_OVERRIDES_KEY,
   DEFAULT_HERO_OVERRIDES_KEY_2,
   DefaultHeroOverrides,
+  HeroLanguageContent,
 } from '@/lib/defaultHeroSlide';
 
 const ASPECTS: DefaultHeroOverrides['image_aspect'][] = ['1/1', '4/5', '4/3', '3/4', '16/9'];
@@ -66,6 +68,16 @@ const AdminDefaultHeroForm: React.FC = () => {
   const state = states[activeVariant];
   const set = <K extends keyof HeroState>(k: K, v: HeroState[K]) =>
     setStates((s) => ({ ...s, [activeVariant]: { ...s[activeVariant], [k]: v } }));
+
+  const setTr = (code: string, field: keyof HeroLanguageContent, val: string) =>
+    setStates((s) => {
+      const prev = s[activeVariant];
+      const trs = { ...(prev.translations ?? {}) };
+      trs[code] = { ...(trs[code] ?? {}), [field]: val };
+      return { ...s, [activeVariant]: { ...prev, translations: trs } };
+    });
+  const trVal = (code: string, field: keyof HeroLanguageContent): string =>
+    state.translations?.[code]?.[field] ?? '';
 
   // Clear pending previews when switching variant
   useEffect(() => {
@@ -236,64 +248,85 @@ const AdminDefaultHeroForm: React.FC = () => {
           <div className="bg-card border border-border rounded-lg p-4 space-y-3">
             <div className="font-display font-semibold">Bloc de l'esquerra</div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label className="text-xs">Eyebrow (CA)</Label><Input value={state.eyebrow_ca} onChange={(e) => set('eyebrow_ca', e.target.value)} /></div>
-              <div><Label className="text-xs">Eyebrow (ES)</Label><Input value={state.eyebrow_es} onChange={(e) => set('eyebrow_es', e.target.value)} /></div>
-            </div>
-            <div>
-              <Label className="text-xs">Mida eyebrow (px) · 0 = per defecte</Label>
-              <Input type="number" min={0} max={120} value={state.eyebrow_size}
-                onChange={(e) => set('eyebrow_size', Number(e.target.value) || 0)} />
-            </div>
+            <LanguageTabs>
+              {(code) => {
+                const fallbackEyebrow = code === 'es' ? state.eyebrow_es : code === 'ca' ? state.eyebrow_ca : '';
+                const fallbackTitle = code === 'es' ? state.title_es : code === 'ca' ? state.title_ca : '';
+                const fallbackSubtitle = code === 'es' ? state.subtitle_es : code === 'ca' ? state.subtitle_ca : '';
+                const fallbackB1 = code === 'es' ? state.button1_text_es : code === 'ca' ? state.button1_text_ca : '';
+                const fallbackB2 = code === 'es' ? state.button2_text_es : code === 'ca' ? state.button2_text_ca : '';
+                const eyebrowVal = trVal(code, 'eyebrow') || fallbackEyebrow;
+                const titleVal = trVal(code, 'title') || fallbackTitle;
+                const subtitleVal = trVal(code, 'subtitle') || fallbackSubtitle;
+                const b1Val = trVal(code, 'button1_text') || fallbackB1;
+                const b2Val = trVal(code, 'button2_text') || fallbackB2;
+                return (
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs">Eyebrow ({code.toUpperCase()})</Label>
+                      <Input value={eyebrowVal} onChange={(e) => setTr(code, 'eyebrow', e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Títol ({code.toUpperCase()})</Label>
+                      <Textarea rows={2} value={titleVal} onChange={(e) => setTr(code, 'title', e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Subtítol ({code.toUpperCase()})</Label>
+                      <Textarea rows={3} value={subtitleVal} onChange={(e) => setTr(code, 'subtitle', e.target.value)} />
+                    </div>
+                    <div className="border-t border-border pt-3 space-y-2">
+                      <div className="text-xs font-semibold text-muted-foreground">Botó 1 ({code.toUpperCase()})</div>
+                      <Input value={b1Val} onChange={(e) => setTr(code, 'button1_text', e.target.value)} />
+                    </div>
+                    <div className="border-t border-border pt-3 space-y-2">
+                      <div className="text-xs font-semibold text-muted-foreground">Botó 2 ({code.toUpperCase()})</div>
+                      <Input value={b2Val} onChange={(e) => setTr(code, 'button2_text', e.target.value)} />
+                    </div>
+                  </div>
+                );
+              }}
+            </LanguageTabs>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label className="text-xs">Títol (CA)</Label><Textarea rows={2} value={state.title_ca} onChange={(e) => set('title_ca', e.target.value)} /></div>
-              <div><Label className="text-xs">Títol (ES)</Label><Textarea rows={2} value={state.title_es} onChange={(e) => set('title_es', e.target.value)} /></div>
-            </div>
-            <div>
-              <Label className="text-xs">Mida títol (px) · 0 = per defecte</Label>
-              <Input type="number" min={0} max={160} value={state.title_size}
-                onChange={(e) => set('title_size', Number(e.target.value) || 0)} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label className="text-xs">Subtítol (CA)</Label><Textarea rows={3} value={state.subtitle_ca} onChange={(e) => set('subtitle_ca', e.target.value)} /></div>
-              <div><Label className="text-xs">Subtítol (ES)</Label><Textarea rows={3} value={state.subtitle_es} onChange={(e) => set('subtitle_es', e.target.value)} /></div>
-            </div>
-            <div>
-              <Label className="text-xs">Mida subtítol (px) · 0 = per defecte</Label>
-              <Input type="number" min={0} max={80} value={state.subtitle_size}
-                onChange={(e) => set('subtitle_size', Number(e.target.value) || 0)} />
-            </div>
-
-            <div className="border-t border-border pt-3 space-y-2">
-              <div className="text-xs font-semibold text-muted-foreground">Botó 1</div>
-              <div className="grid grid-cols-2 gap-2">
-                <div><Label className="text-xs">Text (CA)</Label><Input value={state.button1_text_ca} onChange={(e) => set('button1_text_ca', e.target.value)} /></div>
-                <div><Label className="text-xs">Text (ES)</Label><Input value={state.button1_text_es} onChange={(e) => set('button1_text_es', e.target.value)} /></div>
-              </div>
-              <div><Label className="text-xs">Enllaç</Label><Input value={state.button1_url} onChange={(e) => set('button1_url', e.target.value)} placeholder="/cataleg" /></div>
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border">
               <div>
-                <Label className="text-xs">Mida botó (px) · 0 = per defecte</Label>
+                <Label className="text-xs">Mida eyebrow (px)</Label>
+                <Input type="number" min={0} max={120} value={state.eyebrow_size}
+                  onChange={(e) => set('eyebrow_size', Number(e.target.value) || 0)} />
+              </div>
+              <div>
+                <Label className="text-xs">Mida títol (px)</Label>
+                <Input type="number" min={0} max={160} value={state.title_size}
+                  onChange={(e) => set('title_size', Number(e.target.value) || 0)} />
+              </div>
+              <div>
+                <Label className="text-xs">Mida subtítol (px)</Label>
+                <Input type="number" min={0} max={80} value={state.subtitle_size}
+                  onChange={(e) => set('subtitle_size', Number(e.target.value) || 0)} />
+              </div>
+              <div>
+                <Label className="text-xs">Mida botó 1 (px)</Label>
                 <Input type="number" min={0} max={60} value={state.button1_size}
                   onChange={(e) => set('button1_size', Number(e.target.value) || 0)} />
               </div>
-            </div>
-
-            <div className="border-t border-border pt-3 space-y-2">
-              <div className="text-xs font-semibold text-muted-foreground">Botó 2</div>
-              <div className="grid grid-cols-2 gap-2">
-                <div><Label className="text-xs">Text (CA)</Label><Input value={state.button2_text_ca} onChange={(e) => set('button2_text_ca', e.target.value)} /></div>
-                <div><Label className="text-xs">Text (ES)</Label><Input value={state.button2_text_es} onChange={(e) => set('button2_text_es', e.target.value)} /></div>
-              </div>
-              <div><Label className="text-xs">Enllaç</Label><Input value={state.button2_url} onChange={(e) => set('button2_url', e.target.value)} placeholder="/llista-naixement" /></div>
               <div>
-                <Label className="text-xs">Mida botó (px) · 0 = per defecte</Label>
+                <Label className="text-xs">Mida botó 2 (px)</Label>
                 <Input type="number" min={0} max={60} value={state.button2_size}
                   onChange={(e) => set('button2_size', Number(e.target.value) || 0)} />
               </div>
             </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border">
+              <div>
+                <Label className="text-xs">Enllaç botó 1</Label>
+                <Input value={state.button1_url} onChange={(e) => set('button1_url', e.target.value)} placeholder="/cataleg" />
+              </div>
+              <div>
+                <Label className="text-xs">Enllaç botó 2</Label>
+                <Input value={state.button2_url} onChange={(e) => set('button2_url', e.target.value)} placeholder="/llista-naixement" />
+              </div>
+            </div>
           </div>
+
 
           {/* RIGHT BLOCK */}
           <div className="bg-card border border-border rounded-lg p-4 space-y-3">
@@ -437,14 +470,26 @@ const AdminDefaultHeroForm: React.FC = () => {
               </div>
 
 
-              <div className="grid grid-cols-2 gap-2">
-                <div><Label className="text-xs">Títol (CA)</Label><Input value={state.card_title_ca} onChange={(e) => set('card_title_ca', e.target.value)} /></div>
-                <div><Label className="text-xs">Títol (ES)</Label><Input value={state.card_title_es} onChange={(e) => set('card_title_es', e.target.value)} /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div><Label className="text-xs">Subtítol (CA)</Label><Input value={state.card_subtitle_ca} onChange={(e) => set('card_subtitle_ca', e.target.value)} /></div>
-                <div><Label className="text-xs">Subtítol (ES)</Label><Input value={state.card_subtitle_es} onChange={(e) => set('card_subtitle_es', e.target.value)} /></div>
-              </div>
+              <LanguageTabs>
+                {(code) => {
+                  const fallbackCardT = code === 'es' ? state.card_title_es : code === 'ca' ? state.card_title_ca : '';
+                  const fallbackCardS = code === 'es' ? state.card_subtitle_es : code === 'ca' ? state.card_subtitle_ca : '';
+                  const ct = trVal(code, 'card_title') || fallbackCardT;
+                  const cs = trVal(code, 'card_subtitle') || fallbackCardS;
+                  return (
+                    <div className="space-y-2">
+                      <div>
+                        <Label className="text-xs">Títol targeta ({code.toUpperCase()})</Label>
+                        <Input value={ct} onChange={(e) => setTr(code, 'card_title', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Subtítol targeta ({code.toUpperCase()})</Label>
+                        <Input value={cs} onChange={(e) => setTr(code, 'card_subtitle', e.target.value)} />
+                      </div>
+                    </div>
+                  );
+                }}
+              </LanguageTabs>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label className="text-xs">Mida títol targeta (px)</Label>

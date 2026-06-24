@@ -33,10 +33,11 @@ export const HomeBlocks: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const lang = i18n.language === 'es' ? 'es' : 'ca';
+  const lang = (i18n.language || 'ca').split('-')[0];
+  const isEs = lang === 'es';
 
-  const { data: blocks = [] } = useQuery({
-    queryKey: ['home-blocks'],
+  const { data: payload } = useQuery({
+    queryKey: ['home-blocks', lang],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('cms_blocks')
@@ -45,16 +46,47 @@ export const HomeBlocks: React.FC = () => {
         .eq('is_active', true)
         .order('sort_order');
       if (error) throw error;
-      return data as Block[];
+      const blocks = (data ?? []) as Block[];
+      const ids = blocks.map((b) => b.id);
+      let trMap = new Map<string, { title: string | null; subtitle: string | null; cta_label: string | null }>();
+      if (ids.length > 0 && lang !== 'ca' && lang !== 'es') {
+        const { data: trs } = await supabase
+          .from('cms_block_translations')
+          .select('block_id, title, subtitle, cta_label')
+          .in('block_id', ids)
+          .eq('language_code', lang);
+        (trs ?? []).forEach((t: any) =>
+          trMap.set(t.block_id, { title: t.title, subtitle: t.subtitle, cta_label: t.cta_label }),
+        );
+      } else if (ids.length > 0) {
+        const { data: trs } = await supabase
+          .from('cms_block_translations')
+          .select('block_id, title, subtitle, cta_label')
+          .in('block_id', ids)
+          .eq('language_code', lang);
+        (trs ?? []).forEach((t: any) =>
+          trMap.set(t.block_id, { title: t.title, subtitle: t.subtitle, cta_label: t.cta_label }),
+        );
+      }
+      return { blocks, trMap };
     },
   });
+
+  const blocks = payload?.blocks ?? [];
+  const trMap = payload?.trMap;
 
   const features = blocks.filter(b => b.kind === 'home_feature');
   const ctas = blocks.filter(b => b.kind === 'home_cta');
 
-  const title = (b: Block) => (lang === 'es' ? b.title_es : b.title_ca) ?? '';
-  const subtitle = (b: Block) => (lang === 'es' ? b.subtitle_es : b.subtitle_ca) ?? '';
-  const ctaLabel = (b: Block) => (lang === 'es' ? b.cta_label_es : b.cta_label_ca) ?? '';
+  const pickTr = (b: Block, field: 'title' | 'subtitle' | 'cta_label') => {
+    const tr = trMap?.get(b.id);
+    if (tr && tr[field] && (tr[field] as string).trim()) return tr[field] as string;
+    if (isEs) return (b as any)[`${field}_es`] ?? (b as any)[`${field}_ca`] ?? '';
+    return (b as any)[`${field}_ca`] ?? (b as any)[`${field}_es`] ?? '';
+  };
+  const title = (b: Block) => pickTr(b, 'title');
+  const subtitle = (b: Block) => pickTr(b, 'subtitle');
+  const ctaLabel = (b: Block) => pickTr(b, 'cta_label');
 
   return (
     <>
