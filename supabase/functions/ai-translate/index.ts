@@ -200,8 +200,22 @@ async function translateBatch(provider: Provider, items: string[], source: strin
   return arr.map((x: any) => String(x ?? ""));
 }
 
+async function logCall(admin: any, row: Record<string, any>) {
+  try {
+    await admin.from("ai_translation_logs").insert(row);
+  } catch (e) {
+    console.warn("ai_translation_logs insert failed", e);
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const started = Date.now();
+  let admin: any = null;
+  let userId: string | null = null;
+  let provider: Provider | null = null;
+  let body: TranslateBody | null = null;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -217,20 +231,18 @@ Deno.serve(async (req: Request) => {
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
     if (userErr || !userData?.user) return json({ error: "Unauthorized" }, 401);
+    userId = userData.user.id;
 
-    const admin = createClient(supabaseUrl, serviceKey);
+    admin = createClient(supabaseUrl, serviceKey);
     const { data: profile } = await admin
-      .from("profiles")
-      .select("role")
-      .eq("id", userData.user.id)
-      .single();
+      .from("profiles").select("role").eq("id", userId).single();
     if (profile?.role !== "admin") return json({ error: "Forbidden" }, 403);
 
-    const body = (await req.json()) as TranslateBody;
+    body = (await req.json()) as TranslateBody;
 
     if (body.action === "status") {
-      const provider = await getActiveProvider(admin);
-      return json({ provider, available: availability() });
+      const p = await getActiveProvider(admin);
+      return json({ provider: p, available: availability() });
     }
 
     if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
@@ -243,27 +255,70 @@ Deno.serve(async (req: Request) => {
       return json({ translations: body.items });
     }
 
-    const provider = await getActiveProvider(admin, body.provider);
+    provider = await getActiveProvider(admin, body.provider);
     const avail = availability();
     if (provider === "openai" && !avail.openai) return json({ error: "OPENAI_API_KEY not configured" }, 400);
     if (provider === "anthropic" && !avail.anthropic) return json({ error: "ANTHROPIC_API_KEY not configured" }, 400);
     if (provider === "lovable" && !avail.lovable) return json({ error: "LOVABLE_API_KEY not configured" }, 400);
 
-    // Translate in chunks of 40 to keep prompts small
     const CHUNK = 40;
     const out: string[] = [];
+    let chunkErrors = 0;
+    let lastChunkErr = "";
     for (let i = 0; i < body.items.length; i += CHUNK) {
       const chunk = body.items.slice(i, i + CHUNK);
-      const part = await translateBatch(provider, chunk, body.source_language, body.target_language, body.context);
-      out.push(...part);
+      try {
+        const part = await translateBatch(provider, chunk, body.source_language, body.target_language, body.context);
+        out.push(...part);
+      } catch (e: any) {
+        chunkErrors += chunk.length;
+        lastChunkErr = String(e?.message || e);
+        // pad with empty strings so caller index stays aligned
+        out.push(...new Array(chunk.length).fill(""));
+      }
     }
 
-    return json({ translations: out, provider });
+    const successCount = body.items.length - chunkErrors;
+    const status = chunkErrors === 0 ? "success" : (successCount > 0 ? "partial" : "error");
+
+    await logCall(admin, {
+      user_id: userId,
+      function_name: "ai-translate",
+      scope: body.scope || null,
+      source_language: body.source_language,
+      target_language: body.target_language,
+      items_count: body.items.length,
+      success_count: successCount,
+      error_count: chunkErrors,
+      status,
+      provider,
+      error_message: chunkErrors > 0 ? lastChunkErr.slice(0, 500) : null,
+      duration_ms: Date.now() - started,
+    });
+
+    return json({ translations: out, provider, status, success_count: successCount, error_count: chunkErrors, error_message: chunkErrors > 0 ? lastChunkErr : null });
   } catch (e: any) {
     const msg = String(e?.message || e);
     console.error("ai-translate error", msg);
-    if (msg === "RATE_LIMIT") return json({ error: "RATE_LIMIT" }, 429);
-    if (msg === "CREDITS_EXHAUSTED") return json({ error: "CREDITS_EXHAUSTED" }, 402);
+    if (admin) {
+      await logCall(admin, {
+        user_id: userId,
+        function_name: "ai-translate",
+        scope: body?.scope || null,
+        source_language: body?.source_language || null,
+        target_language: body?.target_language || null,
+        items_count: body?.items?.length || 0,
+        success_count: 0,
+        error_count: body?.items?.length || 0,
+        status: "error",
+        provider,
+        error_message: msg.slice(0, 500),
+        duration_ms: Date.now() - started,
+      });
+    }
+    if (msg === "RATE_LIMIT" || msg.includes("RATE_LIMIT")) return json({ error: "RATE_LIMIT" }, 429);
+    if (msg === "CREDITS_EXHAUSTED" || msg.includes("CREDITS_EXHAUSTED")) return json({ error: "CREDITS_EXHAUSTED" }, 402);
     return json({ error: msg }, 500);
   }
 });
+
