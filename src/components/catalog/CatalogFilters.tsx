@@ -116,26 +116,6 @@ const CatalogFilters: React.FC<Props> = ({
         </div>
       )}
 
-      <Separator />
-
-      {/* Price range */}
-      <div>
-        <Label className="text-sm font-semibold mb-3 block">{t('products.price')}</Label>
-        <Slider
-          value={priceRange}
-          onValueChange={(v) => onPriceRangeChange(v as [number, number])}
-          min={0}
-          max={maxPrice}
-          step={1}
-          className="mb-2"
-        />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{formatPrice(priceRange[0])}</span>
-          <span>{formatPrice(priceRange[1])}</span>
-        </div>
-      </div>
-
-      <Separator />
 
       {/* Availability */}
       <div>
