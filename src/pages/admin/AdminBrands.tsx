@@ -1,10 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -16,6 +17,8 @@ import {
 import { Plus, Pencil, Trash2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { optimizeImage } from '@/lib/optimizeImage';
+import LanguageTabs from '@/components/admin/LanguageTabs';
+import { useLanguages } from '@/hooks/useLanguages';
 
 interface BrandRow {
   id: string;
@@ -24,13 +27,21 @@ interface BrandRow {
   is_active: boolean | null;
 }
 
+interface BrandTranslation {
+  brand_id: string;
+  language_code: string;
+  name: string | null;
+  description: string | null;
+}
+
 interface FormData {
   name: string;
   is_active: boolean;
   logo_url: string | null;
+  translations: Record<string, { name: string; description: string }>;
 }
 
-const emptyForm: FormData = { name: '', is_active: true, logo_url: null };
+const emptyForm: FormData = { name: '', is_active: true, logo_url: null, translations: {} };
 
 const AdminBrands: React.FC = () => {
   const { t } = useTranslation();
@@ -43,6 +54,8 @@ const AdminBrands: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState<File | null>(null);
 
+  const { data: languages = [] } = useLanguages({ onlyEnabled: true });
+
   const { data: brands = [], isLoading } = useQuery({
     queryKey: ['admin-brands'],
     queryFn: async () => {
@@ -54,6 +67,15 @@ const AdminBrands: React.FC = () => {
       return data as BrandRow[];
     },
   });
+
+  const loadTranslations = async (brandId: string) => {
+    const { data, error } = await supabase
+      .from('brand_translations')
+      .select('*')
+      .eq('brand_id', brandId);
+    if (error) throw error;
+    return (data ?? []) as BrandTranslation[];
+  };
 
   const uploadLogo = async (rawFile: File): Promise<string> => {
     const file = rawFile.type === 'image/svg+xml'
@@ -89,9 +111,26 @@ const AdminBrands: React.FC = () => {
     setDialogOpen(true);
   };
 
-  const openEdit = (b: BrandRow) => {
+  const openEdit = async (b: BrandRow) => {
     setEditId(b.id);
-    setForm({ name: b.name, is_active: b.is_active ?? true, logo_url: b.logo_url });
+    const translations: Record<string, { name: string; description: string }> = {};
+    try {
+      const trs = await loadTranslations(b.id);
+      trs.forEach((tr) => {
+        translations[tr.language_code] = {
+          name: tr.name ?? '',
+          description: tr.description ?? '',
+        };
+      });
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+    setForm({
+      name: b.name,
+      is_active: b.is_active ?? true,
+      logo_url: b.logo_url,
+      translations,
+    });
     setPreviewFile(null);
     setDialogOpen(true);
   };
@@ -107,23 +146,31 @@ const AdminBrands: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const setTranslation = (code: string, field: 'name' | 'description', val: string) => {
+    setForm((f) => ({
+      ...f,
+      translations: {
+        ...f.translations,
+        [code]: { ...(f.translations[code] ?? { name: '', description: '' }), [field]: val },
+      },
+    }));
+  };
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       setUploading(true);
       let logoUrl = form.logo_url;
 
-      // Upload new file if selected
       if (previewFile) {
-        // Delete old logo if replacing
         if (logoUrl) await deleteLogo(logoUrl);
         logoUrl = await uploadLogo(previewFile);
       }
-      // If logo was removed (no file, no url) and editing, delete old
       if (!previewFile && !logoUrl && editId) {
         const old = brands.find(b => b.id === editId);
         if (old?.logo_url) await deleteLogo(old.logo_url);
       }
 
+      let brandId = editId;
       if (editId) {
         const { error } = await supabase.from('brands').update({
           name: form.name,
@@ -132,12 +179,40 @@ const AdminBrands: React.FC = () => {
         }).eq('id', editId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('brands').insert({
+        const { data, error } = await supabase.from('brands').insert({
           name: form.name,
           is_active: form.is_active,
           logo_url: logoUrl,
-        });
+        }).select('id').single();
         if (error) throw error;
+        brandId = data.id;
+      }
+
+      // Upsert translations for every enabled language
+      if (brandId) {
+        const rows = languages.map((lng) => ({
+          brand_id: brandId,
+          language_code: lng.code,
+          name: form.translations[lng.code]?.name?.trim() || null,
+          description: form.translations[lng.code]?.description?.trim() || null,
+        }));
+        // Skip rows where both fields are empty to avoid noise
+        const meaningful = rows.filter((r) => r.name || r.description);
+        if (meaningful.length > 0) {
+          const { error } = await supabase
+            .from('brand_translations')
+            .upsert(meaningful, { onConflict: 'brand_id,language_code' });
+          if (error) throw error;
+        }
+        // Remove empty translations
+        const emptyCodes = rows.filter((r) => !r.name && !r.description).map((r) => r.language_code);
+        if (emptyCodes.length > 0) {
+          await supabase
+            .from('brand_translations')
+            .delete()
+            .eq('brand_id', brandId)
+            .in('language_code', emptyCodes);
+        }
       }
     },
     onSuccess: () => {
@@ -233,7 +308,7 @@ const AdminBrands: React.FC = () => {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editId ? t('admin.editBrand') : t('admin.addBrand')}</DialogTitle>
             <DialogDescription>
@@ -242,9 +317,36 @@ const AdminBrands: React.FC = () => {
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="space-y-2">
-              <Label>{t('admin.brandName')} *</Label>
+              <Label>{t('admin.brandName')} * <span className="text-xs text-muted-foreground font-normal">(canonical)</span></Label>
               <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
             </div>
+
+            <div className="border-t border-border pt-3">
+              <Label className="mb-2 block">Traduccions per idioma</Label>
+              <LanguageTabs>
+                {(code) => (
+                  <div className="space-y-2">
+                    <div>
+                      <Label className="text-xs">Nom ({code.toUpperCase()})</Label>
+                      <Input
+                        value={form.translations[code]?.name ?? ''}
+                        onChange={(e) => setTranslation(code, 'name', e.target.value)}
+                        placeholder={form.name}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Descripció ({code.toUpperCase()})</Label>
+                      <Textarea
+                        rows={2}
+                        value={form.translations[code]?.description ?? ''}
+                        onChange={(e) => setTranslation(code, 'description', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+              </LanguageTabs>
+            </div>
+
             <div className="space-y-2">
               <Label>Logo</Label>
               {logoPreviewUrl ? (
