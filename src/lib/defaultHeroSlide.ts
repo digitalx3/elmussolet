@@ -21,6 +21,15 @@ export type DefaultHeroOverrides = {
   button2_text_es?: string;
   button2_url?: string;
 
+  // Text sizes (px). Per-variant overrides. 0 / undefined = use default styles.
+  eyebrow_size?: number;
+  title_size?: number;
+  subtitle_size?: number;
+  button1_size?: number;
+  button2_size?: number;
+  card_title_size?: number;
+  card_subtitle_size?: number;
+
   // Right block - image
   image_url?: string | null;
   image_aspect?: '1/1' | '4/5' | '4/3' | '3/4' | '16/9';
