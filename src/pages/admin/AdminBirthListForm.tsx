@@ -679,8 +679,8 @@ const AdminBirthListForm: React.FC = () => {
           <div>
             {!isNew && (
               <>
-                <Button variant="destructive" size="sm" onClick={openDeleteDialog} disabled={deleting}>
-                  {t('common.delete')}
+                <Button variant="destructive" size="sm" onClick={openDeleteDialog} disabled={deleting || loadingPreview}>
+                  {loadingPreview ? t('common.loading') : t('common.delete')}
                 </Button>
 
                 {/* Step 1 (with orders): warn that orders will be deleted */}
