@@ -377,6 +377,7 @@ const AdminBirthListForm: React.FC = () => {
 
   const openDeleteDialog = async () => {
     if (isNew || !id) return;
+    if (loadingPreview || deleting) return; // guard against double click
     setLoadingPreview(true);
     try {
       // Get orders + their ids (to count order_items)
@@ -431,6 +432,7 @@ const AdminBirthListForm: React.FC = () => {
 
   const performDelete = async () => {
     if (isNew || !id) return;
+    if (deleting) return; // guard against double click
     setDeleting(true);
     try {
       const { data, error } = await supabase.functions.invoke('admin-delete-birth-list', {
@@ -684,7 +686,7 @@ const AdminBirthListForm: React.FC = () => {
                 </Button>
 
                 {/* Step 1 (with orders): warn that orders will be deleted */}
-                <AlertDialog open={deleteStep === 'orders'} onOpenChange={(o) => !o && setDeleteStep('idle')}>
+                <AlertDialog open={deleteStep === 'orders'} onOpenChange={(o) => { if (!o && !deleting) setDeleteStep('idle'); }}>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>{t('admin.deleteListWithOrdersTitle')}</AlertDialogTitle>
@@ -701,8 +703,8 @@ const AdminBirthListForm: React.FC = () => {
                       <div className="flex justify-between"><span>List owners</span><span className="font-mono">{previewCounts.list_owners}</span></div>
                     </div>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => setDeleteStep('final')}>
+                      <AlertDialogCancel disabled={deleting}>{t('common.cancel')}</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => setDeleteStep('final')} disabled={deleting}>
                         {t('admin.deleteListWithOrdersConfirm')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
@@ -710,7 +712,7 @@ const AdminBirthListForm: React.FC = () => {
                 </AlertDialog>
 
                 {/* Final step: double confirmation (checkbox + typed phrase) */}
-                <AlertDialog open={deleteStep === 'final'} onOpenChange={(o) => !o && setDeleteStep('idle')}>
+                <AlertDialog open={deleteStep === 'final'} onOpenChange={(o) => { if (!o && !deleting) setDeleteStep('idle'); }}>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>{t('admin.deleteListFinalTitle')}</AlertDialogTitle>
@@ -763,7 +765,7 @@ const AdminBirthListForm: React.FC = () => {
                     </div>
 
                     <AlertDialogFooter>
-                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                      <AlertDialogCancel disabled={deleting}>{t('common.cancel')}</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={performDelete}
                         disabled={deleting || !canConfirmDelete}
