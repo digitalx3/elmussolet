@@ -15,8 +15,36 @@ interface TranslateBody {
   items?: string[]; // strings to translate
   source_language: string;
   target_language: string;
-  context?: string; // e.g. "UI strings for an ecommerce admin"
-  provider?: Provider; // override; otherwise read site_settings
+  context?: string;
+  scope?: string;     // for logging (e.g. "ui", "product_translations")
+  provider?: Provider;
+}
+
+const MAX_ATTEMPTS = 3;
+
+async function withRetry<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  let lastErr: any;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      lastErr = e;
+      const msg = String(e?.message || e);
+      const transient =
+        msg === "RATE_LIMIT" ||
+        msg.includes("RATE_LIMIT") ||
+        msg.includes("timeout") ||
+        msg.includes("ECONNRESET") ||
+        /\b5\d\d\b/.test(msg);
+      if (!transient || attempt === MAX_ATTEMPTS) {
+        throw new Error(`${label} failed after ${attempt} attempt(s): ${msg}`);
+      }
+      const wait = 600 * attempt;
+      console.warn(`${label} transient error (attempt ${attempt}/${MAX_ATTEMPTS}), retrying in ${wait}ms: ${msg}`);
+      await new Promise(r => setTimeout(r, wait));
+    }
+  }
+  throw lastErr;
 }
 
 const json = (b: unknown, status = 200) =>
