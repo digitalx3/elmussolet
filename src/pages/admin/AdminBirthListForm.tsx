@@ -433,18 +433,57 @@ const AdminBirthListForm: React.FC = () => {
   const performDelete = async () => {
     if (isNew || !id) return;
     if (deleting) return; // guard against double click
+    if (!canConfirmDelete) {
+      toast.error(t('admin.deleteListConfirmRequired', 'Marca la casella i escriu ELIMINAR per confirmar.'));
+      return;
+    }
     setDeleting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('admin-delete-birth-list', {
-        body: { list_id: id },
-      });
-      if (error) throw new Error(error.message || 'Edge function error');
-      if (data?.error) throw new Error(data.error);
-      if (!data?.success) throw new Error('No s\'ha pogut eliminar la llista');
+      // Cascading delete done client-side: admins have full RLS access on all
+      // related tables. This surfaces precise errors per step (the previous
+      // edge-function path returned opaque non-2xx failures).
+      // 1) Orders + order_items
+      const { data: ordersToDel, error: ordersFetchErr } = await supabase
+        .from('orders').select('id').eq('list_id', id);
+      if (ordersFetchErr) throw new Error(`Comandes: ${ordersFetchErr.message}`);
+
+      const orderIds = (ordersToDel ?? []).map(o => o.id);
+      if (orderIds.length > 0) {
+        const { error: oiErr } = await supabase
+          .from('order_items').delete().in('order_id', orderIds);
+        if (oiErr) throw new Error(`Items de comanda: ${oiErr.message}`);
+
+        const { error: oErr } = await supabase
+          .from('orders').delete().in('id', orderIds);
+        if (oErr) throw new Error(`Comandes: ${oErr.message}`);
+      }
+
+      // 2) List items, sections, owners
+      const { error: liErr } = await supabase
+        .from('list_items').delete().eq('list_id', id);
+      if (liErr) throw new Error(`Articles de la llista: ${liErr.message}`);
+
+      const { error: lsErr } = await supabase
+        .from('list_sections').delete().eq('list_id', id);
+      if (lsErr) throw new Error(`Seccions: ${lsErr.message}`);
+
+      const { error: loErr } = await supabase
+        .from('list_owners').delete().eq('list_id', id);
+      if (loErr) throw new Error(`Propietaris: ${loErr.message}`);
+
+      // 3) Birth list itself (verify a row was deleted)
+      const { data: blDel, error: blErr } = await supabase
+        .from('birth_lists').delete().eq('id', id).select('id');
+      if (blErr) throw new Error(`Llista: ${blErr.message}`);
+      if (!blDel || blDel.length === 0) {
+        throw new Error('La llista no s\'ha pogut eliminar (no trobada o sense permisos).');
+      }
+
       queryClient.invalidateQueries({ queryKey: ['admin-birth-lists'] });
       toast.success(t('common.success'));
       navigate('/admin/llistes');
     } catch (err: any) {
+      console.error('[admin] delete birth list failed:', err);
       toast.error(err?.message || t('errors.generic'));
     } finally {
       setDeleting(false);
