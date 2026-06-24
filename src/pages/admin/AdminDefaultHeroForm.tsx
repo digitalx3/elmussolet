@@ -470,14 +470,26 @@ const AdminDefaultHeroForm: React.FC = () => {
               </div>
 
 
-              <div className="grid grid-cols-2 gap-2">
-                <div><Label className="text-xs">Títol (CA)</Label><Input value={state.card_title_ca} onChange={(e) => set('card_title_ca', e.target.value)} /></div>
-                <div><Label className="text-xs">Títol (ES)</Label><Input value={state.card_title_es} onChange={(e) => set('card_title_es', e.target.value)} /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div><Label className="text-xs">Subtítol (CA)</Label><Input value={state.card_subtitle_ca} onChange={(e) => set('card_subtitle_ca', e.target.value)} /></div>
-                <div><Label className="text-xs">Subtítol (ES)</Label><Input value={state.card_subtitle_es} onChange={(e) => set('card_subtitle_es', e.target.value)} /></div>
-              </div>
+              <LanguageTabs>
+                {(code) => {
+                  const fallbackCardT = code === 'es' ? state.card_title_es : code === 'ca' ? state.card_title_ca : '';
+                  const fallbackCardS = code === 'es' ? state.card_subtitle_es : code === 'ca' ? state.card_subtitle_ca : '';
+                  const ct = trVal(code, 'card_title') || fallbackCardT;
+                  const cs = trVal(code, 'card_subtitle') || fallbackCardS;
+                  return (
+                    <div className="space-y-2">
+                      <div>
+                        <Label className="text-xs">Títol targeta ({code.toUpperCase()})</Label>
+                        <Input value={ct} onChange={(e) => setTr(code, 'card_title', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Subtítol targeta ({code.toUpperCase()})</Label>
+                        <Input value={cs} onChange={(e) => setTr(code, 'card_subtitle', e.target.value)} />
+                      </div>
+                    </div>
+                  );
+                }}
+              </LanguageTabs>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label className="text-xs">Mida títol targeta (px)</Label>
