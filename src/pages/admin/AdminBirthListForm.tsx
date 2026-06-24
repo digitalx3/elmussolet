@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, Trash2, Search, Copy, Eye, EyeOff, Package, FolderOpen, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Search, Copy, Eye, EyeOff, Package, FolderOpen, ChevronUp, ChevronDown, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,10 +15,13 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
+import { useLanguages } from '@/hooks/useLanguages';
+import LanguageTabs from '@/components/admin/LanguageTabs';
 
 interface Owner {
   id?: string;
@@ -49,6 +52,7 @@ interface PendingSection {
   name_ca: string;
   name_es: string;
   sort_order: number;
+  translations: Record<string, string>; // language_code -> name
 }
 
 const pickProductImage = (p: any): string | null => {
@@ -104,6 +108,8 @@ const AdminBirthListForm: React.FC = () => {
   const [browseCategory, setBrowseCategory] = useState<string>('all');
   const [browseSearch, setBrowseSearch] = useState('');
   const [defaultsLoaded, setDefaultsLoaded] = useState(false);
+  const [translatingTempId, setTranslatingTempId] = useState<string | null>(null);
+  const { data: enabledLanguages = [] } = useLanguages({ onlyEnabled: true });
 
   const { data: defaultSectionsData = [] } = useDefaultListSections({ onlyActive: true });
 
@@ -111,12 +117,19 @@ const AdminBirthListForm: React.FC = () => {
   useEffect(() => {
     if (!isNew || defaultsLoaded) return;
     if (defaultSectionsData.length === 0) return;
-    const initial = defaultSectionsData.map((s, i) => ({
-      temp_id: `def-${s.id}`,
-      name_ca: pickSectionName(s, 'ca'),
-      name_es: pickSectionName(s, 'es'),
-      sort_order: i,
-    }));
+    const initial: PendingSection[] = defaultSectionsData.map((s, i) => {
+      const translations: Record<string, string> = {};
+      (s.translations || []).forEach(tr => {
+        if (tr?.name) translations[tr.language] = tr.name;
+      });
+      return {
+        temp_id: `def-${s.id}`,
+        name_ca: pickSectionName(s, 'ca'),
+        name_es: pickSectionName(s, 'es'),
+        sort_order: i,
+        translations,
+      };
+    });
     setSections(initial);
     setActiveSectionTempId(initial[0]?.temp_id ?? null);
     setDefaultsLoaded(true);
@@ -129,7 +142,7 @@ const AdminBirthListForm: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('list_sections')
-        .select('id, name_ca, name_es, sort_order')
+        .select('id, name_ca, name_es, sort_order, list_section_translations(language_code, name)')
         .eq('list_id', id!)
         .order('sort_order', { ascending: true });
       if (error) throw error;
@@ -139,13 +152,22 @@ const AdminBirthListForm: React.FC = () => {
 
   useEffect(() => {
     if (existingSections && existingSections.length > 0) {
-      const mapped: PendingSection[] = existingSections.map((s: any) => ({
-        temp_id: `ex-${s.id}`,
-        id: s.id,
-        name_ca: s.name_ca || '',
-        name_es: s.name_es || '',
-        sort_order: s.sort_order ?? 0,
-      }));
+      const mapped: PendingSection[] = existingSections.map((s: any) => {
+        const translations: Record<string, string> = {};
+        (s.list_section_translations || []).forEach((tr: any) => {
+          if (tr?.name) translations[tr.language_code] = tr.name;
+        });
+        if (s.name_ca && !translations.ca) translations.ca = s.name_ca;
+        if (s.name_es && !translations.es) translations.es = s.name_es;
+        return {
+          temp_id: `ex-${s.id}`,
+          id: s.id,
+          name_ca: s.name_ca || '',
+          name_es: s.name_es || '',
+          sort_order: s.sort_order ?? 0,
+          translations,
+        };
+      });
       setSections(mapped);
       setActiveSectionTempId(prev => prev ?? mapped[0]?.temp_id ?? null);
       setDefaultsLoaded(true);
@@ -353,9 +375,10 @@ const AdminBirthListForm: React.FC = () => {
     if (!ca) return;
     const es = window.prompt(lang === 'es' ? 'Nombre de la familia (castellano)' : 'Nom de la família (castellà)')?.trim() || ca;
     setSections(prev => {
-      const next = [...prev, {
+      const next: PendingSection[] = [...prev, {
         temp_id: `new-${Date.now()}-${prev.length}`,
         name_ca: ca, name_es: es, sort_order: prev.length,
+        translations: { ca, es },
       }];
       if (!activeSectionTempId) setActiveSectionTempId(next[next.length - 1].temp_id);
       return next;
@@ -500,8 +523,8 @@ const AdminBirthListForm: React.FC = () => {
       if (sections.length > 0) {
         const toInsert = sections.map((s, i) => ({
           list_id: listId!,
-          name_ca: s.name_ca || s.name_es || '',
-          name_es: s.name_es || s.name_ca || '',
+          name_ca: (s.translations?.ca || s.name_ca || s.name_es || '').trim(),
+          name_es: (s.translations?.es || s.name_es || s.name_ca || '').trim(),
           sort_order: i,
         }));
         const { data: insertedSecs, error: secErr } = await supabase
@@ -513,6 +536,30 @@ const AdminBirthListForm: React.FC = () => {
           const match = insertedSecs?.find((x: any) => x.sort_order === i);
           if (match) sectionIdMap.set(s.temp_id, match.id);
         });
+
+        // Sync per-language translations
+        const trRows: Array<{ section_id: string; language_code: string; name: string }> = [];
+        sections.forEach((s) => {
+          const realId = sectionIdMap.get(s.temp_id);
+          if (!realId) return;
+          Object.entries(s.translations || {}).forEach(([code, name]) => {
+            const trimmed = (name || '').trim();
+            if (trimmed) trRows.push({ section_id: realId, language_code: code, name: trimmed });
+          });
+          // Make sure legacy ca/es are also mirrored if not in translations
+          if (!s.translations?.ca && s.name_ca?.trim()) {
+            trRows.push({ section_id: realId, language_code: 'ca', name: s.name_ca.trim() });
+          }
+          if (!s.translations?.es && s.name_es?.trim()) {
+            trRows.push({ section_id: realId, language_code: 'es', name: s.name_es.trim() });
+          }
+        });
+        if (trRows.length > 0) {
+          const { error: trErr } = await supabase
+            .from('list_section_translations')
+            .upsert(trRows, { onConflict: 'section_id,language_code' });
+          if (trErr) throw trErr;
+        }
       }
 
       if (form.items.length > 0) {
@@ -859,6 +906,9 @@ const AdminBirthListForm: React.FC = () => {
                         <Button type="button" variant="ghost" size="icon" className="h-5 w-5" disabled={idx === sections.length - 1} onClick={() => moveSection(s.temp_id, 'down')}>
                           <ChevronDown className="h-3 w-3" />
                         </Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" title={lang === 'es' ? 'Traducciones' : 'Traduccions'} onClick={() => setTranslatingTempId(s.temp_id)}>
+                          <Globe className="h-3 w-3" />
+                        </Button>
                         <Button type="button" variant="ghost" size="icon" className="h-5 w-5" onClick={() => removeSection(s.temp_id)}>
                           <Trash2 className="h-3 w-3 text-destructive" />
                         </Button>
@@ -1168,6 +1218,52 @@ const AdminBirthListForm: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <Dialog open={!!translatingTempId} onOpenChange={(v) => !v && setTranslatingTempId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{lang === 'es' ? 'Traducciones de la familia' : 'Traduccions de la família'}</DialogTitle>
+          </DialogHeader>
+          {(() => {
+            const sec = sections.find(s => s.temp_id === translatingTempId);
+            if (!sec) return null;
+            const setName = (code: string, value: string) => {
+              setSections(prev => prev.map(x => {
+                if (x.temp_id !== sec.temp_id) return x;
+                const next: PendingSection = {
+                  ...x,
+                  translations: { ...x.translations, [code]: value },
+                };
+                if (code === 'ca') next.name_ca = value;
+                if (code === 'es') next.name_es = value;
+                return next;
+              }));
+            };
+            return (
+              <LanguageTabs>
+                {(code) => {
+                  const fallback = code === 'ca' ? sec.name_ca : code === 'es' ? sec.name_es : '';
+                  const value = sec.translations[code] ?? fallback ?? '';
+                  return (
+                    <div className="space-y-2">
+                      <Label className="text-xs">{lang === 'es' ? 'Nombre' : 'Nom'}</Label>
+                      <Input value={value} onChange={e => setName(code, e.target.value)} />
+                      <p className="text-[11px] text-muted-foreground">
+                        {lang === 'es'
+                          ? 'Se mostrará en la vista pública cuando el visitante use este idioma.'
+                          : 'Es mostrarà a la vista pública quan el visitant utilitzi aquest idioma.'}
+                      </p>
+                    </div>
+                  );
+                }}
+              </LanguageTabs>
+            );
+          })()}
+          <DialogFooter>
+            <Button onClick={() => setTranslatingTempId(null)}>{t('common.close', 'Tancar')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

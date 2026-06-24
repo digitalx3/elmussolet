@@ -274,6 +274,7 @@
     "smtp": "Servidor SMTP",
     "backups": "Còpies de seguretat",
     "languages": "Idiomes",
+    "translations": "Traduccions",
     "languagesTitle": "Idiomes",
     "languagesDesc": "Gestiona els idiomes disponibles a la botiga i a l'administració. Els idiomes activats es mostraran al selector d'idioma.",
     "addLanguage": "Nou idioma",
