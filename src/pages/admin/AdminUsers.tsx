@@ -376,7 +376,7 @@ const AdminUsers: React.FC = () => {
 
       {/* Create / Edit dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>{editMode ? 'Editar usuari' : 'Crear nou usuari'}</DialogTitle>
             <DialogDescription>
@@ -385,64 +385,108 @@ const AdminUsers: React.FC = () => {
                 : 'Es crearà un compte amb les credencials indicades.'}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            {!editMode && (
-              <div>
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
-                />
-              </div>
-            )}
+          <div className="space-y-4">
             <div>
-              <Label>Contrasenya {editMode && <span className="text-muted-foreground text-xs">(opcional)</span>}</Label>
-              <Input
-                type="text"
-                value={form.password}
-                onChange={e => setForm({ ...form, password: e.target.value })}
-                placeholder={editMode ? 'Deixa buit per no canviar' : ''}
-              />
-            </div>
-            <div>
-              <Label>Nom complet</Label>
-              <Input
-                value={form.full_name}
-                onChange={e => setForm({ ...form, full_name: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>Telèfon</Label>
-              <Input
-                value={form.phone}
-                onChange={e => setForm({ ...form, phone: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Rol</Label>
-                <select
-                  value={form.role}
-                  onChange={e => setForm({ ...form, role: e.target.value })}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="customer">Customer</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-              <div>
-                <Label>Idioma</Label>
-                <select
-                  value={form.preferred_language}
-                  onChange={e => setForm({ ...form, preferred_language: e.target.value })}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="ca">Català</option>
-                  <option value="es">Español</option>
-                </select>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Credencials</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Email</Label>
+                  <Input
+                    type="email"
+                    value={form.email}
+                    onChange={e => setForm({ ...form, email: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>Contrasenya {editMode && <span className="text-muted-foreground text-xs">(opcional)</span>}</Label>
+                  <Input
+                    type="text"
+                    value={form.password}
+                    onChange={e => setForm({ ...form, password: e.target.value })}
+                    placeholder={editMode ? 'Deixa buit per no canviar' : ''}
+                  />
+                </div>
               </div>
             </div>
+
+            <div>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Dades personals</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Nom complet</Label>
+                  <Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Telèfon</Label>
+                  <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Rol</Label>
+                  <select
+                    value={form.role}
+                    onChange={e => setForm({ ...form, role: e.target.value })}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="customer">Customer</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Idioma</Label>
+                  <select
+                    value={form.preferred_language}
+                    onChange={e => setForm({ ...form, preferred_language: e.target.value })}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="ca">Català</option>
+                    <option value="es">Español</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Dades fiscals</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>NIF/CIF</Label>
+                  <Input value={form.nif} onChange={e => setForm({ ...form, nif: e.target.value })} placeholder="12345678A" />
+                </div>
+                <div>
+                  <Label>Empresa</Label>
+                  <Input value={form.company_name} onChange={e => setForm({ ...form, company_name: e.target.value })} />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Adreça de facturació i enviament</h3>
+              <div className="space-y-3">
+                <div>
+                  <Label>Adreça (línia 1)</Label>
+                  <Input value={form.address_line1} onChange={e => setForm({ ...form, address_line1: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Adreça (línia 2)</Label>
+                  <Input value={form.address_line2} onChange={e => setForm({ ...form, address_line2: e.target.value })} />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label>Població</Label>
+                    <Input value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Codi postal</Label>
+                    <Input value={form.postal_code} onChange={e => setForm({ ...form, postal_code: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Província</Label>
+                    <Input value={form.province} onChange={e => setForm({ ...form, province: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {!editMode && (
               <div className="flex items-center gap-2 pt-2">
                 <Checkbox
