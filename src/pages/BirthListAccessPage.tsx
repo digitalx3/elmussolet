@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useListAccess } from '@/contexts/ListAccessContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import PublicListSteps from '@/components/list/PublicListSteps';
@@ -14,6 +15,7 @@ const BirthListAccessPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { setAccess } = useListAccess();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [listCode, setListCode] = useState('');
   const [password, setPassword] = useState('');
@@ -28,6 +30,12 @@ const BirthListAccessPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!listCode.trim() || !password.trim()) return;
+    if (!user) {
+      const redirect = encodeURIComponent(`/llista-naixement?code=${encodeURIComponent(listCode.trim())}`);
+      toast.error(t('list.loginRequired', 'Inicia sessió per accedir a la llista'));
+      navigate(`/login?redirect=${redirect}`);
+      return;
+    }
 
     setLoading(true);
     try {
