@@ -35,16 +35,36 @@ const AdminProductForm: React.FC = () => {
   const { data: brands = [] } = useBrands();
   const { data: variantTypes = [] } = useVariantTypes();
   const { data: taxRates = [] } = useActiveTaxRates();
+  const { data: languages = [] } = useLanguages({ onlyEnabled: true });
+  const { data: defaultLang } = useDefaultLanguage();
   const saveProduct = useSaveProduct();
+
+  const defaultCode = defaultLang?.code ?? languages[0]?.code ?? 'ca';
 
   const [form, setForm] = useState<ProductFormData>({
     slug: '', sku: '', base_price: 0, stock_quantity: 0, stock_status: 'in_stock',
     is_active: true, has_variants: false, weight_grams: 0,
     category_id: null, brand_id: null, tax_rate_id: null,
-    translations: { ca: { ...emptyTranslation }, es: { ...emptyTranslation } },
+    translations: {},
     images: [],
     variants: [],
   });
+
+  // Ensure an entry exists for every enabled language
+  useEffect(() => {
+    if (!languages.length) return;
+    setForm(prev => {
+      const next = { ...prev.translations };
+      let changed = false;
+      for (const lng of languages) {
+        if (!next[lng.code]) {
+          next[lng.code] = { ...emptyTranslation };
+          changed = true;
+        }
+      }
+      return changed ? { ...prev, translations: next } : prev;
+    });
+  }, [languages]);
 
   useEffect(() => {
     if (product && !isNew) {
