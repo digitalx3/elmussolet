@@ -207,13 +207,20 @@ const AdminSmtpSettings: React.FC = () => {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
-        <Button onClick={() => save.mutate()} disabled={save.isPending} className="gap-1">
-          {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Desar configuració
-        </Button>
-      </div>
+          <div className="flex justify-end">
+            <Button onClick={() => save.mutate()} disabled={save.isPending} className="gap-1">
+              {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Desar configuració
+            </Button>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="log" className="mt-4">
+          <SmtpLogPanel />
+        </TabsContent>
+      </Tabs>
     </div>
+
   );
 };
 
