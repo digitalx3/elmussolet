@@ -252,9 +252,14 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
         {/* Email change */}
         <div className="pt-6 border-t">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Correu electrònic</h3>
+          {pendingEmail && (
+            <div className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              Canvi pendent de confirmació: <strong>{pendingEmail}</strong>. Revisa la safata d'entrada (i la carpeta de correu brossa) per acabar el canvi. Fins llavors continuaràs entrant amb <strong>{currentEmail}</strong>.
+            </div>
+          )}
           <div className="grid sm:grid-cols-[1fr_auto] gap-3 items-end">
             <div>
-              <Label>Email</Label>
+              <Label>Email actual: <span className="font-mono text-foreground">{currentEmail}</span></Label>
               <Input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
               <p className="text-xs text-muted-foreground mt-1">Hauràs de confirmar el canvi des del nou correu.</p>
             </div>
@@ -263,6 +268,7 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
             </Button>
           </div>
         </div>
+
 
         {/* Password change */}
         <div className="pt-6 border-t">
