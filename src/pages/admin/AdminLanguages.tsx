@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Check, Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, Trash2, Check, Star, Languages as LanguagesIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguages } from '@/hooks/useLanguages';
 import { Button } from '@/components/ui/button';
