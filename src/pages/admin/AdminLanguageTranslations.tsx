@@ -159,6 +159,54 @@ const AdminLanguageTranslations: React.FC = () => {
     }
   };
 
+  // Chunked client-side translation with progress + per-chunk retry.
+  const CHUNK = 30;
+  async function translateChunked(
+    items: string[],
+    scope: string,
+    contextLabel: string,
+    onProgress: (done: number, errors: number) => void,
+  ): Promise<{ translations: string[]; errors: number }> {
+    const out: string[] = new Array(items.length).fill('');
+    let errors = 0;
+    let lastError = '';
+    const started = Date.now();
+    for (let i = 0; i < items.length; i += CHUNK) {
+      const chunk = items.slice(i, i + CHUNK);
+      try {
+        const data: any = await invokeWithRetry('ai-translate', {
+          items: chunk,
+          source_language: defaultCode,
+          target_language: code,
+          context: contextLabel,
+          scope,
+        });
+        const translations: string[] = data?.translations || [];
+        translations.forEach((tr, j) => { out[i + j] = tr ?? ''; });
+      } catch (e: any) {
+        errors += chunk.length;
+        lastError = String(e?.message || e);
+        console.error('chunk failed', e);
+      }
+      onProgress(Math.min(i + chunk.length, items.length), errors);
+    }
+    // Edge function already logs each call; client logs one overall summary for the operation
+    await logAiTranslation({
+      function_name: 'ai-translate',
+      scope: `${scope}:summary`,
+      source_language: defaultCode,
+      target_language: code,
+      items_count: items.length,
+      success_count: items.length - errors,
+      error_count: errors,
+      status: errors === 0 ? 'success' : (errors === items.length ? 'error' : 'partial'),
+      error_message: errors > 0 ? lastError.slice(0, 500) : null,
+      duration_ms: Date.now() - started,
+      metadata: { chunk_size: CHUNK, chunks: Math.ceil(items.length / CHUNK) },
+    });
+    return { translations: out, errors };
+  }
+
   const aiTranslateUi = async (onlyEmpty: boolean) => {
     if (!aiReady) {
       toast({ title: t('admin.aiNotReady', "Configura primer un proveïdor d'IA"), variant: 'destructive' });
@@ -170,26 +218,52 @@ const AdminLanguageTranslations: React.FC = () => {
       return;
     }
     setTranslatingUi(true);
+    setUiProgress({ done: 0, total: targets.length, errors: 0 });
+    setLastSummary(null);
+    const started = Date.now();
     try {
       const items = targets.map(k => sourceFlat[k] || '');
-      const { data, error } = await supabase.functions.invoke('ai-translate', {
-        body: {
-          items,
-          source_language: defaultCode,
-          target_language: code,
-          context: `Ecommerce UI strings (baby & childcare). Keys e.g. ${targets.slice(0, 3).join(', ')}`,
-        },
-      });
-      if (error) throw error;
-      const translations: string[] = data?.translations || [];
+      const { translations, errors } = await translateChunked(
+        items,
+        'ui',
+        `Ecommerce UI strings (baby & childcare). Keys e.g. ${targets.slice(0, 3).join(', ')}`,
+        (done, err) => setUiProgress({ done, total: items.length, errors: err }),
+      );
       const next = { ...uiValues };
-      targets.forEach((k, i) => { if (translations[i] != null) next[k] = translations[i]; });
+      targets.forEach((k, i) => { if (translations[i]) next[k] = translations[i]; });
       setUiValues(next);
-      toast({ title: t('admin.aiTrUiDone', `${translations.length} cadenes traduïdes amb IA`) });
+      const translated = items.length - errors;
+      setLastSummary({
+        scope: 'ui',
+        label: t('admin.aiTrTabUi', 'Interfície'),
+        translated,
+        failed: errors,
+        total: items.length,
+        durationMs: Date.now() - started,
+      });
+      if (errors > 0) {
+        toast({
+          title: `Traducció parcial: ${translated}/${items.length}. ${errors} amb errors.`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({ title: t('admin.aiTrUiDone', `${translated} cadenes traduïdes amb IA`) });
+      }
     } catch (e: any) {
-      toast({ title: e?.message || 'Error', variant: 'destructive' });
+      const msg = e?.message || 'Error';
+      setLastSummary({
+        scope: 'ui',
+        label: t('admin.aiTrTabUi', 'Interfície'),
+        translated: 0,
+        failed: targets.length,
+        total: targets.length,
+        durationMs: Date.now() - started,
+        error: msg,
+      });
+      toast({ title: msg, variant: 'destructive' });
     } finally {
       setTranslatingUi(false);
+      setTimeout(() => setUiProgress(null), 1500);
     }
   };
 
@@ -200,8 +274,10 @@ const AdminLanguageTranslations: React.FC = () => {
       return;
     }
     setAiBusy(def.table);
+    setDynProgress({ table: def.table, done: 0, total: 0, errors: 0 });
+    setLastSummary(null);
+    const started = Date.now();
     try {
-      // Load all source rows in default language
       const cols = ['id', def.fkColumn, ...def.fields.map(f => f.col)];
       const { data: sourceRows, error: srcErr } = await supabase
         .from(def.table as any)
@@ -219,10 +295,10 @@ const AdminLanguageTranslations: React.FC = () => {
 
       if (missing.length === 0) {
         toast({ title: t('admin.aiTrNoMissing', 'Tot ja està traduït') });
+        setDynProgress(null);
         return;
       }
 
-      // Flatten all fields into one big batch with markers so we can recompose
       const flatItems: string[] = [];
       const map: { rowIdx: number; field: string }[] = [];
       missing.forEach((r: any, rowIdx: number) => {
@@ -237,44 +313,76 @@ const AdminLanguageTranslations: React.FC = () => {
 
       if (flatItems.length === 0) {
         toast({ title: t('admin.aiTrNoMissing', 'No hi ha contingut origen per traduir') });
+        setDynProgress(null);
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('ai-translate', {
-        body: {
-          items: flatItems,
-          source_language: defaultCode,
-          target_language: code,
-          context: `Ecommerce ${def.label}. Some fields contain HTML; preserve tags.`,
-        },
-      });
-      if (error) throw error;
-      const translations: string[] = data?.translations || [];
+      setDynProgress({ table: def.table, done: 0, total: flatItems.length, errors: 0 });
+      const { translations, errors } = await translateChunked(
+        flatItems,
+        def.table,
+        `Ecommerce ${def.label}. Some fields contain HTML; preserve tags.`,
+        (done, err) => setDynProgress({ table: def.table, done, total: flatItems.length, errors: err }),
+      );
 
-      // Rebuild rows
       const updates: Record<number, Record<string, string>> = {};
       map.forEach((m, i) => {
         updates[m.rowIdx] = updates[m.rowIdx] || {};
         updates[m.rowIdx][m.field] = translations[i] || '';
       });
 
-      const insertRows = missing.map((r: any, idx: number) => {
-        const base: any = { [def.fkColumn]: r[def.fkColumn], [def.langColumn]: code };
-        const fields = updates[idx] || {};
-        for (const f of def.fields) base[f.col] = fields[f.col] ?? r[f.col] ?? '';
-        return base;
+      const insertRows = missing
+        .map((r: any, idx: number) => {
+          const base: any = { [def.fkColumn]: r[def.fkColumn], [def.langColumn]: code };
+          const fields = updates[idx] || {};
+          for (const f of def.fields) base[f.col] = fields[f.col] ?? r[f.col] ?? '';
+          // Skip rows where no field got translated (full failure)
+          const hasContent = def.fields.some(f => (base[f.col] || '').toString().trim());
+          return hasContent ? base : null;
+        })
+        .filter(Boolean);
+
+      if (insertRows.length > 0) {
+        const { error: insErr } = await supabase.from(def.table as any).insert(insertRows);
+        if (insErr) throw insErr;
+      }
+
+      setLastSummary({
+        scope: def.table,
+        label: def.label,
+        translated: insertRows.length,
+        failed: missing.length - insertRows.length,
+        total: missing.length,
+        durationMs: Date.now() - started,
+        error: errors > 0 ? `${errors} camp(s) sense traduir` : undefined,
       });
 
-      const { error: insErr } = await supabase.from(def.table as any).insert(insertRows);
-      if (insErr) throw insErr;
-
-      toast({ title: `${insertRows.length} ${def.label.toLowerCase()} traduïts amb IA` });
+      if (errors > 0) {
+        toast({
+          title: `${insertRows.length}/${missing.length} ${def.label.toLowerCase()} traduïts. ${errors} camps fallits.`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({ title: `${insertRows.length} ${def.label.toLowerCase()} traduïts amb IA` });
+      }
     } catch (e: any) {
-      toast({ title: e?.message || 'Error', variant: 'destructive' });
+      const msg = e?.message || 'Error';
+      setLastSummary({
+        scope: def.table,
+        label: def.label,
+        translated: 0,
+        failed: 0,
+        total: 0,
+        durationMs: Date.now() - started,
+        error: msg,
+      });
+      toast({ title: msg, variant: 'destructive' });
     } finally {
       setAiBusy(null);
+      setTimeout(() => setDynProgress(null), 1500);
     }
   };
+
 
   if (!lang) {
     return (
