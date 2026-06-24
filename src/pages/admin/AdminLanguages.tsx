@@ -131,6 +131,11 @@ const AdminLanguages: React.FC = () => {
                   )}
                 </TableCell>
                 <TableCell className="text-right">
+                  <Button asChild size="sm" variant="ghost" title={t('admin.aiTrTitle', 'Traduccions')}>
+                    <Link to={`/admin/idiomes/${l.code}/traduccions`}>
+                      <LanguagesIcon className="h-4 w-4" />
+                    </Link>
+                  </Button>
                   <Button size="sm" variant="ghost" disabled={l.is_default} onClick={() => remove(l.code)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
