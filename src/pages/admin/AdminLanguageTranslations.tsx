@@ -1,18 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Sparkles, Save, Search, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, Save, Search, Loader2, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import i18n from '@/i18n';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguages } from '@/hooks/useLanguages';
 import { useAiProvider, isAiReady } from '@/hooks/useAiProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import ca from '@/locales/ca.json';
 import es from '@/locales/es.json';
 import { flattenTranslations, type FlatTranslations } from '@/lib/translationFlatten';
+import { invokeWithRetry, logAiTranslation } from '@/lib/aiTranslationLog';
 
 const BUNDLED: Record<string, FlatTranslations> = {
   ca: flattenTranslations(ca),
