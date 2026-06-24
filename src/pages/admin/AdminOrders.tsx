@@ -220,6 +220,41 @@ const AdminOrders: React.FC = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const deleteOrderMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      // Fetch all items so we can delete them one-by-one and let the
+      // order_items_stock_trigger restore stock / unlock list items.
+      const { data: items, error: itemsErr } = await supabase
+        .from('order_items')
+        .select('id')
+        .eq('order_id', orderId);
+      if (itemsErr) throw itemsErr;
+
+      for (const it of items || []) {
+        const { error: delErr } = await supabase
+          .from('order_items')
+          .delete()
+          .eq('id', it.id);
+        if (delErr) throw delErr;
+      }
+
+      const { error: ordErr } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+      if (ordErr) throw ordErr;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-orders'] });
+      qc.invalidateQueries({ queryKey: ['admin-order-items'] });
+      qc.invalidateQueries({ queryKey: ['admin-stock-movements'] });
+      setSelectedOrder(null);
+      setEditing(false);
+      toast.success(t('admin.orderDeleted', 'Comanda eliminada i estoc alliberat'));
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const addItemMutation = useMutation({
     mutationFn: async (product: any) => {
       if (!selectedOrder) return;
@@ -414,9 +449,35 @@ const AdminOrders: React.FC = () => {
                 </TableCell>
                 <TableCell className="text-right font-medium">{formatPrice(order.total)}</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => setSelectedOrder(order)}>
-                    <Eye className="h-4 w-4" />
-                  </Button>
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => setSelectedOrder(order)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" title={t('admin.deleteOrder', 'Eliminar comanda')}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{t('admin.confirmDeleteOrderTitle', 'Eliminar comanda?')}</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {t('admin.confirmDeleteOrderDesc', 'S\'eliminarà la comanda {{n}} de manera permanent. L\'estoc dels productes es retornarà i, si pertany a una llista, els articles quedaran desbloquejats. Aquesta acció no es pot desfer.', { n: order.order_number })}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel disabled={deleteOrderMutation.isPending}>{t('common.cancel')}</AlertDialogCancel>
+                          <AlertDialogAction
+                            disabled={deleteOrderMutation.isPending}
+                            onClick={() => deleteOrderMutation.mutate(order.id)}
+                          >
+                            {t('common.delete', 'Eliminar')}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -442,6 +503,34 @@ const AdminOrders: React.FC = () => {
                   {format(new Date(selectedOrder.created_at), "d MMMM yyyy, HH:mm", { locale: dateFnsLocale })}
                 </DialogDescription>
               </DialogHeader>
+
+              <div className="flex justify-end -mt-2">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" className="gap-1">
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {t('admin.deleteOrder', 'Eliminar comanda')}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t('admin.confirmDeleteOrderTitle', 'Eliminar comanda?')}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {t('admin.confirmDeleteOrderDesc', 'S\'eliminarà la comanda {{n}} de manera permanent. L\'estoc dels productes es retornarà i, si pertany a una llista, els articles quedaran desbloquejats. Aquesta acció no es pot desfer.', { n: selectedOrder.order_number })}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={deleteOrderMutation.isPending}>{t('common.cancel')}</AlertDialogCancel>
+                      <AlertDialogAction
+                        disabled={deleteOrderMutation.isPending}
+                        onClick={() => deleteOrderMutation.mutate(selectedOrder.id)}
+                      >
+                        {t('common.delete', 'Eliminar')}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
 
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div>
