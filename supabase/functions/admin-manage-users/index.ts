@@ -183,43 +183,76 @@ Deno.serve(async (req: Request) => {
       }
 
       // HARD delete: wipe related data first, then the auth user.
-      // 1) Orders + order_items
-      const { data: ordersToDelete } = await admin
-        .from("orders").select("id").eq("user_id", body.user_id);
-      const orderIds = (ordersToDelete || []).map((o: any) => o.id);
-      if (orderIds.length > 0) {
-        await admin.from("order_items").delete().in("order_id", orderIds);
-        await admin.from("orders").delete().in("id", orderIds);
-      }
-
-      // 2) Birth lists owned by this user (list_owners + list_items + list_sections + birth_lists)
-      const { data: ownerRows } = await admin
-        .from("list_owners").select("list_id").eq("user_id", body.user_id);
-      const ownedListIds = Array.from(new Set((ownerRows || []).map((r: any) => r.list_id)));
-
-      // Remove this user's ownership rows
-      await admin.from("list_owners").delete().eq("user_id", body.user_id);
-
-      // For lists with no remaining owners, fully wipe them
-      if (ownedListIds.length > 0) {
-        const { data: remaining } = await admin
-          .from("list_owners").select("list_id").in("list_id", ownedListIds);
-        const stillOwned = new Set((remaining || []).map((r: any) => r.list_id));
-        const orphanLists = ownedListIds.filter(id => !stillOwned.has(id));
-        if (orphanLists.length > 0) {
-          await admin.from("list_items").delete().in("list_id", orphanLists);
-          await admin.from("list_sections").delete().in("list_id", orphanLists);
-          await admin.from("birth_lists").delete().in("id", orphanLists);
+      const step = async (label: string, fn: () => Promise<any>) => {
+        const res = await fn();
+        if (res?.error) {
+          console.error(`hard-delete step "${label}" failed`, res.error);
+          throw new Error(`${label}: ${res.error.message || res.error}`);
         }
+        return res;
+      };
+
+      try {
+        // 1) Orders + order_items owned by this user
+        const { data: ordersToDelete } = await admin
+          .from("orders").select("id").eq("user_id", body.user_id);
+        const orderIds = (ordersToDelete || []).map((o: any) => o.id);
+        if (orderIds.length > 0) {
+          await step("delete user order_items", () =>
+            admin.from("order_items").delete().in("order_id", orderIds));
+          await step("delete user orders", () =>
+            admin.from("orders").delete().in("id", orderIds));
+        }
+
+        // 2) Birth lists owned by this user
+        const { data: ownerRows } = await admin
+          .from("list_owners").select("list_id").eq("user_id", body.user_id);
+        const ownedListIds = Array.from(new Set((ownerRows || []).map((r: any) => r.list_id)));
+
+        await step("delete list_owners (self)", () =>
+          admin.from("list_owners").delete().eq("user_id", body.user_id));
+
+        // For lists with no remaining owners, fully wipe them
+        if (ownedListIds.length > 0) {
+          const { data: remaining } = await admin
+            .from("list_owners").select("list_id").in("list_id", ownedListIds);
+          const stillOwned = new Set((remaining || []).map((r: any) => r.list_id));
+          const orphanLists = ownedListIds.filter((id) => !stillOwned.has(id));
+          if (orphanLists.length > 0) {
+            // Other users may have placed orders on these lists; detach + wipe them
+            const { data: relatedOrders } = await admin
+              .from("orders").select("id").in("list_id", orphanLists);
+            const relOrderIds = (relatedOrders || []).map((o: any) => o.id);
+            if (relOrderIds.length > 0) {
+              await step("delete orphan-list order_items", () =>
+                admin.from("order_items").delete().in("order_id", relOrderIds));
+              await step("delete orphan-list orders", () =>
+                admin.from("orders").delete().in("id", relOrderIds));
+            }
+            await step("delete list_items", () =>
+              admin.from("list_items").delete().in("list_id", orphanLists));
+            await step("delete list_sections", () =>
+              admin.from("list_sections").delete().in("list_id", orphanLists));
+            await step("delete birth_lists", () =>
+              admin.from("birth_lists").delete().in("id", orphanLists));
+          }
+        }
+
+        // 3) Birth lists created by admin on behalf of this user
+        await step("null birth_lists.created_by", () =>
+          admin.from("birth_lists").update({ created_by: null }).eq("created_by", body.user_id));
+
+        // 4) Finally delete the auth user (profile cascades via FK)
+        const { error: delErr } = await admin.auth.admin.deleteUser(body.user_id);
+        if (delErr) {
+          console.error("auth.admin.deleteUser failed", delErr);
+          return json({ error: `No s'ha pogut eliminar l'usuari d'autenticació: ${delErr.message}` }, 200);
+        }
+        return json({ ok: true, mode: "hard" });
+      } catch (e: any) {
+        console.error("hard delete failed", e);
+        return json({ error: e?.message || "Error eliminant l'usuari permanentment" }, 200);
       }
-
-      // 3) Birth lists created by admin on behalf of this user (created_by)
-      await admin.from("birth_lists").update({ created_by: null }).eq("created_by", body.user_id);
-
-      // 4) Finally delete the auth user (profile cascades via FK)
-      const { error } = await admin.auth.admin.deleteUser(body.user_id);
-      if (error) throw error;
-      return json({ ok: true, mode: "hard" });
     }
 
     if (body.action === "restore") {
