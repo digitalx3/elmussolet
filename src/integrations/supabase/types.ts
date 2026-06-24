@@ -480,6 +480,68 @@ export type Database = {
         }
         Relationships: []
       }
+      default_list_section_translations: {
+        Row: {
+          created_at: string
+          id: string
+          language: string
+          name: string
+          section_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language: string
+          name: string
+          section_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string
+          name?: string
+          section_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "default_list_section_translations_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "default_list_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      default_list_sections: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hero_slide_translations: {
         Row: {
           badge_text: string | null
