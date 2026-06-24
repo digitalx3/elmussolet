@@ -27,6 +27,7 @@ import AdminSmtpSettings from '@/pages/admin/AdminSmtpSettings';
 import AdminBackups from '@/pages/admin/AdminBackups';
 import AdminMaintenance from '@/pages/admin/AdminMaintenance';
 import AdminLanguages from '@/pages/admin/AdminLanguages';
+import AdminDefaultListSections from '@/pages/admin/AdminDefaultListSections';
 
 const AdminPlaceholder: React.FC<{ titleKey: string }> = ({ titleKey }) => {
   const { t } = useTranslation();
@@ -70,6 +71,7 @@ const AdminDashboard: React.FC = () => {
         <Route path="backups" element={<AdminBackups />} />
         <Route path="manteniment" element={<AdminMaintenance />} />
         <Route path="idiomes" element={<AdminLanguages />} />
+        <Route path="families-defecte" element={<AdminDefaultListSections />} />
       </Routes>
     </AdminLayout>
   );
