@@ -233,19 +233,20 @@ const AdminAiHistory: React.FC = () => {
               <TableHead className="text-right">Durada</TableHead>
               <TableHead>Estat</TableHead>
               <TableHead>Error</TableHead>
+              <TableHead className="text-right">Accions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground py-6">
+                <TableCell colSpan={11} className="text-center text-muted-foreground py-6">
                   Carregant...
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground py-6">
+                <TableCell colSpan={11} className="text-center text-muted-foreground py-6">
                   Sense registres.
                 </TableCell>
               </TableRow>
@@ -282,6 +283,26 @@ const AdminAiHistory: React.FC = () => {
                         ? `${r.error_message.slice(0, 100)}…`
                         : r.error_message}
                     </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  {canRetry(r) ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleRetry(r)}
+                      disabled={retryingId === r.id}
+                      title={
+                        r.function_name === 'ai-translate'
+                          ? `Reintenta ${r.metadata?.failed_items?.length || 0} elements fallits`
+                          : 'Reintenta la generació'
+                      }
+                    >
+                      <RotateCw className={cn('h-3 w-3 mr-1', retryingId === r.id && 'animate-spin')} />
+                      {retryingId === r.id ? 'Reintentant…' : 'Reintentar'}
+                    </Button>
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>
                   )}
