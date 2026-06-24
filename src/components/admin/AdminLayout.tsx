@@ -147,16 +147,12 @@ function AdminSidebar() {
     path === '/admin' ? pathname === '/admin' : pathname === path || pathname.startsWith(path + '/');
 
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>(() => {
-    let saved: Record<string, boolean> = {};
-    try {
-      const raw = localStorage.getItem(GROUPS_STORAGE_KEY);
-      if (raw) saved = JSON.parse(raw) ?? {};
-    } catch {
-      /* ignore */
-    }
+    const saved = readStoredGroups();
     const initial: Record<string, boolean> = {};
     groups.forEach(g => {
-      initial[g.id] = saved[g.id] ?? g.items.some(i => isItemActive(i.path));
+      initial[g.id] = typeof saved[g.id] === 'boolean'
+        ? saved[g.id]
+        : g.items.some(i => isItemActive(i.path));
     });
     return initial;
   });
