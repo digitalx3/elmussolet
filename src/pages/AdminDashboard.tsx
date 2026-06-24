@@ -29,6 +29,8 @@ import AdminMaintenance from '@/pages/admin/AdminMaintenance';
 import AdminLanguages from '@/pages/admin/AdminLanguages';
 import AdminDefaultListSections from '@/pages/admin/AdminDefaultListSections';
 import AdminTranslations from '@/pages/admin/AdminTranslations';
+import AdminAiSettings from '@/pages/admin/AdminAiSettings';
+import AdminLanguageTranslations from '@/pages/admin/AdminLanguageTranslations';
 
 const AdminPlaceholder: React.FC<{ titleKey: string }> = ({ titleKey }) => {
   const { t } = useTranslation();
