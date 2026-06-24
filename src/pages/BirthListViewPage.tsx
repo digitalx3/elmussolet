@@ -73,53 +73,28 @@ const BirthListViewPage: React.FC = () => {
   const fetchListItems = async () => {
     setLoading(true);
     try {
-      const [{ data, error }, { data: secData }] = await Promise.all([
-        supabase
-          .from('list_items')
-          .select(`
-            id, product_id, variant_id, section_id, quantity_desired, quantity_purchased, priority, sort_order,
-            product:products(
-              id, slug, base_price, has_variants, stock_quantity, stock_status,
-              product_translations(language, name, short_description),
-              product_images(image_url, is_primary, alt_text),
-              tax_rates(percentage)
-            )
-          `)
-          .eq('list_id', listId!)
-          .order('sort_order', { ascending: true }),
-        supabase
-          .from('list_sections')
-          .select('id, name_ca, name_es, sort_order')
-          .eq('list_id', listId!)
-          .order('sort_order', { ascending: true }),
-      ]);
-
+      // Public registry data is fetched through an edge function so the tightened
+      // RLS on list_items / list_sections cannot expose other lists to gift buyers.
+      const { data, error } = await supabase.functions.invoke('get-public-list-data', {
+        body: { listCode: (listCode || '').trim(), token },
+      });
       if (error) throw error;
-      setSections((secData as ListSection[]) || []);
+      if ((data as any)?.error) throw new Error((data as any).error);
 
-      // Fetch variant info for items with variants
-      const withVariants = await Promise.all(
-        (data || []).map(async (item: any) => {
-          let variant = null;
-          if (item.variant_id) {
-            const { data: v } = await supabase
-              .from('product_variants')
-              .select('id, value, price_override, stock_quantity, variant_type_id')
-              .eq('id', item.variant_id)
-              .single();
-            variant = v;
-          }
-          return { ...item, variant } as ListItemWithProduct;
-        })
-      );
+      const payload = data as {
+        items: ListItemWithProduct[];
+        sections: ListSection[];
+        blockSummary: Array<{ list_item_id: string; reserved_qty: number; delivered_qty: number }>;
+      };
 
-      setItems(withVariants);
+      setSections(payload.sections || []);
+      setItems(payload.items || []);
 
-      // Fetch block summary (reserved vs delivered per list_item)
-      const { data: summary } = await supabase.rpc('get_list_block_summary', { _list_id: listId! });
       const map: Record<string, { reserved: number; delivered: number }> = {};
-      (summary || []).forEach((r: any) => {
-        if (r.list_item_id) map[r.list_item_id] = { reserved: r.reserved_qty ?? 0, delivered: r.delivered_qty ?? 0 };
+      (payload.blockSummary || []).forEach((r) => {
+        if (r.list_item_id) {
+          map[r.list_item_id] = { reserved: r.reserved_qty ?? 0, delivered: r.delivered_qty ?? 0 };
+        }
       });
       setBlockSummary(map);
     } catch {
@@ -128,6 +103,7 @@ const BirthListViewPage: React.FC = () => {
       setLoading(false);
     }
   };
+
 
 
   const getProductName = (item: ListItemWithProduct) => {
