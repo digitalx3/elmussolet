@@ -49,12 +49,16 @@ const ProductsTranslationsPanel: React.FC = () => {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { data: languages = [] } = useLanguages({ onlyEnabled: true });
+  const { data: defaultLang } = useDefaultLanguage();
+  const primaryCode = defaultLang?.code || languages[0]?.code || 'ca';
   const lang = (i18n.language || 'ca').slice(0, 2);
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [drafts, setDrafts] = useState<DraftMap>({});
   const [savingId, setSavingId] = useState<string | null>(null);
+  // productId -> { code -> { field -> message } }
+  const [fieldErrors, setFieldErrors] = useState<Record<string, Record<string, Record<string, string>>>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-translations-products', { search, page }],
