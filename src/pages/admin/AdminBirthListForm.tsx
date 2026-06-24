@@ -765,7 +765,7 @@ const AdminBirthListForm: React.FC = () => {
                     </div>
 
                     <AlertDialogFooter>
-                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                      <AlertDialogCancel disabled={deleting}>{t('common.cancel')}</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={performDelete}
                         disabled={deleting || !canConfirmDelete}
