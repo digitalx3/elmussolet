@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, GripVertical, Upload, Star } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, GripVertical, Upload, Star, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +23,33 @@ import { useLanguages, useDefaultLanguage } from '@/hooks/useLanguages';
 import LanguageTabs from '@/components/admin/LanguageTabs';
 
 const emptyTranslation = { name: '', short_description: '', description: '' };
+
+const MAX_NAME = 200;
+const MAX_SHORT = 500;
+const MAX_DESC = 5000;
+
+type TranslationFieldErrors = { name?: string; short_description?: string; description?: string };
+type TranslationErrors = Record<string, TranslationFieldErrors>;
+
+function validateTranslation(
+  tr: { name: string; short_description: string; description: string },
+  opts: { requireName: boolean; langLabel: string }
+): TranslationFieldErrors {
+  const errs: TranslationFieldErrors = {};
+  const name = (tr.name ?? '').trim();
+  if (opts.requireName && !name) {
+    errs.name = `El nom és obligatori (${opts.langLabel})`;
+  } else if (name.length > MAX_NAME) {
+    errs.name = `Màx. ${MAX_NAME} caràcters`;
+  }
+  if ((tr.short_description ?? '').length > MAX_SHORT) {
+    errs.short_description = `Màx. ${MAX_SHORT} caràcters`;
+  }
+  if ((tr.description ?? '').length > MAX_DESC) {
+    errs.description = `Màx. ${MAX_DESC} caràcters`;
+  }
+  return errs;
+}
 
 const AdminProductForm: React.FC = () => {
   const { t } = useTranslation();
@@ -49,6 +76,9 @@ const AdminProductForm: React.FC = () => {
     images: [],
     variants: [],
   });
+
+  const [translationErrors, setTranslationErrors] = useState<TranslationErrors>({});
+  const [activeLang, setActiveLang] = useState<string | undefined>(undefined);
 
   // Ensure an entry exists for every enabled language
   useEffect(() => {
@@ -109,7 +139,7 @@ const AdminProductForm: React.FC = () => {
   const updateField = <K extends keyof ProductFormData>(key: K, value: ProductFormData[K]) =>
     setForm(prev => ({ ...prev, [key]: value }));
 
-  const updateTranslation = (lang: string, field: string, value: string) =>
+  const updateTranslation = (lang: string, field: string, value: string) => {
     setForm(prev => ({
       ...prev,
       translations: {
@@ -117,6 +147,14 @@ const AdminProductForm: React.FC = () => {
         [lang]: { ...(prev.translations[lang] ?? emptyTranslation), [field]: value },
       },
     }));
+    // Clear the specific field error as the user edits it
+    setTranslationErrors(prev => {
+      if (!prev[lang]?.[field as keyof TranslationFieldErrors]) return prev;
+      const langErrs = { ...prev[lang] };
+      delete langErrs[field as keyof TranslationFieldErrors];
+      return { ...prev, [lang]: langErrs };
+    });
+  };
 
   // Auto-generate slug from the default language name
   const autoSlug = () => {
@@ -195,11 +233,32 @@ const AdminProductForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const defaultName = form.translations[defaultCode]?.name?.trim();
-    if (!defaultName || !form.slug || !form.sku) {
-      toast.error(`Omple els camps obligatoris: nom (${defaultCode.toUpperCase()}), slug i SKU`);
+
+    // Validate each enabled language
+    const newErrors: TranslationErrors = {};
+    let firstInvalidLang: string | null = null;
+    for (const lng of languages) {
+      const tr = form.translations[lng.code] ?? emptyTranslation;
+      const langLabel = (lng.native_name || lng.name || lng.code).toString();
+      const errs = validateTranslation(tr, { requireName: true, langLabel });
+      if (Object.keys(errs).length > 0) {
+        newErrors[lng.code] = errs;
+        if (!firstInvalidLang) firstInvalidLang = lng.code;
+      }
+    }
+    setTranslationErrors(newErrors);
+
+    if (firstInvalidLang) {
+      setActiveLang(firstInvalidLang);
+      toast.error('Revisa les traduccions: hi ha camps amb errors.');
       return;
     }
+
+    if (!form.slug || !form.sku) {
+      toast.error('Omple els camps obligatoris: slug i SKU');
+      return;
+    }
+
     try {
       await saveProduct.mutateAsync({ id: isNew ? undefined : id, data: form });
       toast.success(isNew ? 'Producte creat' : 'Producte actualitzat');
@@ -238,27 +297,49 @@ const AdminProductForm: React.FC = () => {
       <Card>
         <CardHeader><CardTitle>Traduccions</CardTitle></CardHeader>
         <CardContent>
-          <LanguageTabs>
+          <LanguageTabs value={activeLang} onChange={setActiveLang}>
             {(lang) => {
               const tr = form.translations[lang] ?? emptyTranslation;
-              const isDefault = lang === defaultCode;
+              const errs = translationErrors[lang] ?? {};
               return (
                 <div className="space-y-4">
                   <div>
-                    <Label>Nom {isDefault && '*'}</Label>
+                    <Label>Nom *</Label>
                     <Input
                       value={tr.name}
                       onChange={e => updateTranslation(lang, 'name', e.target.value)}
-                      onBlur={isDefault ? autoSlug : undefined}
+                      onBlur={lang === defaultCode ? autoSlug : undefined}
                       placeholder={`Nom (${lang.toUpperCase()})`}
+                      maxLength={MAX_NAME}
+                      aria-invalid={!!errs.name}
+                      className={cn(errs.name && 'border-destructive focus-visible:ring-destructive')}
                     />
+                    <div className="flex justify-between mt-1">
+                      {errs.name ? (
+                        <p className="text-[11px] text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" /> {errs.name}
+                        </p>
+                      ) : <span />}
+                      <span className="text-[11px] text-muted-foreground">{tr.name.length}/{MAX_NAME}</span>
+                    </div>
                   </div>
                   <div>
                     <Label>Descripció curta</Label>
                     <Input
                       value={tr.short_description}
                       onChange={e => updateTranslation(lang, 'short_description', e.target.value)}
+                      maxLength={MAX_SHORT}
+                      aria-invalid={!!errs.short_description}
+                      className={cn(errs.short_description && 'border-destructive focus-visible:ring-destructive')}
                     />
+                    <div className="flex justify-between mt-1">
+                      {errs.short_description ? (
+                        <p className="text-[11px] text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" /> {errs.short_description}
+                        </p>
+                      ) : <span />}
+                      <span className="text-[11px] text-muted-foreground">{tr.short_description.length}/{MAX_SHORT}</span>
+                    </div>
                   </div>
                   <div>
                     <Label>Descripció</Label>
@@ -266,7 +347,18 @@ const AdminProductForm: React.FC = () => {
                       value={tr.description}
                       onChange={e => updateTranslation(lang, 'description', e.target.value)}
                       rows={5}
+                      maxLength={MAX_DESC}
+                      aria-invalid={!!errs.description}
+                      className={cn(errs.description && 'border-destructive focus-visible:ring-destructive')}
                     />
+                    <div className="flex justify-between mt-1">
+                      {errs.description ? (
+                        <p className="text-[11px] text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" /> {errs.description}
+                        </p>
+                      ) : <span />}
+                      <span className="text-[11px] text-muted-foreground">{tr.description.length}/{MAX_DESC}</span>
+                    </div>
                   </div>
                 </div>
               );
