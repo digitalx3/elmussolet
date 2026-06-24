@@ -33,10 +33,7 @@ const AdminDefaultHeroForm: React.FC = () => {
     2: { ...DEFAULT_HERO, enabled: false },
   });
   const [uploading, setUploading] = useState<'image' | 'logo' | null>(null);
-
-  const state = states[activeVariant];
-  const set = <K extends keyof HeroState>(k: K, v: HeroState[K]) =>
-    setStates((s) => ({ ...s, [activeVariant]: { ...s[activeVariant], [k]: v } }));
+  const [pending, setPending] = useState<{ image?: { file: File; url: string }; logo?: { file: File; url: string } }>({});
 
   const { data: existing } = useQuery({
     queryKey: ['default-hero-overrides-all'],
@@ -65,9 +62,43 @@ const AdminDefaultHeroForm: React.FC = () => {
 
   const currentKey = activeVariant === 1 ? DEFAULT_HERO_OVERRIDES_KEY : DEFAULT_HERO_OVERRIDES_KEY_2;
 
-  const upload = async (kind: 'image' | 'logo', rawFile: File) => {
+
+  const state = states[activeVariant];
+  const set = <K extends keyof HeroState>(k: K, v: HeroState[K]) =>
+    setStates((s) => ({ ...s, [activeVariant]: { ...s[activeVariant], [k]: v } }));
+
+  // Clear pending previews when switching variant
+  useEffect(() => {
+    setPending((p) => {
+      if (p.image) URL.revokeObjectURL(p.image.url);
+      if (p.logo) URL.revokeObjectURL(p.logo.url);
+      return {};
+    });
+  }, [activeVariant]);
+
+  const pickFile = (kind: 'image' | 'logo', rawFile: File) => {
+    setPending((p) => {
+      const prev = p[kind];
+      if (prev) URL.revokeObjectURL(prev.url);
+      return { ...p, [kind]: { file: rawFile, url: URL.createObjectURL(rawFile) } };
+    });
+  };
+
+  const cancelPending = (kind: 'image' | 'logo') => {
+    setPending((p) => {
+      const prev = p[kind];
+      if (prev) URL.revokeObjectURL(prev.url);
+      const { [kind]: _, ...rest } = p;
+      return rest;
+    });
+  };
+
+  const confirmUpload = async (kind: 'image' | 'logo') => {
+    const item = pending[kind];
+    if (!item) return;
     setUploading(kind);
     try {
+      const rawFile = item.file;
       const file = rawFile.type === 'image/svg+xml'
         ? rawFile
         : await optimizeImage(rawFile, {
@@ -83,7 +114,8 @@ const AdminDefaultHeroForm: React.FC = () => {
       const { data } = supabase.storage.from('site-assets').getPublicUrl(path);
       if (kind === 'image') set('image_url', data.publicUrl);
       else set('card_logo_url', data.publicUrl);
-      toast.success('Imatge pujada');
+      cancelPending(kind);
+      toast.success('Imatge pujada. Recorda desar els canvis.');
     } catch (e) {
       console.error(e);
       toast.error('Error pujant la imatge');
@@ -269,24 +301,43 @@ const AdminDefaultHeroForm: React.FC = () => {
 
             <div>
               <Label className="text-xs mb-1 block">Imatge principal</Label>
-              {state.image_url && (
+              {(pending.image || state.image_url) && (
                 <div className="mb-2 relative aspect-video rounded overflow-hidden border border-border">
-                  <img src={state.image_url} alt="" className="w-full h-full object-cover" />
+                  <img src={pending.image?.url ?? state.image_url ?? ''} alt="" className="w-full h-full object-cover" />
+                  {pending.image && (
+                    <div className="absolute top-2 left-2 bg-amber-500/95 text-white text-[10px] font-semibold px-2 py-0.5 rounded">
+                      VISTA PRÈVIA — sense pujar
+                    </div>
+                  )}
                 </div>
               )}
               <div className="flex items-center gap-2 flex-wrap">
                 <label className="inline-flex items-center gap-2 cursor-pointer text-sm px-3 py-2 rounded-md border border-border hover:bg-muted">
                   <Upload className="h-4 w-4" />
-                  {uploading === 'image' ? 'Pujant...' : state.image_url ? 'Canviar' : 'Pujar'}
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && upload('image', e.target.files[0])} />
+                  {state.image_url || pending.image ? 'Triar una altra' : 'Triar imatge'}
+                  <input
+                    type="file" accept="image/*" className="hidden"
+                    onChange={(e) => { if (e.target.files?.[0]) { pickFile('image', e.target.files[0]); e.target.value = ''; } }}
+                  />
                 </label>
-                {state.image_url && (
+                {pending.image && (
+                  <>
+                    <Button size="sm" onClick={() => confirmUpload('image')} disabled={uploading === 'image'}>
+                      {uploading === 'image' ? 'Pujant...' : 'Confirmar i pujar'}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => cancelPending('image')} disabled={uploading === 'image'}>
+                      Cancel·lar
+                    </Button>
+                  </>
+                )}
+                {!pending.image && state.image_url && (
                   <Button variant="ghost" size="sm" className="text-destructive" onClick={() => set('image_url', null)}>
                     Treure
                   </Button>
                 )}
               </div>
             </div>
+
 
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -346,24 +397,45 @@ const AdminDefaultHeroForm: React.FC = () => {
 
               <div>
                 <Label className="text-xs mb-1 block">Logo</Label>
-                {state.card_logo_url && (
-                  <div className="mb-2 w-14 h-14 rounded-full overflow-hidden border border-border">
-                    <img src={state.card_logo_url} alt="" className="w-full h-full object-cover" />
+                {(pending.logo || state.card_logo_url) && (
+                  <div className="mb-2 flex items-center gap-2">
+                    <div className="w-14 h-14 rounded-full overflow-hidden border border-border">
+                      <img src={pending.logo?.url ?? state.card_logo_url ?? ''} alt="" className="w-full h-full object-cover" />
+                    </div>
+                    {pending.logo && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/95 text-white">
+                        VISTA PRÈVIA
+                      </span>
+                    )}
                   </div>
                 )}
                 <div className="flex items-center gap-2 flex-wrap">
                   <label className="inline-flex items-center gap-2 cursor-pointer text-sm px-3 py-2 rounded-md border border-border hover:bg-muted">
                     <Upload className="h-4 w-4" />
-                    {uploading === 'logo' ? 'Pujant...' : state.card_logo_url ? 'Canviar' : 'Pujar'}
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && upload('logo', e.target.files[0])} />
+                    {state.card_logo_url || pending.logo ? 'Triar un altre' : 'Triar logo'}
+                    <input
+                      type="file" accept="image/*" className="hidden"
+                      onChange={(e) => { if (e.target.files?.[0]) { pickFile('logo', e.target.files[0]); e.target.value = ''; } }}
+                    />
                   </label>
-                  {state.card_logo_url && (
+                  {pending.logo && (
+                    <>
+                      <Button size="sm" onClick={() => confirmUpload('logo')} disabled={uploading === 'logo'}>
+                        {uploading === 'logo' ? 'Pujant...' : 'Confirmar i pujar'}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => cancelPending('logo')} disabled={uploading === 'logo'}>
+                        Cancel·lar
+                      </Button>
+                    </>
+                  )}
+                  {!pending.logo && state.card_logo_url && (
                     <Button variant="ghost" size="sm" className="text-destructive" onClick={() => set('card_logo_url', null)}>
                       Treure
                     </Button>
                   )}
                 </div>
               </div>
+
 
               <div className="grid grid-cols-2 gap-2">
                 <div><Label className="text-xs">Títol (CA)</Label><Input value={state.card_title_ca} onChange={(e) => set('card_title_ca', e.target.value)} /></div>
