@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatPrice } from '@/hooks/useTaxRates';
+import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
 
 interface ListItem {
   id?: string;
