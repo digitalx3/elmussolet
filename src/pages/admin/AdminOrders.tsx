@@ -499,9 +499,40 @@ const AdminOrders: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {orderItems.map(item => (
+                    {orderItems.map(item => {
+                      const orderStatus = selectedOrder.status || 'pending';
+                      const paymentStatus = selectedOrder.payment_status || 'pending';
+                      const isBlocking = orderStatus !== 'cancelled';
+                      const isPendingPayment = paymentStatus === 'pending' || paymentStatus === 'failed';
+                      const blockReason = isBlocking
+                        ? (isPendingPayment
+                            ? t('admin.stockBlockedPendingPayment', 'Estoc bloquejat per comanda pendent de pagament')
+                            : t('admin.stockBlockedActiveOrder', 'Estoc bloquejat per comanda activa'))
+                        : t('admin.stockReleasedCancelled', 'Estoc alliberat (comanda cancel·lada)');
+                      return (
                       <TableRow key={item.id}>
-                        <TableCell className="text-sm">{getProductName(item)}</TableCell>
+                        <TableCell className="text-sm">
+                          <div className="flex flex-col gap-1">
+                            <span>{getProductName(item)}</span>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <Badge
+                                className={`text-[10px] border ${isBlocking ? (isPendingPayment ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-blue-100 text-blue-800 border-blue-200') : 'bg-gray-100 text-gray-700 border-gray-200'}`}
+                                title={blockReason}
+                              >
+                                {isBlocking
+                                  ? (isPendingPayment
+                                      ? t('admin.blockedPendingPayment', 'Bloquejat · pagament pendent')
+                                      : t('admin.blockedByOrder', 'Bloquejat per comanda'))
+                                  : t('admin.released', 'Alliberat')}
+                              </Badge>
+                              <span className="text-[10px] text-muted-foreground">
+                                {t('admin.orderStatusLabel', 'Estat')}: <span className="font-medium" style={{ color: getStatusColor(orderStatus) }}>{getStatusName(orderStatus)}</span>
+                                {' · '}
+                                {t('admin.paymentStatus')}: <span className="font-medium">{getPaymentLabel(paymentStatus)}</span>
+                              </span>
+                            </div>
+                          </div>
+                        </TableCell>
                         <TableCell className="text-center">
                           {editing ? (
                             <Input
@@ -528,7 +559,8 @@ const AdminOrders: React.FC = () => {
                           </TableCell>
                         )}
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
 
