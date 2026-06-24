@@ -121,17 +121,19 @@ export function useSaveProduct() {
         productId = newProduct.id;
       }
 
-      // Upsert translations
-      for (const lang of ['ca', 'es'] as const) {
+      // Upsert translations (dynamic across enabled languages)
+      for (const lang of Object.keys(data.translations)) {
         const t = data.translations[lang];
-        // Delete existing then insert
+        if (!t) continue;
         await supabase.from('product_translations').delete().eq('product_id', productId!).eq('language', lang);
+        // Skip empty rows (no name) to avoid orphans
+        if (!t.name?.trim()) continue;
         const { error } = await supabase.from('product_translations').insert({
           product_id: productId!,
           language: lang,
           name: t.name,
           short_description: t.short_description || null,
-          description: t.description,
+          description: t.description || '',
         });
         if (error) throw error;
       }
