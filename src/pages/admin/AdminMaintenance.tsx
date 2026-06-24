@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Plus, Trash2, MapPin, Save } from 'lucide-react';
+import { AlertTriangle, Plus, Trash2, MapPin, Save, KeyRound, Copy, RefreshCw } from 'lucide-react';
 import RichTextEditor from '@/components/ui/rich-text-editor';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -16,9 +16,17 @@ interface MaintenanceSettings {
   message_ca: string;
   message_es: string;
   allowed_ips: string[];
+  emergency_token: string | null;
+  emergency_token_expires_at: string | null;
 }
 
 const IP_OR_CIDR = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d?\d)(?:\/(?:[0-9]|[12]\d|3[0-2]))?$/;
+
+function generateToken(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
 
 const AdminMaintenance: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
@@ -29,15 +37,18 @@ const AdminMaintenance: React.FC = () => {
     message_ca: '',
     message_es: '',
     allowed_ips: [],
+    emergency_token: null,
+    emergency_token_expires_at: null,
   });
   const [newIp, setNewIp] = React.useState('');
   const [myIp, setMyIp] = React.useState<string | null>(null);
+  const [tokenHours, setTokenHours] = React.useState<number>(24);
 
   const load = React.useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('maintenance_settings')
-      .select('enabled, show_logo, message_ca, message_es, allowed_ips')
+      .select('enabled, show_logo, message_ca, message_es, allowed_ips, emergency_token, emergency_token_expires_at')
       .limit(1)
       .maybeSingle();
     if (error) {
@@ -49,6 +60,8 @@ const AdminMaintenance: React.FC = () => {
         message_ca: data.message_ca ?? '',
         message_es: data.message_es ?? '',
         allowed_ips: data.allowed_ips ?? [],
+        emergency_token: (data as any).emergency_token ?? null,
+        emergency_token_expires_at: (data as any).emergency_token_expires_at ?? null,
       });
     }
     setLoading(false);
@@ -74,17 +87,17 @@ const AdminMaintenance: React.FC = () => {
         message_ca: state.message_ca,
         message_es: state.message_es,
         allowed_ips: state.allowed_ips,
+        emergency_token: state.emergency_token,
+        emergency_token_expires_at: state.emergency_token_expires_at,
         updated_by: (await supabase.auth.getUser()).data.user?.id ?? null,
-      })
+      } as any)
       .eq('id', '00000000-0000-0000-0000-000000000001');
     setSaving(false);
     if (error) {
       toast.error('Error guardant: ' + error.message);
     } else {
       toast.success('Configuració desada');
-      try {
-        sessionStorage.removeItem('maintenance.state.v1');
-      } catch { /* ignore */ }
+      try { sessionStorage.removeItem('maintenance.state.v1'); } catch { /* ignore */ }
     }
   };
 
@@ -107,6 +120,35 @@ const AdminMaintenance: React.FC = () => {
     setState((s) => ({ ...s, allowed_ips: s.allowed_ips.filter((x) => x !== ip) }));
   };
 
+  const regenerateToken = () => {
+    const hours = Math.max(1, Math.min(720, Number(tokenHours) || 24));
+    const expires = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+    setState((s) => ({ ...s, emergency_token: generateToken(), emergency_token_expires_at: expires }));
+    toast.info(`Token generat (vàlid ${hours}h). Recorda Desar canvis.`);
+  };
+
+  const clearToken = () => {
+    setState((s) => ({ ...s, emergency_token: null, emergency_token_expires_at: null }));
+  };
+
+  const tokenUrl =
+    state.emergency_token
+      ? `${window.location.origin}/?mt_token=${encodeURIComponent(state.emergency_token)}`
+      : '';
+
+  const tokenExpired =
+    !!state.emergency_token_expires_at &&
+    new Date(state.emergency_token_expires_at).getTime() <= Date.now();
+
+  const copy = async (text: string, label = 'Copiat al porta-retalls') => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(label);
+    } catch {
+      toast.error('No s\'ha pogut copiar');
+    }
+  };
+
   if (loading) {
     return <div className="p-4 text-muted-foreground">Carregant...</div>;
   }
@@ -124,68 +166,46 @@ const AdminMaintenance: React.FC = () => {
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Mode manteniment ACTIU</AlertTitle>
-          <AlertDescription>
-            La botiga no és accessible per als visitants normals.
-          </AlertDescription>
+          <AlertDescription>La botiga no és accessible per als visitants normals.</AlertDescription>
         </Alert>
       )}
 
       <Card>
-        <CardHeader>
-          <CardTitle>Estat</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Estat</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <Label className="text-base">Activar mode manteniment</Label>
               <p className="text-sm text-muted-foreground">Bloqueja l'accés públic a la web.</p>
             </div>
-            <Switch
-              checked={state.enabled}
-              onCheckedChange={(v) => setState((s) => ({ ...s, enabled: v }))}
-            />
+            <Switch checked={state.enabled} onCheckedChange={(v) => setState((s) => ({ ...s, enabled: v }))} />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <Label className="text-base">Mostrar logo</Label>
               <p className="text-sm text-muted-foreground">Mostra el logo del lloc a la pàgina de manteniment.</p>
             </div>
-            <Switch
-              checked={state.show_logo}
-              onCheckedChange={(v) => setState((s) => ({ ...s, show_logo: v }))}
-            />
+            <Switch checked={state.show_logo} onCheckedChange={(v) => setState((s) => ({ ...s, show_logo: v }))} />
           </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Missatge</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Missatge</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div>
             <Label className="mb-2 block">Missatge (Català)</Label>
-            <RichTextEditor
-              value={state.message_ca}
-              onChange={(html) => setState((s) => ({ ...s, message_ca: html }))}
-              placeholder="Tornarem ben aviat..."
-            />
+            <RichTextEditor value={state.message_ca} onChange={(html) => setState((s) => ({ ...s, message_ca: html }))} placeholder="Tornarem ben aviat..." />
           </div>
           <div>
             <Label className="mb-2 block">Missatge (Castellà)</Label>
-            <RichTextEditor
-              value={state.message_es}
-              onChange={(html) => setState((s) => ({ ...s, message_es: html }))}
-              placeholder="Volvemos enseguida..."
-            />
+            <RichTextEditor value={state.message_es} onChange={(html) => setState((s) => ({ ...s, message_es: html }))} placeholder="Volvemos enseguida..." />
           </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>IPs autoritzades</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>IPs autoritzades</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
             Aquestes IPs poden navegar per la web encara que el mode manteniment estigui actiu.
@@ -196,13 +216,7 @@ const AdminMaintenance: React.FC = () => {
             <div className="flex items-center gap-2 text-sm bg-muted/40 rounded-md p-3">
               <MapPin className="h-4 w-4 text-muted-foreground" />
               <span>La teva IP actual: <code className="font-mono">{myIp}</code></span>
-              <Button
-                size="sm"
-                variant="outline"
-                className="ml-auto"
-                onClick={() => addIp(myIp)}
-                disabled={state.allowed_ips.includes(myIp)}
-              >
+              <Button size="sm" variant="outline" className="ml-auto" onClick={() => addIp(myIp)} disabled={state.allowed_ips.includes(myIp)}>
                 Afegir la meva IP
               </Button>
             </div>
@@ -234,6 +248,86 @@ const AdminMaintenance: React.FC = () => {
               ))
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <KeyRound className="h-5 w-5" />
+            Enllaç d'accés d'emergència
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Genera un token temporal per accedir a la web encara que la teva IP no estigui autoritzada.
+            Obre l'enllaç al navegador i quedarà autoritzat fins que el token caduqui o el revoquis.
+          </p>
+
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <Label className="mb-1 block">Vàlid durant (hores)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={720}
+                value={tokenHours}
+                onChange={(e) => setTokenHours(Number(e.target.value))}
+              />
+            </div>
+            <Button type="button" onClick={regenerateToken}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              {state.emergency_token ? 'Regenerar token' : 'Generar token'}
+            </Button>
+            {state.emergency_token && (
+              <Button type="button" variant="outline" onClick={clearToken}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Revocar
+              </Button>
+            )}
+          </div>
+
+          {state.emergency_token ? (
+            <div className="space-y-3 border rounded-md p-3 bg-muted/30">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">Estat</span>
+                {tokenExpired ? (
+                  <span className="text-xs font-semibold text-destructive">CADUCAT</span>
+                ) : (
+                  <span className="text-xs font-semibold text-primary">ACTIU</span>
+                )}
+              </div>
+              {state.emergency_token_expires_at && (
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Caduca: </span>
+                  <span className="font-medium">{new Date(state.emergency_token_expires_at).toLocaleString()}</span>
+                </div>
+              )}
+              <div>
+                <Label className="mb-1 block text-xs">Token</Label>
+                <div className="flex gap-2">
+                  <Input readOnly value={state.emergency_token} className="font-mono text-xs" />
+                  <Button type="button" variant="outline" size="icon" onClick={() => copy(state.emergency_token!, 'Token copiat')}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div>
+                <Label className="mb-1 block text-xs">Enllaç d'accés</Label>
+                <div className="flex gap-2">
+                  <Input readOnly value={tokenUrl} className="font-mono text-xs" />
+                  <Button type="button" variant="outline" size="icon" onClick={() => copy(tokenUrl, 'Enllaç copiat')}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Obrint aquesta URL en qualsevol dispositiu, l'usuari saltarà el bloqueig fins que caduqui el token.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">No hi ha cap token actiu.</p>
+          )}
         </CardContent>
       </Card>
 
