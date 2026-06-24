@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      backup_runs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_by_email: string | null
+          error: string | null
+          file_path: string | null
+          file_size_bytes: number | null
+          finished_at: string | null
+          id: string
+          kind: string
+          started_at: string
+          status: string
+          storage_json: Json | null
+          tables_json: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          error?: string | null
+          file_path?: string | null
+          file_size_bytes?: number | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          started_at?: string
+          status?: string
+          storage_json?: Json | null
+          tables_json?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          error?: string | null
+          file_path?: string | null
+          file_size_bytes?: number | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          started_at?: string
+          status?: string
+          storage_json?: Json | null
+          tables_json?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       birth_lists: {
         Row: {
           baby_name: string | null
