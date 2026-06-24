@@ -31,16 +31,34 @@ const modules = {
   },
 };
 
+// Quill (and many WYSIWYG editors) insert &nbsp; / U+00A0 between words to
+// preserve visual spacing. For our CMS we always want regular spaces so the
+// rendered HTML wraps correctly and stays clean.
+const normalizeHtml = (html: string): string => {
+  if (!html) return html;
+  return html
+    // numeric / named non-breaking space entities → normal space
+    .replace(/&nbsp;|&#160;|&#xA0;/gi, ' ')
+    // raw U+00A0 char
+    .replace(/\u00A0/g, ' ')
+    // collapse runs of spaces (but keep newlines)
+    .replace(/ {2,}/g, ' ');
+};
+
 export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, className }) => {
   const [mode, setMode] = useState<'visual' | 'code'>('visual');
+
+  const handleChange = (html: string) => {
+    onChange(normalizeHtml(html));
+  };
 
   return (
     <div className={`bg-background rounded-md border border-input ${className ?? ''}`}>
       <div className="flex items-center justify-between gap-1 border-b border-border px-2 py-1 bg-muted/30">
         <span className="text-[11px] text-muted-foreground pl-1">
           {mode === 'code'
-            ? 'Mode HTML: el codi es desa tal qual, sense modificar.'
-            : 'Mode visual: en editar, el codi HTML pot ser reformatat.'}
+            ? 'Mode HTML: el codi es desa tal qual (sense &nbsp;).'
+            : 'Mode visual: els espais no separables (&nbsp;) es normalitzen automàticament.'}
         </span>
         <div className="flex items-center gap-1">
           <Button
@@ -71,14 +89,14 @@ export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, 
         <ReactQuill
           theme="snow"
           value={value}
-          onChange={onChange}
+          onChange={handleChange}
           modules={modules}
           placeholder={placeholder}
         />
       ) : (
         <textarea
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(normalizeHtml(e.target.value))}
           placeholder={placeholder || '<p>HTML cru…</p>'}
           spellCheck={false}
           className="w-full min-h-[320px] font-mono text-xs p-3 bg-background rounded-b-md focus:outline-none focus:ring-0 resize-y"
