@@ -110,10 +110,21 @@ Deno.serve(async (req) => {
       variant: i.variant_id ? variantsById[i.variant_id] || null : null,
     }));
 
+    const normalizedSections = (sectionsRes.data ?? []).map((s: any) => ({
+      id: s.id,
+      name_ca: s.name_ca,
+      name_es: s.name_es,
+      sort_order: s.sort_order,
+      translations: (s.list_section_translations ?? []).map((t: any) => ({
+        language_code: t.language_code,
+        name: t.name,
+      })),
+    }));
+
     return json({
       ok: true,
       items: enrichedItems,
-      sections: sectionsRes.data ?? [],
+      sections: normalizedSections,
       blockSummary: summaryRes.data ?? [],
     });
   } catch (err) {
