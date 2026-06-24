@@ -208,8 +208,27 @@ function AdminSidebar() {
 }
 
 const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(() => {
+    try {
+      const raw = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+      if (raw !== null) return raw === 'true';
+    } catch {
+      /* ignore */
+    }
+    return true;
+  });
+
+  const handleOpenChange = React.useCallback((value: boolean) => {
+    setSidebarOpen(value);
+    try {
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(value));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   return (
-    <SidebarProvider>
+    <SidebarProvider open={sidebarOpen} onOpenChange={handleOpenChange}>
       <div className="min-h-screen flex w-full bg-background">
         <AdminSidebar />
         <div className="flex-1 flex flex-col min-w-0">
