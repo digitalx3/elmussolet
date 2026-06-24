@@ -81,10 +81,7 @@ export interface ProductFormData {
   category_id: string | null;
   brand_id: string | null;
   tax_rate_id: string | null;
-  translations: {
-    ca: { name: string; short_description: string; description: string };
-    es: { name: string; short_description: string; description: string };
-  };
+  translations: Record<string, { name: string; short_description: string; description: string }>;
   images: { id?: string; image_url: string; alt_text: string; is_primary: boolean; sort_order: number }[];
   variants: {
     id?: string; value: string; price_override: number | null;
@@ -124,17 +121,19 @@ export function useSaveProduct() {
         productId = newProduct.id;
       }
 
-      // Upsert translations
-      for (const lang of ['ca', 'es'] as const) {
+      // Upsert translations (dynamic across enabled languages)
+      for (const lang of Object.keys(data.translations)) {
         const t = data.translations[lang];
-        // Delete existing then insert
+        if (!t) continue;
         await supabase.from('product_translations').delete().eq('product_id', productId!).eq('language', lang);
+        // Skip empty rows (no name) to avoid orphans
+        if (!t.name?.trim()) continue;
         const { error } = await supabase.from('product_translations').insert({
           product_id: productId!,
           language: lang,
           name: t.name,
           short_description: t.short_description || null,
-          description: t.description,
+          description: t.description || '',
         });
         if (error) throw error;
       }

@@ -19,6 +19,8 @@ import { useCategories } from '@/hooks/useCategories';
 import { useBrands } from '@/hooks/useBrands';
 import { useActiveTaxRates, priceWithTax } from '@/hooks/useTaxRates';
 import { optimizeImage } from '@/lib/optimizeImage';
+import { useLanguages, useDefaultLanguage } from '@/hooks/useLanguages';
+import LanguageTabs from '@/components/admin/LanguageTabs';
 
 const emptyTranslation = { name: '', short_description: '', description: '' };
 
@@ -33,21 +35,52 @@ const AdminProductForm: React.FC = () => {
   const { data: brands = [] } = useBrands();
   const { data: variantTypes = [] } = useVariantTypes();
   const { data: taxRates = [] } = useActiveTaxRates();
+  const { data: languages = [] } = useLanguages({ onlyEnabled: true });
+  const { data: defaultLang } = useDefaultLanguage();
   const saveProduct = useSaveProduct();
+
+  const defaultCode = defaultLang?.code ?? languages[0]?.code ?? 'ca';
 
   const [form, setForm] = useState<ProductFormData>({
     slug: '', sku: '', base_price: 0, stock_quantity: 0, stock_status: 'in_stock',
     is_active: true, has_variants: false, weight_grams: 0,
     category_id: null, brand_id: null, tax_rate_id: null,
-    translations: { ca: { ...emptyTranslation }, es: { ...emptyTranslation } },
+    translations: {},
     images: [],
     variants: [],
   });
 
+  // Ensure an entry exists for every enabled language
+  useEffect(() => {
+    if (!languages.length) return;
+    setForm(prev => {
+      const next = { ...prev.translations };
+      let changed = false;
+      for (const lng of languages) {
+        if (!next[lng.code]) {
+          next[lng.code] = { ...emptyTranslation };
+          changed = true;
+        }
+      }
+      return changed ? { ...prev, translations: next } : prev;
+    });
+  }, [languages]);
+
   useEffect(() => {
     if (product && !isNew) {
-      const ca = product.product_translations.find(t => t.language === 'ca');
-      const es = product.product_translations.find(t => t.language === 'es');
+      const translations: ProductFormData['translations'] = {};
+      // Seed every enabled language with empty values
+      for (const lng of languages) {
+        translations[lng.code] = { ...emptyTranslation };
+      }
+      // Fill in stored values (also keeps codes that exist in DB but aren't enabled)
+      for (const tr of product.product_translations || []) {
+        translations[tr.language] = {
+          name: tr.name || '',
+          short_description: tr.short_description || '',
+          description: tr.description || '',
+        };
+      }
       setForm({
         slug: product.slug,
         sku: product.sku,
@@ -60,10 +93,7 @@ const AdminProductForm: React.FC = () => {
         category_id: product.category_id,
         brand_id: product.brand_id,
         tax_rate_id: (product as any).tax_rate_id ?? null,
-        translations: {
-          ca: { name: ca?.name || '', short_description: ca?.short_description || '', description: ca?.description || '' },
-          es: { name: es?.name || '', short_description: es?.short_description || '', description: es?.description || '' },
-        },
+        translations,
         images: (product.product_images || []).sort((a, b) => a.sort_order - b.sort_order).map(img => ({
           id: img.id, image_url: img.image_url, alt_text: img.alt_text || '', is_primary: img.is_primary, sort_order: img.sort_order,
         })),
@@ -74,23 +104,23 @@ const AdminProductForm: React.FC = () => {
         })),
       });
     }
-  }, [product, isNew]);
+  }, [product, isNew, languages]);
 
   const updateField = <K extends keyof ProductFormData>(key: K, value: ProductFormData[K]) =>
     setForm(prev => ({ ...prev, [key]: value }));
 
-  const updateTranslation = (lang: 'ca' | 'es', field: string, value: string) =>
+  const updateTranslation = (lang: string, field: string, value: string) =>
     setForm(prev => ({
       ...prev,
       translations: {
         ...prev.translations,
-        [lang]: { ...prev.translations[lang], [field]: value },
+        [lang]: { ...(prev.translations[lang] ?? emptyTranslation), [field]: value },
       },
     }));
 
-  // Auto-generate slug from CA name
+  // Auto-generate slug from the default language name
   const autoSlug = () => {
-    const name = form.translations.ca.name;
+    const name = form.translations[defaultCode]?.name ?? '';
     if (name && !form.slug) {
       updateField('slug', name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
     }
@@ -165,8 +195,9 @@ const AdminProductForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.translations.ca.name || !form.slug || !form.sku) {
-      toast.error('Omple els camps obligatoris: nom (CA), slug i SKU');
+    const defaultName = form.translations[defaultCode]?.name?.trim();
+    if (!defaultName || !form.slug || !form.sku) {
+      toast.error(`Omple els camps obligatoris: nom (${defaultCode.toUpperCase()}), slug i SKU`);
       return;
     }
     try {
@@ -207,40 +238,40 @@ const AdminProductForm: React.FC = () => {
       <Card>
         <CardHeader><CardTitle>Traduccions</CardTitle></CardHeader>
         <CardContent>
-          <Tabs defaultValue="ca">
-            <TabsList>
-              <TabsTrigger value="ca">Català</TabsTrigger>
-              <TabsTrigger value="es">Castellano</TabsTrigger>
-            </TabsList>
-            {(['ca', 'es'] as const).map(lang => (
-              <TabsContent key={lang} value={lang} className="space-y-4 mt-4">
-                <div>
-                  <Label>Nom *</Label>
-                  <Input
-                    value={form.translations[lang].name}
-                    onChange={e => updateTranslation(lang, 'name', e.target.value)}
-                    onBlur={lang === 'ca' ? autoSlug : undefined}
-                    placeholder={lang === 'ca' ? 'Nom del producte' : 'Nombre del producto'}
-                  />
+          <LanguageTabs>
+            {(lang) => {
+              const tr = form.translations[lang] ?? emptyTranslation;
+              const isDefault = lang === defaultCode;
+              return (
+                <div className="space-y-4">
+                  <div>
+                    <Label>Nom {isDefault && '*'}</Label>
+                    <Input
+                      value={tr.name}
+                      onChange={e => updateTranslation(lang, 'name', e.target.value)}
+                      onBlur={isDefault ? autoSlug : undefined}
+                      placeholder={`Nom (${lang.toUpperCase()})`}
+                    />
+                  </div>
+                  <div>
+                    <Label>Descripció curta</Label>
+                    <Input
+                      value={tr.short_description}
+                      onChange={e => updateTranslation(lang, 'short_description', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Descripció</Label>
+                    <Textarea
+                      value={tr.description}
+                      onChange={e => updateTranslation(lang, 'description', e.target.value)}
+                      rows={5}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label>Descripció curta</Label>
-                  <Input
-                    value={form.translations[lang].short_description}
-                    onChange={e => updateTranslation(lang, 'short_description', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Descripció</Label>
-                  <Textarea
-                    value={form.translations[lang].description}
-                    onChange={e => updateTranslation(lang, 'description', e.target.value)}
-                    rows={5}
-                  />
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
+              );
+            }}
+          </LanguageTabs>
         </CardContent>
       </Card>
 
