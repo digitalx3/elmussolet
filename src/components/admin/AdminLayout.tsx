@@ -73,6 +73,7 @@ const groups: NavGroup[] = [
       { key: 'shipping', path: '/admin/enviaments', icon: Truck },
       { key: 'languages', path: '/admin/idiomes', icon: LanguagesIcon },
       { key: 'translations', path: '/admin/traduccions', icon: Globe },
+      { key: 'aiSettings', path: '/admin/ia', icon: Sparkles, label: "IA" },
       { key: 'smtp', path: '/admin/smtp', icon: Server },
       { key: 'backups', path: '/admin/backups', icon: Database },
       { key: 'maintenance', path: '/admin/manteniment', icon: Power },
