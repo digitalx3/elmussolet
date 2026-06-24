@@ -110,6 +110,23 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
+
+  const handleResendEmailChange = async () => {
+    if (!pendingEmail) return;
+    setResendingEmail(true);
+    // Re-trigger the email change to re-send confirmation links
+    const { error } = await supabase.auth.updateUser(
+      { email: pendingEmail },
+      { emailRedirectTo: `${window.location.origin}/account` },
+    );
+    setResendingEmail(false);
+    if (error) {
+      toast.error(error.message || 'No s\'ha pogut reenviar la confirmació');
+    } else {
+      toast.success('Correu de confirmació reenviat. Revisa la safata d\'entrada.');
+    }
+  };
 
   const loadAuthUser = async () => {
     const { data } = await supabase.auth.getUser();
