@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_translation_logs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_count: number
+          error_message: string | null
+          function_name: string
+          id: string
+          items_count: number
+          metadata: Json | null
+          provider: string | null
+          scope: string | null
+          source_language: string | null
+          status: string
+          success_count: number
+          target_language: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_count?: number
+          error_message?: string | null
+          function_name: string
+          id?: string
+          items_count?: number
+          metadata?: Json | null
+          provider?: string | null
+          scope?: string | null
+          source_language?: string | null
+          status: string
+          success_count?: number
+          target_language?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_count?: number
+          error_message?: string | null
+          function_name?: string
+          id?: string
+          items_count?: number
+          metadata?: Json | null
+          provider?: string | null
+          scope?: string | null
+          source_language?: string | null
+          status?: string
+          success_count?: number
+          target_language?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       backup_runs: {
         Row: {
           created_at: string
