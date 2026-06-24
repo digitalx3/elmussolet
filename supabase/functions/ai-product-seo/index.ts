@@ -141,8 +141,42 @@ async function callAnthropic(prompt: string): Promise<string> {
   return (j?.content?.[0]?.text as string) ?? "";
 }
 
+const MAX_ATTEMPTS = 3;
+async function withRetry<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  let lastErr: any;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      lastErr = e;
+      const msg = String(e?.message || e);
+      const transient =
+        msg === "RATE_LIMIT" ||
+        msg.includes("RATE_LIMIT") ||
+        msg.includes("timeout") ||
+        msg.includes("ECONNRESET") ||
+        /\b5\d\d\b/.test(msg);
+      if (!transient || attempt === MAX_ATTEMPTS) {
+        throw new Error(`${label} failed after ${attempt} attempt(s): ${msg}`);
+      }
+      await new Promise(r => setTimeout(r, 600 * attempt));
+    }
+  }
+  throw lastErr;
+}
+
+async function logCall(admin: any, row: Record<string, any>) {
+  try { await admin.from("ai_translation_logs").insert(row); } catch (e) { console.warn("log fail", e); }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const started = Date.now();
+  let admin: any = null;
+  let userId: string | null = null;
+  let provider: Provider | null = null;
+  let body: Body | null = null;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -158,34 +192,75 @@ Deno.serve(async (req: Request) => {
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
     if (userErr || !userData?.user) return json({ error: "Unauthorized" }, 401);
+    userId = userData.user.id;
 
-    const admin = createClient(supabaseUrl, serviceKey);
+    admin = createClient(supabaseUrl, serviceKey);
     const { data: profile } = await admin
-      .from("profiles").select("role").eq("id", userData.user.id).single();
+      .from("profiles").select("role").eq("id", userId).single();
     if (profile?.role !== "admin") return json({ error: "Forbidden" }, 403);
 
-    const body = (await req.json()) as Body;
+    body = (await req.json()) as Body;
     if (!body.name || !body.language) return json({ error: "name and language required" }, 400);
 
-    const provider = await getActiveProvider(admin, body.provider);
+    provider = await getActiveProvider(admin, body.provider);
 
     const prompt = buildPrompt(body);
-    let raw = "";
-    if (provider === "openai") raw = await callOpenAI(prompt);
-    else if (provider === "anthropic") raw = await callAnthropic(prompt);
-    else raw = await callLovable(prompt);
+    const raw = await withRetry(`call ${provider}`, async () => {
+      if (provider === "openai") return await callOpenAI(prompt);
+      if (provider === "anthropic") return await callAnthropic(prompt);
+      return await callLovable(prompt);
+    });
 
     const parsed = parseJsonLoose(raw);
-    return json({
-      short_description: String(parsed.short_description || ""),
-      description: String(parsed.description || ""),
+    const short_description = String(parsed.short_description || "");
+    const description = String(parsed.description || "");
+
+    // Honour optional `fields` filter so caller can request only one field.
+    const fields: string[] | undefined = Array.isArray((body as any).fields) ? (body as any).fields : undefined;
+    const result: Record<string, string> = { provider } as any;
+    if (!fields || fields.includes("short")) result.short_description = short_description;
+    if (!fields || fields.includes("long")) result.description = description;
+
+    await logCall(admin, {
+      user_id: userId,
+      function_name: "ai-product-seo",
+      scope: (body as any).product_id ? `product:${(body as any).product_id}` : "product",
+      source_language: null,
+      target_language: body.language,
+      items_count: fields?.length || 2,
+      success_count: fields?.length || 2,
+      error_count: 0,
+      status: "success",
       provider,
+      error_message: null,
+      duration_ms: Date.now() - started,
+      metadata: { name: body.name, sku: body.sku || null, fields: fields || ["short", "long"] },
     });
+
+    return json(result);
   } catch (e: any) {
     const msg = String(e?.message || e);
     console.error("ai-product-seo error", msg);
-    if (msg === "RATE_LIMIT") return json({ error: "RATE_LIMIT" }, 429);
-    if (msg === "CREDITS_EXHAUSTED") return json({ error: "CREDITS_EXHAUSTED" }, 402);
+    if (admin) {
+      await logCall(admin, {
+        user_id: userId,
+        function_name: "ai-product-seo",
+        scope: "product",
+        source_language: null,
+        target_language: body?.language || null,
+        items_count: 1,
+        success_count: 0,
+        error_count: 1,
+        status: "error",
+        provider,
+        error_message: msg.slice(0, 500),
+        duration_ms: Date.now() - started,
+        metadata: { name: body?.name || null, sku: body?.sku || null },
+      });
+    }
+    if (msg === "RATE_LIMIT" || msg.includes("RATE_LIMIT")) return json({ error: "RATE_LIMIT" }, 429);
+    if (msg === "CREDITS_EXHAUSTED" || msg.includes("CREDITS_EXHAUSTED")) return json({ error: "CREDITS_EXHAUSTED" }, 402);
     return json({ error: msg }, 500);
   }
 });
+

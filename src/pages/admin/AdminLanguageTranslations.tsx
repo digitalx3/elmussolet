@@ -1,18 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Sparkles, Save, Search, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, Save, Search, Loader2, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import i18n from '@/i18n';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguages } from '@/hooks/useLanguages';
 import { useAiProvider, isAiReady } from '@/hooks/useAiProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import ca from '@/locales/ca.json';
 import es from '@/locales/es.json';
 import { flattenTranslations, type FlatTranslations } from '@/lib/translationFlatten';
+import { invokeWithRetry, logAiTranslation } from '@/lib/aiTranslationLog';
 
 const BUNDLED: Record<string, FlatTranslations> = {
   ca: flattenTranslations(ca),
@@ -76,6 +78,20 @@ const AdminLanguageTranslations: React.FC = () => {
   const [savingUi, setSavingUi] = useState(false);
   const [translatingUi, setTranslatingUi] = useState(false);
   const [aiBusy, setAiBusy] = useState<string | null>(null);
+  const [uiProgress, setUiProgress] = useState<{ done: number; total: number; errors: number } | null>(null);
+  const [dynProgress, setDynProgress] = useState<{ table: string; done: number; total: number; errors: number } | null>(null);
+  const [lastSummary, setLastSummary] = useState<
+    | null
+    | {
+        scope: string;
+        label: string;
+        translated: number;
+        failed: number;
+        total: number;
+        durationMs: number;
+        error?: string;
+      }
+  >(null);
 
   useEffect(() => {
     let alive = true;
@@ -143,6 +159,54 @@ const AdminLanguageTranslations: React.FC = () => {
     }
   };
 
+  // Chunked client-side translation with progress + per-chunk retry.
+  const CHUNK = 30;
+  async function translateChunked(
+    items: string[],
+    scope: string,
+    contextLabel: string,
+    onProgress: (done: number, errors: number) => void,
+  ): Promise<{ translations: string[]; errors: number }> {
+    const out: string[] = new Array(items.length).fill('');
+    let errors = 0;
+    let lastError = '';
+    const started = Date.now();
+    for (let i = 0; i < items.length; i += CHUNK) {
+      const chunk = items.slice(i, i + CHUNK);
+      try {
+        const data: any = await invokeWithRetry('ai-translate', {
+          items: chunk,
+          source_language: defaultCode,
+          target_language: code,
+          context: contextLabel,
+          scope,
+        });
+        const translations: string[] = data?.translations || [];
+        translations.forEach((tr, j) => { out[i + j] = tr ?? ''; });
+      } catch (e: any) {
+        errors += chunk.length;
+        lastError = String(e?.message || e);
+        console.error('chunk failed', e);
+      }
+      onProgress(Math.min(i + chunk.length, items.length), errors);
+    }
+    // Edge function already logs each call; client logs one overall summary for the operation
+    await logAiTranslation({
+      function_name: 'ai-translate',
+      scope: `${scope}:summary`,
+      source_language: defaultCode,
+      target_language: code,
+      items_count: items.length,
+      success_count: items.length - errors,
+      error_count: errors,
+      status: errors === 0 ? 'success' : (errors === items.length ? 'error' : 'partial'),
+      error_message: errors > 0 ? lastError.slice(0, 500) : null,
+      duration_ms: Date.now() - started,
+      metadata: { chunk_size: CHUNK, chunks: Math.ceil(items.length / CHUNK) },
+    });
+    return { translations: out, errors };
+  }
+
   const aiTranslateUi = async (onlyEmpty: boolean) => {
     if (!aiReady) {
       toast({ title: t('admin.aiNotReady', "Configura primer un proveïdor d'IA"), variant: 'destructive' });
@@ -154,26 +218,52 @@ const AdminLanguageTranslations: React.FC = () => {
       return;
     }
     setTranslatingUi(true);
+    setUiProgress({ done: 0, total: targets.length, errors: 0 });
+    setLastSummary(null);
+    const started = Date.now();
     try {
       const items = targets.map(k => sourceFlat[k] || '');
-      const { data, error } = await supabase.functions.invoke('ai-translate', {
-        body: {
-          items,
-          source_language: defaultCode,
-          target_language: code,
-          context: `Ecommerce UI strings (baby & childcare). Keys e.g. ${targets.slice(0, 3).join(', ')}`,
-        },
-      });
-      if (error) throw error;
-      const translations: string[] = data?.translations || [];
+      const { translations, errors } = await translateChunked(
+        items,
+        'ui',
+        `Ecommerce UI strings (baby & childcare). Keys e.g. ${targets.slice(0, 3).join(', ')}`,
+        (done, err) => setUiProgress({ done, total: items.length, errors: err }),
+      );
       const next = { ...uiValues };
-      targets.forEach((k, i) => { if (translations[i] != null) next[k] = translations[i]; });
+      targets.forEach((k, i) => { if (translations[i]) next[k] = translations[i]; });
       setUiValues(next);
-      toast({ title: t('admin.aiTrUiDone', `${translations.length} cadenes traduïdes amb IA`) });
+      const translated = items.length - errors;
+      setLastSummary({
+        scope: 'ui',
+        label: t('admin.aiTrTabUi', 'Interfície'),
+        translated,
+        failed: errors,
+        total: items.length,
+        durationMs: Date.now() - started,
+      });
+      if (errors > 0) {
+        toast({
+          title: `Traducció parcial: ${translated}/${items.length}. ${errors} amb errors.`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({ title: t('admin.aiTrUiDone', `${translated} cadenes traduïdes amb IA`) });
+      }
     } catch (e: any) {
-      toast({ title: e?.message || 'Error', variant: 'destructive' });
+      const msg = e?.message || 'Error';
+      setLastSummary({
+        scope: 'ui',
+        label: t('admin.aiTrTabUi', 'Interfície'),
+        translated: 0,
+        failed: targets.length,
+        total: targets.length,
+        durationMs: Date.now() - started,
+        error: msg,
+      });
+      toast({ title: msg, variant: 'destructive' });
     } finally {
       setTranslatingUi(false);
+      setTimeout(() => setUiProgress(null), 1500);
     }
   };
 
@@ -184,8 +274,10 @@ const AdminLanguageTranslations: React.FC = () => {
       return;
     }
     setAiBusy(def.table);
+    setDynProgress({ table: def.table, done: 0, total: 0, errors: 0 });
+    setLastSummary(null);
+    const started = Date.now();
     try {
-      // Load all source rows in default language
       const cols = ['id', def.fkColumn, ...def.fields.map(f => f.col)];
       const { data: sourceRows, error: srcErr } = await supabase
         .from(def.table as any)
@@ -203,10 +295,10 @@ const AdminLanguageTranslations: React.FC = () => {
 
       if (missing.length === 0) {
         toast({ title: t('admin.aiTrNoMissing', 'Tot ja està traduït') });
+        setDynProgress(null);
         return;
       }
 
-      // Flatten all fields into one big batch with markers so we can recompose
       const flatItems: string[] = [];
       const map: { rowIdx: number; field: string }[] = [];
       missing.forEach((r: any, rowIdx: number) => {
@@ -221,44 +313,76 @@ const AdminLanguageTranslations: React.FC = () => {
 
       if (flatItems.length === 0) {
         toast({ title: t('admin.aiTrNoMissing', 'No hi ha contingut origen per traduir') });
+        setDynProgress(null);
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('ai-translate', {
-        body: {
-          items: flatItems,
-          source_language: defaultCode,
-          target_language: code,
-          context: `Ecommerce ${def.label}. Some fields contain HTML; preserve tags.`,
-        },
-      });
-      if (error) throw error;
-      const translations: string[] = data?.translations || [];
+      setDynProgress({ table: def.table, done: 0, total: flatItems.length, errors: 0 });
+      const { translations, errors } = await translateChunked(
+        flatItems,
+        def.table,
+        `Ecommerce ${def.label}. Some fields contain HTML; preserve tags.`,
+        (done, err) => setDynProgress({ table: def.table, done, total: flatItems.length, errors: err }),
+      );
 
-      // Rebuild rows
       const updates: Record<number, Record<string, string>> = {};
       map.forEach((m, i) => {
         updates[m.rowIdx] = updates[m.rowIdx] || {};
         updates[m.rowIdx][m.field] = translations[i] || '';
       });
 
-      const insertRows = missing.map((r: any, idx: number) => {
-        const base: any = { [def.fkColumn]: r[def.fkColumn], [def.langColumn]: code };
-        const fields = updates[idx] || {};
-        for (const f of def.fields) base[f.col] = fields[f.col] ?? r[f.col] ?? '';
-        return base;
+      const insertRows = missing
+        .map((r: any, idx: number) => {
+          const base: any = { [def.fkColumn]: r[def.fkColumn], [def.langColumn]: code };
+          const fields = updates[idx] || {};
+          for (const f of def.fields) base[f.col] = fields[f.col] ?? r[f.col] ?? '';
+          // Skip rows where no field got translated (full failure)
+          const hasContent = def.fields.some(f => (base[f.col] || '').toString().trim());
+          return hasContent ? base : null;
+        })
+        .filter(Boolean);
+
+      if (insertRows.length > 0) {
+        const { error: insErr } = await supabase.from(def.table as any).insert(insertRows);
+        if (insErr) throw insErr;
+      }
+
+      setLastSummary({
+        scope: def.table,
+        label: def.label,
+        translated: insertRows.length,
+        failed: missing.length - insertRows.length,
+        total: missing.length,
+        durationMs: Date.now() - started,
+        error: errors > 0 ? `${errors} camp(s) sense traduir` : undefined,
       });
 
-      const { error: insErr } = await supabase.from(def.table as any).insert(insertRows);
-      if (insErr) throw insErr;
-
-      toast({ title: `${insertRows.length} ${def.label.toLowerCase()} traduïts amb IA` });
+      if (errors > 0) {
+        toast({
+          title: `${insertRows.length}/${missing.length} ${def.label.toLowerCase()} traduïts. ${errors} camps fallits.`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({ title: `${insertRows.length} ${def.label.toLowerCase()} traduïts amb IA` });
+      }
     } catch (e: any) {
-      toast({ title: e?.message || 'Error', variant: 'destructive' });
+      const msg = e?.message || 'Error';
+      setLastSummary({
+        scope: def.table,
+        label: def.label,
+        translated: 0,
+        failed: 0,
+        total: 0,
+        durationMs: Date.now() - started,
+        error: msg,
+      });
+      toast({ title: msg, variant: 'destructive' });
     } finally {
       setAiBusy(null);
+      setTimeout(() => setDynProgress(null), 1500);
     }
   };
+
 
   if (!lang) {
     return (
@@ -345,6 +469,18 @@ const AdminLanguageTranslations: React.FC = () => {
             </Button>
           </div>
 
+          {uiProgress && (
+            <ProgressCard
+              label={t('admin.aiTrTabUi', 'Interfície')}
+              done={uiProgress.done}
+              total={uiProgress.total}
+              errors={uiProgress.errors}
+            />
+          )}
+          {lastSummary && lastSummary.scope === 'ui' && (
+            <SummaryCard s={lastSummary} />
+          )}
+
           <div className="text-xs text-muted-foreground">
             {filteredKeys.length} {t('admin.aiTrShowing', 'de')} {sourceKeys.length} {t('admin.aiTrKeys', 'claus')}
           </div>
@@ -388,6 +524,19 @@ const AdminLanguageTranslations: React.FC = () => {
           <p className="text-sm text-muted-foreground">
             {t('admin.aiTrContentDesc', "Genera amb IA les traduccions que falten per a cada tipus de contingut. Es traduiran només les files que encara no tenen cap traducció en aquest idioma. Les ja existents no es modifiquen.")}
           </p>
+
+          {dynProgress && (
+            <ProgressCard
+              label={DYNAMIC_TABLES.find(d => d.table === dynProgress.table)?.label || dynProgress.table}
+              done={dynProgress.done}
+              total={dynProgress.total}
+              errors={dynProgress.errors}
+            />
+          )}
+          {lastSummary && lastSummary.scope !== 'ui' && (
+            <SummaryCard s={lastSummary} />
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {DYNAMIC_TABLES.map(def => (
               <div key={def.table} className="border rounded-md p-4 flex items-center justify-between">
@@ -422,5 +571,55 @@ const AdminLanguageTranslations: React.FC = () => {
     </div>
   );
 };
+
+const ProgressCard: React.FC<{ label: string; done: number; total: number; errors: number }> = ({ label, done, total, errors }) => {
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  return (
+    <div className="border rounded-md p-3 bg-card space-y-2">
+      <div className="flex items-center justify-between text-sm">
+        <span className="font-medium flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          Traduint {label}...
+        </span>
+        <span className="text-muted-foreground tabular-nums">
+          {done}/{total} ({pct}%){errors > 0 ? ` · ${errors} errors` : ''}
+        </span>
+      </div>
+      <Progress value={pct} />
+    </div>
+  );
+};
+
+const SummaryCard: React.FC<{ s: { label: string; translated: number; failed: number; total: number; durationMs: number; error?: string } }> = ({ s }) => {
+  const ok = !s.error && s.failed === 0;
+  const partial = !s.error && s.failed > 0 && s.translated > 0;
+  const Icon = ok ? CheckCircle2 : partial ? AlertTriangle : XCircle;
+  const cls = ok
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+    : partial
+    ? 'border-amber-200 bg-amber-50 text-amber-900'
+    : 'border-red-200 bg-red-50 text-red-900';
+  return (
+    <div className={`border rounded-md p-3 text-sm ${cls}`}>
+      <div className="flex items-start gap-2">
+        <Icon className="h-4 w-4 mt-0.5 flex-shrink-0" />
+        <div className="flex-1">
+          <div className="font-medium">
+            {ok && `${s.label}: traducció completada`}
+            {partial && `${s.label}: traducció parcial`}
+            {!ok && !partial && `${s.label}: error en la traducció`}
+          </div>
+          <div className="text-xs opacity-90 mt-0.5">
+            {s.translated} traduïts · {s.failed} fallits · {s.total} total · {(s.durationMs / 1000).toFixed(1)}s
+          </div>
+          {s.error && (
+            <div className="text-xs mt-1 font-mono break-words opacity-90">{s.error}</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 export default AdminLanguageTranslations;
