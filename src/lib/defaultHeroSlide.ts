@@ -131,6 +131,8 @@ export const DEFAULT_HERO: Required<Omit<DefaultHeroOverrides,
   card_title_es: 'El Mussolet',
   card_subtitle_ca: 'Botiga de confiança',
   card_subtitle_es: 'Tienda de confianza',
+
+  translations: {},
 };
 
 export function mergeHeroOverrides(overrides?: DefaultHeroOverrides | null) {
