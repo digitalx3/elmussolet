@@ -599,7 +599,12 @@ const AdminBirthListForm: React.FC = () => {
       toast.success(t('common.success'));
       navigate('/admin/llistes');
     } catch (err: any) {
-      toast.error(err.message || t('errors.generic'));
+      const detail = err?.message || err?.error_description || t('errors.generic');
+      toast.error(
+        lang === 'es'
+          ? `No se ha podido guardar la lista: ${detail}`
+          : `No s'ha pogut desar la llista: ${detail}`,
+      );
     } finally {
       setSaving(false);
     }
