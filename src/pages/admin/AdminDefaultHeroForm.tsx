@@ -9,11 +9,13 @@ import { Save, Upload, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { optimizeImage } from '@/lib/optimizeImage';
 import DefaultHero from '@/components/home/DefaultHero';
+import LanguageTabs from '@/components/admin/LanguageTabs';
 import {
   DEFAULT_HERO,
   DEFAULT_HERO_OVERRIDES_KEY,
   DEFAULT_HERO_OVERRIDES_KEY_2,
   DefaultHeroOverrides,
+  HeroLanguageContent,
 } from '@/lib/defaultHeroSlide';
 
 const ASPECTS: DefaultHeroOverrides['image_aspect'][] = ['1/1', '4/5', '4/3', '3/4', '16/9'];
