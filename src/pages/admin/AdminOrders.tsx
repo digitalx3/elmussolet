@@ -915,6 +915,108 @@ const AdminOrders: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Deletion Audit Dialog */}
+      <Dialog open={auditOpen} onOpenChange={setAuditOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('admin.deletionAudit', 'Historial d\'eliminacions')}</DialogTitle>
+            <DialogDescription>
+              {t('admin.deletionAuditDesc', 'Registre de comandes eliminades: qui, quan i quins registres es van actualitzar.')}
+            </DialogDescription>
+          </DialogHeader>
+
+          {auditLoading ? (
+            <p className="text-muted-foreground">{t('common.loading')}</p>
+          ) : auditLog.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic py-4">
+              {t('admin.noAuditEntries', 'Encara no hi ha eliminacions registrades.')}
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">{t('admin.movementDate', 'Data')}</TableHead>
+                  <TableHead className="text-xs">{t('admin.orderNumber')}</TableHead>
+                  <TableHead className="text-xs">{t('admin.deletedBy', 'Eliminat per')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('admin.auditItems', 'Línies')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('admin.auditStock', 'Mov. estoc')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('admin.auditListItems', 'Art. llista')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('admin.orderTotal')}</TableHead>
+                  <TableHead className="w-10"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {auditLog.map((a: any) => (
+                  <TableRow key={a.id}>
+                    <TableCell className="text-xs whitespace-nowrap">
+                      {format(new Date(a.created_at), 'dd/MM/yy HH:mm:ss', { locale: dateFnsLocale })}
+                    </TableCell>
+                    <TableCell className="text-xs font-mono">{a.order_number || '—'}</TableCell>
+                    <TableCell className="text-xs">{a.deleted_by_email || a.deleted_by || '—'}</TableCell>
+                    <TableCell className="text-xs text-right">{a.order_items_deleted}</TableCell>
+                    <TableCell className="text-xs text-right">{a.stock_movements_created}</TableCell>
+                    <TableCell className="text-xs text-right">{a.list_items_affected}</TableCell>
+                    <TableCell className="text-xs text-right">{formatPrice(Number(a.total ?? 0))}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAuditDetail(a)}>
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Audit detail (snapshots) */}
+      <Dialog open={!!auditDetail} onOpenChange={(o) => { if (!o) setAuditDetail(null); }}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          {auditDetail && (
+            <>
+              <DialogHeader>
+                <DialogTitle>
+                  {t('admin.auditDetailTitle', 'Detall eliminació')} — {auditDetail.order_number || auditDetail.order_id}
+                </DialogTitle>
+                <DialogDescription>
+                  {format(new Date(auditDetail.created_at), "d MMMM yyyy, HH:mm:ss", { locale: dateFnsLocale })}
+                  {' · '}{auditDetail.deleted_by_email || auditDetail.deleted_by || '—'}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-3 gap-3 py-3 text-sm">
+                <div className="rounded-md border p-2">
+                  <p className="text-xs text-muted-foreground">{t('admin.auditItems', 'Línies')}</p>
+                  <p className="font-semibold">{auditDetail.order_items_deleted}</p>
+                </div>
+                <div className="rounded-md border p-2">
+                  <p className="text-xs text-muted-foreground">{t('admin.auditStock', 'Mov. estoc')}</p>
+                  <p className="font-semibold">{auditDetail.stock_movements_created}</p>
+                </div>
+                <div className="rounded-md border p-2">
+                  <p className="text-xs text-muted-foreground">{t('admin.auditListItems', 'Art. llista')}</p>
+                  <p className="font-semibold">{auditDetail.list_items_affected}</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-semibold mb-1">{t('admin.orderSnapshot', 'Snapshot comanda')}</p>
+                  <pre className="text-[11px] bg-muted/40 p-2 rounded-md overflow-x-auto max-h-60">
+{JSON.stringify(auditDetail.order_snapshot, null, 2)}
+                  </pre>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold mb-1">{t('admin.itemsSnapshot', 'Snapshot línies')}</p>
+                  <pre className="text-[11px] bg-muted/40 p-2 rounded-md overflow-x-auto max-h-60">
+{JSON.stringify(auditDetail.items_snapshot, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
