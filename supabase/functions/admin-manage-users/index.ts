@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 interface Body {
-  action: "create" | "update" | "delete" | "restore";
+  action: "create" | "update" | "delete" | "restore" | "get";
   user_id?: string;
   email?: string;
   password?: string;
@@ -17,6 +17,13 @@ interface Body {
   phone?: string;
   role?: string;
   preferred_language?: string;
+  address_line1?: string;
+  address_line2?: string;
+  city?: string;
+  postal_code?: string;
+  province?: string;
+  nif?: string;
+  company_name?: string;
   send_welcome_email?: boolean;
   delete_mode?: "soft" | "hard";
 }
