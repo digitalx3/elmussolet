@@ -118,12 +118,20 @@ const AdminSmtpSettings: React.FC = () => {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Connexió</CardTitle>
-          <CardDescription>Dades del servidor de correu sortint.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <Tabs defaultValue="config">
+        <TabsList>
+          <TabsTrigger value="config">Configuració</TabsTrigger>
+          <TabsTrigger value="log">Registre d'enviaments</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="config" className="space-y-6 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Connexió</CardTitle>
+              <CardDescription>Dades del servidor de correu sortint.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+
           <div className="grid grid-cols-1 md:grid-cols-[1fr_120px] gap-3">
             <div>
               <Label>Servidor de sortida (host)</Label>
