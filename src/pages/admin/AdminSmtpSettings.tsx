@@ -2,12 +2,29 @@ import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Loader2, Send, Server } from 'lucide-react';
+import { Save, Loader2, Send, Server, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { format } from 'date-fns';
+import { ca } from 'date-fns/locale';
+
+interface SmtpLogRow {
+  id: string;
+  created_at: string;
+  recipient: string;
+  subject: string;
+  smtp_host: string | null;
+  test_mode: boolean;
+  success: boolean;
+  error_message: string | null;
+}
+
 
 interface SmtpRow {
   id?: string;
@@ -101,12 +118,20 @@ const AdminSmtpSettings: React.FC = () => {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Connexió</CardTitle>
-          <CardDescription>Dades del servidor de correu sortint.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <Tabs defaultValue="config">
+        <TabsList>
+          <TabsTrigger value="config">Configuració</TabsTrigger>
+          <TabsTrigger value="log">Registre d'enviaments</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="config" className="space-y-6 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Connexió</CardTitle>
+              <CardDescription>Dades del servidor de correu sortint.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+
           <div className="grid grid-cols-1 md:grid-cols-[1fr_120px] gap-3">
             <div>
               <Label>Servidor de sortida (host)</Label>
@@ -182,14 +207,110 @@ const AdminSmtpSettings: React.FC = () => {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
-        <Button onClick={() => save.mutate()} disabled={save.isPending} className="gap-1">
-          {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Desar configuració
-        </Button>
-      </div>
+          <div className="flex justify-end">
+            <Button onClick={() => save.mutate()} disabled={save.isPending} className="gap-1">
+              {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Desar configuració
+            </Button>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="log" className="mt-4">
+          <SmtpLogPanel />
+        </TabsContent>
+      </Tabs>
     </div>
+
+  );
+};
+
+const SmtpLogPanel: React.FC = () => {
+  const { data: logs = [], isLoading, refetch, isFetching } = useQuery({
+    queryKey: ['smtp-send-log'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('smtp_send_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data || []) as SmtpLogRow[];
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="text-lg">Registre d'enviaments</CardTitle>
+          <CardDescription>Últims 100 intents d'enviament SMTP (correctes i errors).</CardDescription>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1">
+          <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+          Actualitzar
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground py-4">Carregant…</p>
+        ) : logs.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic py-4">Encara no hi ha enviaments registrats.</p>
+        ) : (
+          <div className="rounded-md border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Data</TableHead>
+                  <TableHead className="text-xs">Destinatari</TableHead>
+                  <TableHead className="text-xs">Assumpte</TableHead>
+                  <TableHead className="text-xs">Estat</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {logs.map(l => (
+                  <TableRow key={l.id}>
+                    <TableCell className="text-xs whitespace-nowrap">
+                      {format(new Date(l.created_at), 'dd/MM/yy HH:mm:ss', { locale: ca })}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span>{l.recipient}</span>
+                        {l.test_mode && (
+                          <Badge variant="outline" className="text-[10px]">prova</Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs max-w-[260px] truncate" title={l.subject}>
+                      {l.subject}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {l.success ? (
+                        <Badge className="text-[10px] border bg-green-100 text-green-800 border-green-200 gap-1">
+                          <CheckCircle2 className="h-3 w-3" /> Enviat
+                        </Badge>
+                      ) : (
+                        <div className="flex flex-col gap-0.5">
+                          <Badge className="text-[10px] border bg-red-100 text-red-800 border-red-200 gap-1 w-fit">
+                            <XCircle className="h-3 w-3" /> Error
+                          </Badge>
+                          {l.error_message && (
+                            <span className="text-[10px] text-muted-foreground max-w-[300px] truncate" title={l.error_message}>
+                              {l.error_message}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
 export default AdminSmtpSettings;
+
