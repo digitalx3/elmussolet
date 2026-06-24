@@ -99,6 +99,97 @@ const AdminBirthListForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [sections, setSections] = useState<PendingSection[]>([]);
+  const [activeSectionTempId, setActiveSectionTempId] = useState<string | null>(null);
+  const [browseCategory, setBrowseCategory] = useState<string>('all');
+  const [browseSearch, setBrowseSearch] = useState('');
+  const [defaultsLoaded, setDefaultsLoaded] = useState(false);
+
+  const { data: defaultSectionsData = [] } = useDefaultListSections({ onlyActive: true });
+
+  // Pre-load default sections when creating a new list
+  useEffect(() => {
+    if (!isNew || defaultsLoaded) return;
+    if (defaultSectionsData.length === 0) return;
+    const initial = defaultSectionsData.map((s, i) => ({
+      temp_id: `def-${s.id}`,
+      name_ca: pickSectionName(s, 'ca'),
+      name_es: pickSectionName(s, 'es'),
+      sort_order: i,
+    }));
+    setSections(initial);
+    setActiveSectionTempId(initial[0]?.temp_id ?? null);
+    setDefaultsLoaded(true);
+  }, [isNew, defaultsLoaded, defaultSectionsData]);
+
+  // Existing sections when editing
+  const { data: existingSections } = useQuery({
+    queryKey: ['admin-birth-list-sections', id],
+    enabled: !isNew && !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('list_sections')
+        .select('id, name_ca, name_es, sort_order')
+        .eq('list_id', id!)
+        .order('sort_order', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  useEffect(() => {
+    if (existingSections && existingSections.length > 0) {
+      const mapped: PendingSection[] = existingSections.map((s: any) => ({
+        temp_id: `ex-${s.id}`,
+        id: s.id,
+        name_ca: s.name_ca || '',
+        name_es: s.name_es || '',
+        sort_order: s.sort_order ?? 0,
+      }));
+      setSections(mapped);
+      setActiveSectionTempId(prev => prev ?? mapped[0]?.temp_id ?? null);
+      setDefaultsLoaded(true);
+    }
+  }, [existingSections]);
+
+  // Categories for the browse filter (same source as client)
+  const { data: browseCategories = [] } = useQuery({
+    queryKey: ['admin-birthlist-browse-cats'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('categories')
+        .select('id, slug, category_translations(language, name)')
+        .eq('is_active', true)
+        .order('sort_order');
+      return data || [];
+    },
+  });
+
+  // Browse products grid
+  const { data: browseProducts = [], isFetching: browseLoading } = useQuery({
+    queryKey: ['admin-birthlist-browse-products', browseCategory],
+    queryFn: async () => {
+      let q = supabase
+        .from('products')
+        .select(`id, base_price, slug, category_id, product_translations(language, name), product_images(image_url, is_primary, sort_order)`)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(60);
+      if (browseCategory !== 'all') q = q.eq('category_id', browseCategory);
+      const { data } = await q;
+      return data || [];
+    },
+  });
+
+  const filteredBrowse = useMemo(() => {
+    const q = browseSearch.trim().toLowerCase();
+    if (!q) return browseProducts;
+    return browseProducts.filter((p: any) => {
+      const tr = p.product_translations?.find((t: any) => t.language === lang)
+        || p.product_translations?.[0];
+      return (tr?.name || p.slug || '').toLowerCase().includes(q);
+    });
+  }, [browseProducts, browseSearch, lang]);
 
   // Load existing list
   const { data: existingList, isLoading } = useQuery({
