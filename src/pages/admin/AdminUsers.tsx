@@ -100,10 +100,17 @@ const AdminUsers: React.FC = () => {
     queryKey: ['admin-user-orders', detailUser?.id],
     queryFn: async () => {
       if (!detailUser) return [];
+      // Trobar el customer enllaçat a aquest auth user i llistar els seus pedidos
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('auth_user_id', detailUser.id)
+        .maybeSingle();
+      if (!customer) return [];
       const { data, error } = await supabase
         .from('orders')
         .select('id, order_number, total, status, created_at')
-        .eq('user_id', detailUser.id)
+        .eq('customer_id', customer.id)
         .order('created_at', { ascending: false })
         .limit(20);
       if (error) throw error;
@@ -111,6 +118,7 @@ const AdminUsers: React.FC = () => {
     },
     enabled: !!detailUser,
   });
+
 
   const { data: userLists = [] } = useQuery({
     queryKey: ['admin-user-lists', detailUser?.id],
