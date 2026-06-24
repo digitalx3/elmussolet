@@ -356,6 +356,14 @@ const AdminBirthListForm: React.FC = () => {
   const [deleting, setDeleting] = useState(false);
   const [confirmChecked, setConfirmChecked] = useState(false);
   const [confirmPhrase, setConfirmPhrase] = useState('');
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [previewCounts, setPreviewCounts] = useState<{
+    orders: number;
+    order_items: number;
+    list_items: number;
+    list_sections: number;
+    list_owners: number;
+  }>({ orders: 0, order_items: 0, list_items: 0, list_sections: 0, list_owners: 0 });
   const REQUIRED_PHRASE = 'ELIMINAR';
   const canConfirmDelete = confirmChecked && confirmPhrase.trim().toUpperCase() === REQUIRED_PHRASE;
 
@@ -369,17 +377,56 @@ const AdminBirthListForm: React.FC = () => {
 
   const openDeleteDialog = async () => {
     if (isNew || !id) return;
-    const { count, error } = await supabase
-      .from('orders')
-      .select('id', { count: 'exact', head: true })
-      .eq('list_id', id);
-    if (error) {
-      toast.error(error.message || t('errors.generic'));
-      return;
+    setLoadingPreview(true);
+    try {
+      // Get orders + their ids (to count order_items)
+      const { data: ordersData, error: ordersErr } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('list_id', id);
+      if (ordersErr) throw ordersErr;
+      const orderIds = (ordersData ?? []).map((o: any) => o.id);
+
+      const headCount = async (table: any, col: string, val: any) => {
+        const { count, error } = await supabase
+          .from(table)
+          .select('id', { count: 'exact', head: true })
+          .eq(col, val);
+        if (error) throw error;
+        return count ?? 0;
+      };
+
+      let orderItemsCount = 0;
+      if (orderIds.length > 0) {
+        const { count, error } = await supabase
+          .from('order_items')
+          .select('id', { count: 'exact', head: true })
+          .in('order_id', orderIds);
+        if (error) throw error;
+        orderItemsCount = count ?? 0;
+      }
+
+      const [listItems, listSections, listOwners] = await Promise.all([
+        headCount('list_items', 'list_id', id),
+        headCount('list_sections', 'list_id', id),
+        headCount('list_owners', 'list_id', id),
+      ]);
+
+      const counts = {
+        orders: orderIds.length,
+        order_items: orderItemsCount,
+        list_items: listItems,
+        list_sections: listSections,
+        list_owners: listOwners,
+      };
+      setPreviewCounts(counts);
+      setOrdersCount(counts.orders);
+      setDeleteStep(counts.orders > 0 ? 'orders' : 'final');
+    } catch (err: any) {
+      toast.error(err?.message || t('errors.generic'));
+    } finally {
+      setLoadingPreview(false);
     }
-    const n = count ?? 0;
-    setOrdersCount(n);
-    setDeleteStep(n > 0 ? 'orders' : 'final');
   };
 
   const performDelete = async () => {
@@ -632,8 +679,8 @@ const AdminBirthListForm: React.FC = () => {
           <div>
             {!isNew && (
               <>
-                <Button variant="destructive" size="sm" onClick={openDeleteDialog} disabled={deleting}>
-                  {t('common.delete')}
+                <Button variant="destructive" size="sm" onClick={openDeleteDialog} disabled={deleting || loadingPreview}>
+                  {loadingPreview ? t('common.loading') : t('common.delete')}
                 </Button>
 
                 {/* Step 1 (with orders): warn that orders will be deleted */}
@@ -645,6 +692,14 @@ const AdminBirthListForm: React.FC = () => {
                         {t('admin.deleteListWithOrdersDesc', { count: ordersCount })}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
+                    <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
+                      <div className="font-medium mb-1">{t('admin.deletePreviewTitle', { defaultValue: 'Se eliminarán los siguientes registros:' })}</div>
+                      <div className="flex justify-between"><span>Orders</span><span className="font-mono">{previewCounts.orders}</span></div>
+                      <div className="flex justify-between"><span>Order items</span><span className="font-mono">{previewCounts.order_items}</span></div>
+                      <div className="flex justify-between"><span>List items</span><span className="font-mono">{previewCounts.list_items}</span></div>
+                      <div className="flex justify-between"><span>List sections</span><span className="font-mono">{previewCounts.list_sections}</span></div>
+                      <div className="flex justify-between"><span>List owners</span><span className="font-mono">{previewCounts.list_owners}</span></div>
+                    </div>
                     <AlertDialogFooter>
                       <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                       <AlertDialogAction onClick={() => setDeleteStep('final')}>
@@ -665,6 +720,15 @@ const AdminBirthListForm: React.FC = () => {
                           : t('admin.deleteListConfirm')}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
+
+                    <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
+                      <div className="font-medium mb-1">{t('admin.deletePreviewTitle', { defaultValue: 'Se eliminarán los siguientes registros:' })}</div>
+                      <div className="flex justify-between"><span>Orders</span><span className="font-mono">{previewCounts.orders}</span></div>
+                      <div className="flex justify-between"><span>Order items</span><span className="font-mono">{previewCounts.order_items}</span></div>
+                      <div className="flex justify-between"><span>List items</span><span className="font-mono">{previewCounts.list_items}</span></div>
+                      <div className="flex justify-between"><span>List sections</span><span className="font-mono">{previewCounts.list_sections}</span></div>
+                      <div className="flex justify-between"><span>List owners</span><span className="font-mono">{previewCounts.list_owners}</span></div>
+                    </div>
 
                     <div className="space-y-4 py-2">
                       <label className="flex items-start gap-3 cursor-pointer">
