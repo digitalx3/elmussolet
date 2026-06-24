@@ -44,6 +44,13 @@ interface UserFormState {
   phone: string;
   role: string;
   preferred_language: string;
+  address_line1: string;
+  address_line2: string;
+  city: string;
+  postal_code: string;
+  province: string;
+  nif: string;
+  company_name: string;
   send_welcome_email: boolean;
 }
 
@@ -54,6 +61,13 @@ const emptyForm: UserFormState = {
   phone: '',
   role: 'customer',
   preferred_language: 'ca',
+  address_line1: '',
+  address_line2: '',
+  city: '',
+  postal_code: '',
+  province: '',
+  nif: '',
+  company_name: '',
   send_welcome_email: true,
 };
 
