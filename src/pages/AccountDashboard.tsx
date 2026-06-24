@@ -104,11 +104,21 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
 
   // Auth credentials state
   const [currentEmail, setCurrentEmail] = useState('');
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [newEmail, setNewEmail] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
+
+  const loadAuthUser = async () => {
+    const { data } = await supabase.auth.getUser();
+    const em = data.user?.email || '';
+    const pending = (data.user as any)?.new_email || null;
+    setCurrentEmail(em);
+    setPendingEmail(pending && pending !== em ? pending : null);
+    setNewEmail(em);
+  };
 
   useEffect(() => {
     if (profile) {
@@ -125,11 +135,7 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
         company_name: profile.company_name || '',
       });
     }
-    supabase.auth.getUser().then(({ data }) => {
-      const em = data.user?.email || '';
-      setCurrentEmail(em);
-      setNewEmail(em);
-    });
+    loadAuthUser();
   }, [profile]);
 
   const handleSave = async () => {
@@ -147,13 +153,24 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
 
   const handleUpdateEmail = async () => {
     if (!newEmail || newEmail === currentEmail) return;
+    // Basic email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      toast.error('Format de correu invàlid');
+      return;
+    }
     setSavingEmail(true);
-    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    const { error } = await supabase.auth.updateUser(
+      { email: newEmail },
+      { emailRedirectTo: `${window.location.origin}/account` },
+    );
     setSavingEmail(false);
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success(t('account.emailUpdateRequested') || 'Revisa el teu correu per confirmar el canvi');
+      toast.success('Revisa el teu correu actual i el nou per confirmar el canvi');
+      setPendingEmail(newEmail);
+      // Refresh from auth after a short delay to pick up new_email field
+      setTimeout(loadAuthUser, 800);
     }
   };
 
