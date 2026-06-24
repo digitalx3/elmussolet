@@ -77,6 +77,8 @@ const AdminOrders: React.FC = () => {
   const [editing, setEditing] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [productResults, setProductResults] = useState<any[]>([]);
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [auditDetail, setAuditDetail] = useState<any | null>(null);
 
   const isEditable = !!selectedOrder && selectedOrder.payment_status !== 'paid' && selectedOrder.payment_status !== 'refunded';
 
