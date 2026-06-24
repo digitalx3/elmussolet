@@ -78,6 +78,20 @@ const AdminLanguageTranslations: React.FC = () => {
   const [savingUi, setSavingUi] = useState(false);
   const [translatingUi, setTranslatingUi] = useState(false);
   const [aiBusy, setAiBusy] = useState<string | null>(null);
+  const [uiProgress, setUiProgress] = useState<{ done: number; total: number; errors: number } | null>(null);
+  const [dynProgress, setDynProgress] = useState<{ table: string; done: number; total: number; errors: number } | null>(null);
+  const [lastSummary, setLastSummary] = useState<
+    | null
+    | {
+        scope: string;
+        label: string;
+        translated: number;
+        failed: number;
+        total: number;
+        durationMs: number;
+        error?: string;
+      }
+  >(null);
 
   useEffect(() => {
     let alive = true;
