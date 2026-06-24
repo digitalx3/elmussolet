@@ -415,6 +415,10 @@ const AdminOrders: React.FC = () => {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-2xl font-bold">{t('admin.orders')}</h1>
+        <Button variant="outline" size="sm" className="gap-1" onClick={() => setAuditOpen(true)}>
+          <History className="h-4 w-4" />
+          {t('admin.deletionAudit', 'Historial d\'eliminacions')}
+        </Button>
       </div>
 
       {/* Filters */}
