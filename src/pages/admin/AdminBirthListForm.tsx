@@ -636,20 +636,6 @@ const AdminBirthListForm: React.FC = () => {
                   {t('common.delete')}
                 </Button>
 
-                {/* Step 1 (no orders): simple confirmation */}
-                <AlertDialog open={deleteStep === 'first'} onOpenChange={(o) => !o && setDeleteStep('idle')}>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>{t('admin.deleteList')}</AlertDialogTitle>
-                      <AlertDialogDescription>{t('admin.deleteListConfirm')}</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                      <AlertDialogAction onClick={performDelete}>{t('common.delete')}</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-
                 {/* Step 1 (with orders): warn that orders will be deleted */}
                 <AlertDialog open={deleteStep === 'orders'} onOpenChange={(o) => !o && setDeleteStep('idle')}>
                   <AlertDialogContent>
@@ -668,18 +654,57 @@ const AdminBirthListForm: React.FC = () => {
                   </AlertDialogContent>
                 </AlertDialog>
 
-                {/* Step 2 (with orders): final confirmation */}
+                {/* Final step: double confirmation (checkbox + typed phrase) */}
                 <AlertDialog open={deleteStep === 'final'} onOpenChange={(o) => !o && setDeleteStep('idle')}>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>{t('admin.deleteListFinalTitle')}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        {t('admin.deleteListFinalDesc', { count: ordersCount })}
+                        {ordersCount > 0
+                          ? t('admin.deleteListFinalDesc', { count: ordersCount })
+                          : t('admin.deleteListConfirm')}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
+
+                    <div className="space-y-4 py-2">
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <Checkbox
+                          checked={confirmChecked}
+                          onCheckedChange={(v) => setConfirmChecked(v === true)}
+                          className="mt-0.5"
+                        />
+                        <span className="text-sm text-foreground">
+                          {t('admin.deleteListAckCheckbox', {
+                            defaultValue:
+                              'Entiendo que esta acción es permanente y eliminará la lista, sus propietarios, sus regalos y todos los pedidos asociados.',
+                          })}
+                        </span>
+                      </label>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm-phrase" className="text-sm">
+                          {t('admin.deleteListTypePhrase', {
+                            phrase: REQUIRED_PHRASE,
+                            defaultValue: `Para confirmar, escribe "${REQUIRED_PHRASE}" a continuación:`,
+                          })}
+                        </Label>
+                        <Input
+                          id="confirm-phrase"
+                          value={confirmPhrase}
+                          onChange={(e) => setConfirmPhrase(e.target.value)}
+                          placeholder={REQUIRED_PHRASE}
+                          autoComplete="off"
+                        />
+                      </div>
+                    </div>
+
                     <AlertDialogFooter>
                       <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                      <AlertDialogAction onClick={performDelete} disabled={deleting}>
+                      <AlertDialogAction
+                        onClick={performDelete}
+                        disabled={deleting || !canConfirmDelete}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
                         {deleting ? t('common.loading') : t('common.delete')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
