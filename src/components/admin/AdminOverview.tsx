@@ -158,7 +158,7 @@ const AdminOverview: React.FC = () => {
                     <div>
                       <p className="font-medium text-sm">{order.order_number}</p>
                       <p className="text-xs text-muted-foreground">
-                        {order.profiles?.full_name || '—'} · {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: ca })}
+                        {order.customers?.full_name || '—'} · {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: ca })}
                       </p>
                     </div>
                     <div className="text-right">
