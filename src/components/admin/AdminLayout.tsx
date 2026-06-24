@@ -133,8 +133,11 @@ function AdminSidebar() {
         </SidebarGroup>
 
         {collapsed
-          ? groups.map(group => (
-              <SidebarGroup key={group.id}>
+          ? groups.map((group, idx) => (
+              <SidebarGroup key={group.id} className="py-1">
+                {idx > 0 && (
+                  <div className="mx-2 mb-1 h-px bg-border/60" aria-hidden="true" />
+                )}
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {group.items.map(item => (
