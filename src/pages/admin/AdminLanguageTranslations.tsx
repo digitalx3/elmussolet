@@ -524,6 +524,19 @@ const AdminLanguageTranslations: React.FC = () => {
           <p className="text-sm text-muted-foreground">
             {t('admin.aiTrContentDesc', "Genera amb IA les traduccions que falten per a cada tipus de contingut. Es traduiran només les files que encara no tenen cap traducció en aquest idioma. Les ja existents no es modifiquen.")}
           </p>
+
+          {dynProgress && (
+            <ProgressCard
+              label={DYNAMIC_TABLES.find(d => d.table === dynProgress.table)?.label || dynProgress.table}
+              done={dynProgress.done}
+              total={dynProgress.total}
+              errors={dynProgress.errors}
+            />
+          )}
+          {lastSummary && lastSummary.scope !== 'ui' && (
+            <SummaryCard s={lastSummary} />
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {DYNAMIC_TABLES.map(def => (
               <div key={def.table} className="border rounded-md p-4 flex items-center justify-between">
@@ -558,5 +571,55 @@ const AdminLanguageTranslations: React.FC = () => {
     </div>
   );
 };
+
+const ProgressCard: React.FC<{ label: string; done: number; total: number; errors: number }> = ({ label, done, total, errors }) => {
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  return (
+    <div className="border rounded-md p-3 bg-card space-y-2">
+      <div className="flex items-center justify-between text-sm">
+        <span className="font-medium flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          Traduint {label}...
+        </span>
+        <span className="text-muted-foreground tabular-nums">
+          {done}/{total} ({pct}%){errors > 0 ? ` · ${errors} errors` : ''}
+        </span>
+      </div>
+      <Progress value={pct} />
+    </div>
+  );
+};
+
+const SummaryCard: React.FC<{ s: { label: string; translated: number; failed: number; total: number; durationMs: number; error?: string } }> = ({ s }) => {
+  const ok = !s.error && s.failed === 0;
+  const partial = !s.error && s.failed > 0 && s.translated > 0;
+  const Icon = ok ? CheckCircle2 : partial ? AlertTriangle : XCircle;
+  const cls = ok
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+    : partial
+    ? 'border-amber-200 bg-amber-50 text-amber-900'
+    : 'border-red-200 bg-red-50 text-red-900';
+  return (
+    <div className={`border rounded-md p-3 text-sm ${cls}`}>
+      <div className="flex items-start gap-2">
+        <Icon className="h-4 w-4 mt-0.5 flex-shrink-0" />
+        <div className="flex-1">
+          <div className="font-medium">
+            {ok && `${s.label}: traducció completada`}
+            {partial && `${s.label}: traducció parcial`}
+            {!ok && !partial && `${s.label}: error en la traducció`}
+          </div>
+          <div className="text-xs opacity-90 mt-0.5">
+            {s.translated} traduïts · {s.failed} fallits · {s.total} total · {(s.durationMs / 1000).toFixed(1)}s
+          </div>
+          {s.error && (
+            <div className="text-xs mt-1 font-mono break-words opacity-90">{s.error}</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 export default AdminLanguageTranslations;
