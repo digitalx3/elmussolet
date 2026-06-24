@@ -102,6 +102,14 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
   });
   const [saving, setSaving] = useState(false);
 
+  // Auth credentials state
+  const [currentEmail, setCurrentEmail] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+
   useEffect(() => {
     if (profile) {
       setForm({
@@ -117,6 +125,11 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
         company_name: profile.company_name || '',
       });
     }
+    supabase.auth.getUser().then(({ data }) => {
+      const em = data.user?.email || '';
+      setCurrentEmail(em);
+      setNewEmail(em);
+    });
   }, [profile]);
 
   const handleSave = async () => {
@@ -129,6 +142,39 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
     } else {
       toast.success(t('account.saved'));
       await refreshProfile();
+    }
+  };
+
+  const handleUpdateEmail = async () => {
+    if (!newEmail || newEmail === currentEmail) return;
+    setSavingEmail(true);
+    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    setSavingEmail(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(t('account.emailUpdateRequested') || 'Revisa el teu correu per confirmar el canvi');
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast.error(t('account.passwordTooShort') || 'La contrasenya ha de tenir almenys 6 caràcters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error(t('account.passwordMismatch') || 'Les contrasenyes no coincideixen');
+      return;
+    }
+    setSavingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setSavingPassword(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(t('account.passwordUpdated') || 'Contrasenya actualitzada');
+      setNewPassword('');
+      setConfirmPassword('');
     }
   };
 
@@ -185,6 +231,39 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
         </div>
 
         <Button onClick={handleSave} disabled={saving}>{saving ? t('common.loading') : t('account.save')}</Button>
+
+        {/* Email change */}
+        <div className="pt-6 border-t">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Correu electrònic</h3>
+          <div className="grid sm:grid-cols-[1fr_auto] gap-3 items-end">
+            <div>
+              <Label>Email</Label>
+              <Input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
+              <p className="text-xs text-muted-foreground mt-1">Hauràs de confirmar el canvi des del nou correu.</p>
+            </div>
+            <Button onClick={handleUpdateEmail} disabled={savingEmail || !newEmail || newEmail === currentEmail}>
+              {savingEmail ? t('common.loading') : 'Canviar email'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Password change */}
+        <div className="pt-6 border-t">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Contrasenya</h3>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <Label>Nova contrasenya</Label>
+              <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} autoComplete="new-password" />
+            </div>
+            <div>
+              <Label>Confirma la contrasenya</Label>
+              <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" />
+            </div>
+          </div>
+          <Button className="mt-4" onClick={handleUpdatePassword} disabled={savingPassword || !newPassword}>
+            {savingPassword ? t('common.loading') : 'Canviar contrasenya'}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
