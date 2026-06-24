@@ -397,24 +397,45 @@ const AdminDefaultHeroForm: React.FC = () => {
 
               <div>
                 <Label className="text-xs mb-1 block">Logo</Label>
-                {state.card_logo_url && (
-                  <div className="mb-2 w-14 h-14 rounded-full overflow-hidden border border-border">
-                    <img src={state.card_logo_url} alt="" className="w-full h-full object-cover" />
+                {(pending.logo || state.card_logo_url) && (
+                  <div className="mb-2 flex items-center gap-2">
+                    <div className="w-14 h-14 rounded-full overflow-hidden border border-border">
+                      <img src={pending.logo?.url ?? state.card_logo_url ?? ''} alt="" className="w-full h-full object-cover" />
+                    </div>
+                    {pending.logo && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/95 text-white">
+                        VISTA PRÈVIA
+                      </span>
+                    )}
                   </div>
                 )}
                 <div className="flex items-center gap-2 flex-wrap">
                   <label className="inline-flex items-center gap-2 cursor-pointer text-sm px-3 py-2 rounded-md border border-border hover:bg-muted">
                     <Upload className="h-4 w-4" />
-                    {uploading === 'logo' ? 'Pujant...' : state.card_logo_url ? 'Canviar' : 'Pujar'}
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && upload('logo', e.target.files[0])} />
+                    {state.card_logo_url || pending.logo ? 'Triar un altre' : 'Triar logo'}
+                    <input
+                      type="file" accept="image/*" className="hidden"
+                      onChange={(e) => { if (e.target.files?.[0]) { pickFile('logo', e.target.files[0]); e.target.value = ''; } }}
+                    />
                   </label>
-                  {state.card_logo_url && (
+                  {pending.logo && (
+                    <>
+                      <Button size="sm" onClick={() => confirmUpload('logo')} disabled={uploading === 'logo'}>
+                        {uploading === 'logo' ? 'Pujant...' : 'Confirmar i pujar'}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => cancelPending('logo')} disabled={uploading === 'logo'}>
+                        Cancel·lar
+                      </Button>
+                    </>
+                  )}
+                  {!pending.logo && state.card_logo_url && (
                     <Button variant="ghost" size="sm" className="text-destructive" onClick={() => set('card_logo_url', null)}>
                       Treure
                     </Button>
                   )}
                 </div>
               </div>
+
 
               <div className="grid grid-cols-2 gap-2">
                 <div><Label className="text-xs">Títol (CA)</Label><Input value={state.card_title_ca} onChange={(e) => set('card_title_ca', e.target.value)} /></div>
