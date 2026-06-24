@@ -19,6 +19,8 @@ import { useCategories } from '@/hooks/useCategories';
 import { useBrands } from '@/hooks/useBrands';
 import { useActiveTaxRates, priceWithTax } from '@/hooks/useTaxRates';
 import { optimizeImage } from '@/lib/optimizeImage';
+import { useLanguages, useDefaultLanguage } from '@/hooks/useLanguages';
+import LanguageTabs from '@/components/admin/LanguageTabs';
 
 const emptyTranslation = { name: '', short_description: '', description: '' };
 
