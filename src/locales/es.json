@@ -254,6 +254,7 @@
     "shipping": "Envíos",
     "attributes": "Atributos",
     "settings": "Configuración",
+    "maintenance": "Modo mantenimiento",
     "pendingOrders": "Pedidos pendientes",
     "todayOrders": "Pedidos hoy",
     "lowStock": "Stock bajo",

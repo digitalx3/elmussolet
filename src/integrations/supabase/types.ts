@@ -785,6 +785,42 @@ export type Database = {
         }
         Relationships: []
       }
+      maintenance_settings: {
+        Row: {
+          allowed_ips: string[]
+          enabled: boolean
+          id: string
+          message_ca: string
+          message_es: string
+          show_logo: boolean
+          singleton: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allowed_ips?: string[]
+          enabled?: boolean
+          id?: string
+          message_ca?: string
+          message_es?: string
+          show_logo?: boolean
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allowed_ips?: string[]
+          enabled?: boolean
+          id?: string
+          message_ca?: string
+          message_es?: string
+          show_logo?: boolean
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       order_deletion_audit: {
         Row: {
           created_at: string

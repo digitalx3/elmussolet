@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   Package, LayoutDashboard, Tags, Bookmark, ListChecks,
   FileText, ShoppingCart, Users, Truck, Settings, ArrowLeft, SlidersHorizontal, Image as ImageIcon,
-  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database,
+  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database, Power,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel,
@@ -71,6 +71,7 @@ const groups: NavGroup[] = [
       { key: 'users', path: '/admin/usuaris', icon: Users },
       { key: 'shipping', path: '/admin/enviaments', icon: Truck },
       { key: 'backups', path: '/admin/backups', icon: Database, label: 'Còpies de seguretat' },
+      { key: 'maintenance', path: '/admin/manteniment', icon: Power, label: 'Mode manteniment' },
       { key: 'settings', path: '/admin/configuracio', icon: Settings },
     ],
   },

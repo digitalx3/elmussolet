@@ -25,6 +25,7 @@ import AdminContactSettings from '@/pages/admin/AdminContactSettings';
 import AdminContactMessages from '@/pages/admin/AdminContactMessages';
 import AdminSmtpSettings from '@/pages/admin/AdminSmtpSettings';
 import AdminBackups from '@/pages/admin/AdminBackups';
+import AdminMaintenance from '@/pages/admin/AdminMaintenance';
 
 const AdminPlaceholder: React.FC<{ titleKey: string }> = ({ titleKey }) => {
   const { t } = useTranslation();
@@ -66,6 +67,7 @@ const AdminDashboard: React.FC = () => {
         <Route path="missatges" element={<AdminContactMessages />} />
         <Route path="smtp" element={<AdminSmtpSettings />} />
         <Route path="backups" element={<AdminBackups />} />
+        <Route path="manteniment" element={<AdminMaintenance />} />
       </Routes>
     </AdminLayout>
   );
