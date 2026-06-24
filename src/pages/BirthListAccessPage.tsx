@@ -15,7 +15,7 @@ const BirthListAccessPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { setAccess } = useListAccess();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [listCode, setListCode] = useState('');
   const [password, setPassword] = useState('');
