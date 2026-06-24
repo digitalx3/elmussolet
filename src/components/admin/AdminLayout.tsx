@@ -70,6 +70,7 @@ const groups: NavGroup[] = [
     items: [
       { key: 'users', path: '/admin/usuaris', icon: Users },
       { key: 'shipping', path: '/admin/enviaments', icon: Truck },
+      { key: 'backups', path: '/admin/backups', icon: Database, label: 'Còpies de seguretat' },
       { key: 'settings', path: '/admin/configuracio', icon: Settings },
     ],
   },
