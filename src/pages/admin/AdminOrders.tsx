@@ -448,6 +448,61 @@ const AdminOrders: React.FC = () => {
                 </div>
               </div>
 
+              {(() => {
+                const status = selectedOrder.status || 'pending';
+                const payment = selectedOrder.payment_status || 'pending';
+                const canRelease = status !== 'cancelled' && (payment === 'pending' || payment === 'failed' || payment === 'refunded');
+                if (!canRelease) return null;
+                return (
+                  <div className="rounded-md border border-amber-200 bg-amber-50 p-3 flex items-start justify-between gap-3">
+                    <div className="text-xs text-amber-900">
+                      <p className="font-semibold mb-0.5">
+                        {t('admin.releaseBlockedTitle', 'Línies bloquejant estoc')}
+                      </p>
+                      <p>
+                        {t('admin.releaseBlockedDesc', 'Cancel·la la comanda per alliberar l\'estoc reservat i desbloquejar els articles de la llista.')}
+                      </p>
+                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm" className="gap-1 shrink-0">
+                          <Ban className="h-3.5 w-3.5" />
+                          {t('admin.cancelAndRelease', 'Cancel·lar i alliberar')}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{t('admin.confirmCancelTitle', 'Cancel·lar comanda?')}</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {t('admin.confirmCancelDesc', 'La comanda passarà a estat cancel·lada. L\'estoc i les reserves de la llista s\'alliberaran automàticament. Aquesta acció no es pot desfer.')}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => {
+                              updateStatusMutation.mutate(
+                                { id: selectedOrder.id, status: 'cancelled' },
+                                {
+                                  onSuccess: () => {
+                                    setSelectedOrder(prev => prev ? { ...prev, status: 'cancelled' } : prev);
+                                    qc.invalidateQueries({ queryKey: ['admin-order-items', selectedOrder.id] });
+                                    toast.success(t('admin.stockReleased', 'Estoc alliberat'));
+                                  },
+                                }
+                              );
+                            }}
+                          >
+                            {t('admin.cancelAndRelease', 'Cancel·lar i alliberar')}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                );
+              })()}
+
+
               {selectedOrder.shipping_address && (
                 <>
                   <Separator />
