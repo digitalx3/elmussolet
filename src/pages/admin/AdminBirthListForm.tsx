@@ -904,6 +904,9 @@ const AdminBirthListForm: React.FC = () => {
                         <Button type="button" variant="ghost" size="icon" className="h-5 w-5" disabled={idx === sections.length - 1} onClick={() => moveSection(s.temp_id, 'down')}>
                           <ChevronDown className="h-3 w-3" />
                         </Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" title={lang === 'es' ? 'Traducciones' : 'Traduccions'} onClick={() => setTranslatingTempId(s.temp_id)}>
+                          <Globe className="h-3 w-3" />
+                        </Button>
                         <Button type="button" variant="ghost" size="icon" className="h-5 w-5" onClick={() => removeSection(s.temp_id)}>
                           <Trash2 className="h-3 w-3 text-destructive" />
                         </Button>
