@@ -377,6 +377,7 @@ const AdminBirthListForm: React.FC = () => {
 
   const openDeleteDialog = async () => {
     if (isNew || !id) return;
+    if (loadingPreview || deleting) return; // guard against double click
     setLoadingPreview(true);
     try {
       // Get orders + their ids (to count order_items)
