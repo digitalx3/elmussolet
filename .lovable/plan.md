@@ -1,85 +1,103 @@
-# Mode manteniment
+# Pla: Reorganització de menú + sistema d'idiomes
 
-Nova secció a Administració per posar la web en manteniment, amb logo + missatge personalitzat i llista d'IPs autoritzades. Els administradors autenticats sempre poden entrar; els visitants només si la seva IP està a la llista o accedeixen per la URL privada d'admin.
+## 1. Moure "Servidor SMTP" a Configuració
 
-## 1. Base de dades
+A `src/components/admin/AdminLayout.tsx`:
+- Treure l'ítem `smtp` del grup `communication`.
+- Afegir-lo al grup `config` (just abans de `settings`).
+- Si el grup `communication` queda només amb `messages`, mantenir-lo igualment (té sentit semàntic).
 
-Nova taula `maintenance_settings` (singleton, 1 fila):
+## 2. Sistema d'idiomes dinàmics (BD)
 
-- `id` (uuid, PK, default fix)
-- `enabled` (bool, default false)
-- `message_ca` (text) i `message_es` (text) — HTML del missatge (editor ric)
-- `show_logo` (bool, default true)
-- `allowed_ips` (text[], default `{}`) — llista d'IPs/CIDR que poden saltar-se el manteniment
-- `updated_at`, `updated_by`
+### Esquema nou
 
-RLS:
-- `SELECT` públic (anon + authenticated) — cal per saber si la web està en manteniment
-- `UPDATE` només admin (via `is_admin(auth.uid())`)
+**`languages`** — idiomes que existeixen al sistema
+- `code` (PK, text, ex: `ca`, `es`, `en`)
+- `name` (text, ex: "Català")
+- `native_name` (text, ex: "Català")
+- `is_enabled` (bool) — visible al frontend
+- `is_default` (bool) — un sol idioma per defecte
+- `sort_order` (int)
 
-GRANTs estàndard a `anon`, `authenticated`, `service_role`.
+GRANTs: `SELECT` a `anon`+`authenticated` (cal a tot arreu); escriptura només admin via RLS amb `is_admin()`.
 
-## 2. Edge function `check-maintenance-access`
+Sembrar amb `ca` (default, enabled) i `es` (enabled).
 
-Retorna `{ in_maintenance: boolean, bypass: boolean, settings: {...} }`:
-- Llegeix `maintenance_settings`
-- Obté IP del client via `x-forwarded-for`
-- `bypass = true` si IP coincideix amb `allowed_ips` (suport CIDR bàsic IPv4)
-- Públic (verify_jwt=false)
+### UI admin — nova pàgina
 
-## 3. Frontend — guard global
+`/admin/idiomes` dins el grup **Configuració**:
+- Llistar idiomes, activar/desactivar, marcar per defecte, afegir-ne (codi ISO + nom).
+- Eliminar només si no és el default i no té contingut traduït referenciat.
 
-Nou `MaintenanceGate` muntat a `App.tsx` que embolcalla les rutes públiques:
+### Frontend — càrrega dinàmica
 
-1. Crida `check-maintenance-access` un cop al carregar
-2. Si `in_maintenance && !bypass`:
-   - Si l'usuari està autenticat **i** és admin → deixa passar
-   - Si la ruta comença per `/admin` o `/login-admin` → deixa passar (l'admin pot entrar amb les seves credencials)
-   - En qualsevol altre cas → renderitza `<MaintenancePage />`
-3. Es revalida en focus de finestra
+- Nou hook `useLanguages()` que llegeix `languages` actius (cache via React Query).
+- `src/i18n.ts`: després de detectar idiomes, validar contra la llista activa; fallback al default de la BD.
+- Selector d'idioma a `Header` (públic) i a `AdminLayout` header (admin), poblat des de `useLanguages()`.
 
-`MaintenancePage`:
-- Fons net amb el logo del site (`useSiteSettings`) centrat
-- Missatge HTML segons idioma (`i18n.language`) amb `dangerouslySetInnerHTML` (ja sanititzat per l'editor)
-- Sense header/footer
+## 3. Traduccions UI (JSON al codi)
 
-URL "privada" d'admin: `/login` continua funcionant sempre (ja és la pàgina de login). Els administradors entren, AuthContext detecta rol admin, i el gate els deixa passar a qualsevol ruta.
+- Auditar `src/locales/ca.json` i `es.json`: ja existeix una clau `admin` però **les pàgines admin no usen `useTranslation` consistentment**. Hi ha labels durs (`'General'`, `'Catàleg'`, `'Aparença'`, etc.) a `AdminLayout` i moltes pàgines.
+- Extreure tots els textos hardcodejats de:
+  - `AdminLayout` (labels de grups + items que no tenen `label` traduït)
+  - Totes les pàgines `src/pages/admin/*.tsx` (títols, botons, missatges toast, columnes de taula)
+  - Components admin compartits
+- Ampliar `ca.json` i `es.json` amb namespaces: `admin.nav.*`, `admin.groups.*`, `admin.pages.<page>.*`, `admin.actions.*`, `admin.toasts.*`.
+- Quan s'afegeix un idioma nou a la BD però encara no hi ha fitxer JSON: fallback automàtic al default (i18next ho fa per defecte amb `fallbackLng`).
+- Documentar al README com afegir un fitxer `locales/<code>.json` quan s'habilita un idioma nou.
 
-## 4. Admin UI — `AdminMaintenance.tsx`
+## 4. Traduccions de contingut (BD)
 
-Nova pàgina a `Configuració → Manteniment`:
+Patró existent: taules `<entity>_translations` amb `(entity_id, language_code, ...)`. Replicar-ho a:
 
-- Switch **Activar mode manteniment** (vermell quan està actiu, amb avís)
-- Switch **Mostrar logo**
-- `RichTextEditor` per missatge en català
-- `RichTextEditor` per missatge en castellà
-- Editor d'IPs autoritzades:
-  - Llista d'inputs amb botó "Afegir IP" / "Eliminar"
-  - Botó "Afegir la meva IP actual" (detecta via `https://api.ipify.org`)
-  - Validació format IPv4 / CIDR
-- Botó **Desar canvis**
-- Caixa informativa: "Els administradors autenticats sempre poden accedir des de `/login`."
+### Noves taules de traducció
 
-## 5. Ruta i sidebar
+- **`brand_translations`**: `brand_id`, `language_code`, `name`, `description`
+- **`list_section_translations`**: `section_id`, `language_code`, `title`
+- **`cms_block_translations`**: `block_id`, `language_code`, `title`, `subtitle`, `body`, `cta_label`  
+  (Avui `cms_blocks` té camps `*_ca`/`*_es` durs — migrar-los a la nova taula i deprecar els camps suffix.)
+- **`hero_slide_translations`**: `slide_id`, `language_code`, `title`, `subtitle`, `cta_label`  
+  (Mateix patró: migrar dades dels camps `*_ca`/`*_es` actuals.)
 
-- Afegir ruta `/admin/maintenance` a `AdminDashboard.tsx`
-- Afegir entrada al grup **Configuració** de `AdminLayout.tsx` (icona `Wrench` o `Power`)
-- Traduccions `admin.nav.maintenance` a `ca.json` / `es.json`
+Cada taula:
+1. PK composta `(entity_id, language_code)` + FK a `languages(code)` i a l'entitat amb `ON DELETE CASCADE`.
+2. GRANTs: `SELECT` a `anon`+`authenticated`, escriptura via RLS (només admin).
+3. RLS: lectura pública; escriptura `is_admin(auth.uid())`.
 
-## 6. Detalls tècnics
+### Cobertura ja existent (verificar)
 
-- L'estat del gate es cachea a `sessionStorage` 60s per evitar flicker entre navegacions
-- Si la edge function falla → fallback: deixa passar (fail-open) per no bloquejar la web mai per un error de backend
-- El missatge s'edita amb el `RichTextEditor` existent (visual + HTML)
+- `product_translations`, `category_translations`, `variant_type_translations`, `list_template_translations`, `order_status_translations`, `order_status_email_templates` — comprovar que tenen FK a `languages` o convertir `language_code` a referenciar la nova taula.
 
-## Fitxers afectats
+### UI admin per editar
 
-- Migració SQL nova (taula + RLS + GRANTs)
-- `supabase/functions/check-maintenance-access/index.ts` (nou)
-- `src/components/MaintenanceGate.tsx` (nou)
-- `src/pages/MaintenancePage.tsx` (nou)
-- `src/pages/admin/AdminMaintenance.tsx` (nou)
-- `src/App.tsx` (muntar gate)
-- `src/pages/AdminDashboard.tsx` (ruta)
-- `src/components/admin/AdminLayout.tsx` (sidebar)
-- `src/locales/ca.json`, `src/locales/es.json`
+A cada formulari (producte, categoria, marca, slide, bloc CMS, secció de llista, plantilla, estat):
+- Tabs per idioma (poblats des de `useLanguages()`).
+- Camps tradu\u00efbles per tab; persistir a `<entity>_translations`.
+- Quan s'afegeix un idioma nou, els tabs apareixen buits automàticament.
+
+### Lectura al frontend
+
+- Hooks existents (`useTranslatedProducts`, etc.) ja seleccionen `language_code = currentLang`. Estendre patró als hooks/components que llegeixen brands, hero_slides, cms_blocks, list_sections.
+
+## 5. Detalls tècnics
+
+- **Migració de dades CMS/Hero**: copiar `title_ca`→row `language_code=ca`, `title_es`→row `language_code=es`, mantenir columnes `*_ca`/`*_es` un temps (deprecades) i fer un PR posterior per eliminar-les un cop el frontend ja llegeixi de les noves taules.
+- **Cap canvi a `auth`/`storage`** schemas.
+- **Sense `ALTER DATABASE`**.
+- Selector d'idioma persisteix a `localStorage` (clau `i18nextLng`), igual que avui.
+- Edge functions que enviin correus llegiran l'idioma de la comanda/client (camp `language_code` ja present a `orders`?) — verificar i estendre si cal.
+
+## Ordre d'execució
+
+1. Migració BD: crear `languages`, sembrar `ca`/`es`, crear 4 noves taules `*_translations`, migrar dades de `cms_blocks` i `hero_slides`.
+2. Moure ítem SMTP al grup Configuració.
+3. Pàgina admin `/admin/idiomes` + hook `useLanguages` + selector a headers.
+4. Refactor `i18n.ts` per fer servir idiomes dinàmics.
+5. Ampliar `ca.json`/`es.json` i substituir strings hardcodejats a admin.
+6. Afegir tabs d'idioma als formularis d'entitats noves (brands, hero, cms, list sections).
+7. Actualitzar lectures de frontend (Footer, Home, llistes) per llegir de les noves taules de traducció.
+
+## Què no inclou
+
+- No es tradueix automàticament res (sense crida a IA de traducció). Es deixa preparat un punt clar on afegir-ho més endavant si vols.
+- No es canvia la URL per idioma (`/es/...`). Es manté un sol arbre de rutes amb idioma a `localStorage`.
