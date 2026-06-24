@@ -1,49 +1,155 @@
-## Rediseño de "Mi Lista" en Mi Cuenta
 
-Reformular `src/pages/MyBirthListPage.tsx` para que el flujo sea claro y guiado, en tres bloques visibles según el estado del usuario.
+# Còpies de seguretat amb clients desacoblats
 
-### Estructura nueva
+Dos blocs independents però lligats: primer reestructurem clients per fer-los restaurables, després construïm el sistema de backup/restore.
 
-1. **Información de la lista** (cabecera con icono y descripción corta, sin cambios funcionales).
+---
 
-2. **Grid de mis listas**
-   - Carga todas las listas vinculadas a la cuenta (`list_owners` → `birth_lists`).
-   - Tarjetas visualmente alineadas con el resto de la web (mismo estilo que `ProductCard`: card con padding, título Playfair, badges de estado, código MUSSOLET-…, fecha prevista, número de productos).
-   - Cada tarjeta tiene acciones: **Editar**, **Ver pública**, **Copiar código**, **Eliminar**.
-   - Al final del grid, tarjeta-botón **"Crear una lista nueva"** (estilo dashed border + icono `Plus`) **solo si** `listas.length < 10`.
-   - Si está al máximo (10), se oculta el botón y se muestra un aviso "Has alcanzado el máximo de 10 listas".
+## Bloc 1 — Taula `customers` desacoblada d'`auth.users`
 
-3. **Panel de creación (desplegable inline)**
-   - Al pulsar "Crear una lista nueva", se despliega justo debajo del grid un panel con dos pestañas/tarjetas grandes:
-     - **Plantilla predefinida** → grid de plantillas del admin (`list_templates` activas), cada una como tarjeta clicable con su descripción.
-     - **Lista personalizada** → inputs de nombre en Catalán y Castellano + botón "Empezar".
-   - Tras escoger una opción se entra al editor:
-     - **Plantilla** → editor precargado con sus secciones y productos; el cliente puede eliminar elementos o secciones que no le convenzan, reordenar, y guardar.
-     - **Personalizada** → editor vacío. Primero crea una sección (con nombre CA/ES), luego abre el catálogo de productos (con imágenes) para arrastrar/añadir a esa sección. Repite por sección.
-   - Botón final **"Guardar lista"** que la añade al grid.
+### Esquema nou
 
-### Reglas
+Crear `public.customers` com a font única de dades de client (independent de qui té login):
 
-- Productos siempre con miniatura (`product_images` o placeholder).
-- Atributos/variante fijados al crear: cuando una lista pública se consume, el visitante **no** puede cambiar la variante elegida (color, talla, etc.). Aplicar este bloqueo en la vista pública (`BirthListViewPage.tsx` / `PublicListSteps.tsx`): si `list_item.variant_id` no es null, ocultar selector de variantes y mostrar la variante fijada con tag "Configuración escogida por la familia".
-- Mantener todo el backend actual (tablas `birth_lists`, `list_items`, `list_sections`, `list_owners`, `list_templates`). No se requiere migración SQL.
-- Mantener i18n (claves `ca.json` / `es.json`); añadir las nuevas etiquetas.
+```text
+customers
+  id uuid PK
+  email text UNIQUE NOT NULL
+  full_name text
+  phone, address_line1, address_line2, city, postal_code, province, nif, company_name
+  preferred_language text DEFAULT 'ca'
+  auth_user_id uuid NULL  → auth.users(id) ON DELETE SET NULL
+  deleted_at timestamptz NULL
+  created_at, updated_at
+```
 
-### Archivos a modificar
+- `auth_user_id` és **opcional**: només es lliga quan el client té compte. Els compradors convidats (checkout sense registre) també tenen fila a `customers`.
+- RLS: l'admin veu/edita tot; un usuari autenticat veu/edita la seva fila via `auth_user_id = auth.uid()`.
 
-- `src/pages/MyBirthListPage.tsx` — reestructura completa de la vista (grid + creador + editor) reutilizando los helpers ya existentes (`persistSectionsOrder`, drag-and-drop, búsqueda de productos, plantillas).
-- `src/pages/BirthListViewPage.tsx` y/o `src/components/list/PublicListSteps.tsx` — bloquear cambio de variante cuando `variant_id` está fijado.
-- `src/locales/ca.json`, `src/locales/es.json` — nuevas etiquetas (`myList.createNew`, `myList.maxReached`, `myList.choosePreset`, `myList.customList`, `myList.nameCa`, `myList.nameEs`, `publicList.variantLocked`, etc.).
+### Re-enllaçat de taules
 
-### Notas técnicas
+- `orders`: afegir `customer_id uuid NOT NULL → customers(id)`. Mantenim `user_id` durant la migració, després `DROP`.
+- `list_owners`: afegir `customer_id uuid → customers(id)`. `user_id` queda com a info opcional o es retira.
+- `profiles`: queda només com a **perfil d'autenticació** (rol, idioma de la UI, soft-delete d'usuari). Les dades de contacte/adreça es mouen a `customers`.
 
-- El estado `view: 'list' | 'editor'` se amplía con `'list' | 'create-choice' | 'editor'` para soportar el desplegable de elección plantilla/personalizada.
-- Para la card "Crear nueva", reutilizar tokens (`border-dashed border-primary/40`, hover suave).
-- Para el catálogo embebido en modo personalizado, reutilizar la query de búsqueda actual (`productSearch`) y añadir un grid con imagen + nombre + botón "+".
-- Bloqueo de variante en vista pública: en el selector actual, si el item tiene `variant_id` no nulo, renderizar `<Badge>` con el nombre de la variante en vez del `<Select>`.
+### Migració de dades existents
 
-### Fuera de alcance
+Dins de la mateixa migració:
+1. Per cada `profiles` no esborrat, crear `customers` copiant nom/adreça/NIF/idioma i fixant `auth_user_id = profiles.id`, `email` agafat d'`auth.users` via funció `SECURITY DEFINER`.
+2. Per cada `orders.user_id`, omplir `orders.customer_id` amb el `customers.id` corresponent.
+3. Igual per `list_owners`.
+4. Validar que no queda cap `orders.customer_id` NULL abans de fer-lo `NOT NULL`.
 
-- No se cambia el backend ni se añaden migraciones.
-- No se modifica el panel admin de plantillas.
-- No se cambia el checkout ni la lógica de compra.
+### Codi a actualitzar
+
+- **Checkout** (`CheckoutPage.tsx`, `CartContext`): en crear pedido, `upsert` a `customers` per `email` i fer servir el `customer_id` retornat. Funciona igual per usuari autenticat o convidat.
+- **Admin pedidos** (`AdminOrders.tsx`): mostrar dades del client via `customer` (no `profile`).
+- **Admin llistes** (`AdminBirthListForm.tsx`, `AdminBirthListList.tsx`): mostrar propietaris via `customer`.
+- **Compte d'usuari** (`AccountDashboard.tsx`, `MyBirthListPage.tsx`): llegir/editar dades de contacte des de `customers` (la seva fila on `auth_user_id = auth.uid()`).
+- **Edge functions**: `admin-delete-birth-list`, `admin-manage-users`, `get-public-list-data`, `verify-list-access` — substituir referències a `profiles`/`user_id` per `customers`/`customer_id`.
+
+### Nou apartat admin: **Clients**
+
+A `AdminLayout` afegim `clients` dins del grup *Configuració* (o del grup *Vendes*). Llistat amb cerca, edició, soft-delete i veure els seus pedidos i llistes. Independent de la pestanya *Usuaris* (que segueix gestionant comptes d'auth + rols).
+
+---
+
+## Bloc 2 — Sistema de còpies de seguretat
+
+### Bucket privat i taula d'historial
+
+- Bucket nou `backups` (privat, només admins amb signed URLs).
+- Taula `backup_runs` per registrar cada execució:
+
+```text
+backup_runs
+  id, kind ('manual'|'scheduled'), status ('running'|'success'|'failed'),
+  created_by uuid, file_path text, file_size_bytes bigint,
+  tables_json jsonb (recompte per taula), storage_json jsonb (buckets/fitxers),
+  error text, started_at, finished_at
+```
+
+### Edge function `admin-backup-create`
+
+Només admin. Genera un ZIP amb:
+
+```text
+backup-YYYYMMDD-HHmm.zip
+├─ manifest.json         (versió esquema, data, taules, comptatges, checksum)
+├─ data/
+│   ├─ customers.json
+│   ├─ orders.json
+│   ├─ order_items.json
+│   ├─ products.json, product_variants.json, product_translations.json, product_images.json
+│   ├─ brands.json, categories.json, category_translations.json
+│   ├─ birth_lists.json, list_items.json, list_sections.json, list_owners.json
+│   ├─ list_templates.json, list_template_items.json, list_template_sections.json, list_template_translations.json
+│   ├─ hero_slides.json, cms_blocks.json
+│   ├─ shipping_zones.json, shipping_rates.json, tax_rates.json
+│   ├─ order_statuses.json, order_status_translations.json, order_status_email_templates.json
+│   ├─ variant_types.json, variant_type_translations.json
+│   ├─ smtp_settings.json, site_settings.json
+│   └─ contact_messages.json
+└─ storage/
+    ├─ product-images/...
+    ├─ brand-logos/...
+    └─ site-assets/...
+```
+
+- Puja el ZIP a `backups/` i crea fila a `backup_runs`.
+- **NO** inclou `auth.users`, `profiles`, `stock_movements`, `order_deletion_audit`, `smtp_send_log`, `backup_runs`.
+
+### Edge function `admin-backup-restore`
+
+Rep `{ backup_id, mode: 'upsert'|'wipe', groups: string[] }`. Descarrega el ZIP de Storage, valida `manifest.json` i aplica per grup en l'ordre correcte de FK:
+
+- **Mode `upsert`**: `INSERT ... ON CONFLICT (id) DO UPDATE`. Files no presents al backup es conserven.
+- **Mode `wipe`**: `DELETE FROM <taula> WHERE ...` només de les taules del grup seleccionat, després `INSERT` net. Respecta FKs eliminant primer les taules filles.
+- Restaura també els fitxers de Storage del grup (sobreescriu per path).
+- Retorna informe: files inserides/actualitzades/eliminades per taula, fitxers restaurats, errors.
+
+### Grups de restauració seleccionables
+
+A la UI l'admin marca quins grups vol restaurar i amb quin mode cadascun:
+
+| Grup | Taules | Storage |
+|---|---|---|
+| Catàleg | products, product_variants, product_translations, product_images, brands, categories, category_translations, variant_types, variant_type_translations | product-images, brand-logos |
+| Contingut | hero_slides, cms_blocks | site-assets |
+| Configuració | shipping_zones, shipping_rates, tax_rates, order_statuses, order_status_translations, order_status_email_templates, smtp_settings, site_settings | — |
+| Plantilles | list_templates, list_template_items, list_template_sections, list_template_translations | — |
+| Clients i vendes | customers, orders, order_items, birth_lists, list_items, list_sections, list_owners | — |
+| Missatges | contact_messages | — |
+
+Gràcies a `customers` desacoblats, el grup *Clients i vendes* ja es pot restaurar íntegrament sense dependre d'`auth.users`. Si un client tenia compte i el seu `auth.users` ja no existeix, `auth_user_id` queda `NULL` i el client passa a ser "sense compte" (l'admin pot reassignar manualment).
+
+### UI: `AdminBackups` dins del grup *Configuració*
+
+- Botó **Crear còpia ara** → crida `admin-backup-create`, mostra progrés.
+- Taula d'historial (`backup_runs`) amb: data, mida, autor, estat, accions.
+- Per cada fila: **Descarregar** (signed URL del bucket `backups`), **Restaurar...** (obre modal), **Eliminar**.
+- Modal de restauració:
+  - Checkboxes per grup.
+  - Radio `Upsert` / `Wipe + reimport` per cada grup marcat.
+  - Avís vermell explícit per al mode `Wipe`, requereix escriure `RESTAURAR` per confirmar.
+  - Botó **Executar restauració** → crida `admin-backup-restore`, mostra informe final.
+
+### Detalls tècnics importants
+
+- ZIP: llibreria `jszip` via `npm:` import a Deno.
+- Streaming: per buckets grossos, fer servir signed download URLs i afegir-los al ZIP en streaming per no excedir memòria de l'edge function.
+- Triggers de stock (`order_items_stock_trigger`, `orders_status_stock_trigger`) s'han de **desactivar temporalment** durant el restore del grup *Clients i vendes* per evitar moviments duplicats; tornar a activar al final. Es fa amb una funció `SECURITY DEFINER` `restore_set_triggers(_enabled bool)`.
+- Validar `manifest.schema_version` per detectar backups incompatibles amb l'esquema actual.
+
+---
+
+## Ordre d'implementació
+
+1. Migració esquema `customers` + re-enllaç `orders`/`list_owners` + migració de dades.
+2. Actualitzar checkout, comptes, admin pedidos/llistes i edge functions per usar `customers`.
+3. Nou apartat admin **Clients**.
+4. Bucket `backups`, taula `backup_runs`, edge function `admin-backup-create`.
+5. Edge function `admin-backup-restore` amb modes Upsert/Wipe per grup.
+6. UI `AdminBackups` amb llistat, descàrrega, modal de restauració.
+
+El bloc 1 és prerequisit del bloc 2: sense `customers` desacoblats el grup *Clients i vendes* no es pot restaurar de forma consistent.
