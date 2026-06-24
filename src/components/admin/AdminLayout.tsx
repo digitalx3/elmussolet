@@ -44,6 +44,7 @@ const groups: NavGroup[] = [
       { key: 'orders', path: '/admin/comandes', icon: ShoppingCart },
       { key: 'lists', path: '/admin/llistes', icon: ListChecks },
       { key: 'templates', path: '/admin/plantilles', icon: FileText },
+      { key: 'defaultSections', path: '/admin/families-defecte', icon: FileText },
     ],
   },
   {

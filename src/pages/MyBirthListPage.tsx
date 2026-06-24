@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatPrice } from '@/hooks/useTaxRates';
+import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
 
 interface ListItem {
   id?: string;
@@ -93,6 +94,7 @@ const MyBirthListPage: React.FC = () => {
   const [customSectionEs, setCustomSectionEs] = useState('');
   const [deletingList, setDeletingList] = useState<{ id: string; label: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const { data: defaultSectionsData = [] } = useDefaultListSections({ onlyActive: true });
 
   const handleDeleteList = async () => {
     if (!deletingList) return;
@@ -837,7 +839,7 @@ const MyBirthListPage: React.FC = () => {
     setView('create-choice');
   };
 
-  const DEFAULT_CUSTOM_SECTIONS: Array<{ name_ca: string; name_es: string }> = [
+  const FALLBACK_DEFAULT_SECTIONS: Array<{ name_ca: string; name_es: string }> = [
     { name_ca: 'Higiene personal', name_es: 'Higiene personal' },
     { name_ca: 'Dormir', name_es: 'Dormir' },
     { name_ca: 'Alimentació', name_es: 'Alimentación' },
@@ -853,7 +855,12 @@ const MyBirthListPage: React.FC = () => {
     if (atLimit) return;
     resetEditor();
     setEditingListId(null);
-    setSections(DEFAULT_CUSTOM_SECTIONS.map((s, i) => ({
+    const fromDb = defaultSectionsData.map(s => ({
+      name_ca: pickSectionName(s, 'ca'),
+      name_es: pickSectionName(s, 'es'),
+    }));
+    const source = fromDb.length > 0 ? fromDb : FALLBACK_DEFAULT_SECTIONS;
+    setSections(source.map((s, i) => ({
       temp_id: `new-${Date.now()}-${i}`,
       name_ca: s.name_ca,
       name_es: s.name_es,

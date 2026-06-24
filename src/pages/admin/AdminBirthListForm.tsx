@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, Trash2, Search, Copy, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Search, Copy, Eye, EyeOff, Package, FolderOpen, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
 
 interface Owner {
   id?: string;
@@ -34,11 +35,28 @@ interface ListItem {
   quantity_desired: number;
   priority: string;
   sort_order: number;
+  section_temp_id?: string | null;
   // joined
   productName?: string;
   variantLabel?: string;
   price?: number;
+  image_url?: string | null;
 }
+
+interface PendingSection {
+  temp_id: string;
+  id?: string;
+  name_ca: string;
+  name_es: string;
+  sort_order: number;
+}
+
+const pickProductImage = (p: any): string | null => {
+  const imgs = p?.product_images || [];
+  if (!imgs.length) return null;
+  const primary = imgs.find((i: any) => i.is_primary);
+  return (primary || imgs[0])?.image_url || null;
+};
 
 interface ListForm {
   list_code: string;
@@ -81,6 +99,97 @@ const AdminBirthListForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [sections, setSections] = useState<PendingSection[]>([]);
+  const [activeSectionTempId, setActiveSectionTempId] = useState<string | null>(null);
+  const [browseCategory, setBrowseCategory] = useState<string>('all');
+  const [browseSearch, setBrowseSearch] = useState('');
+  const [defaultsLoaded, setDefaultsLoaded] = useState(false);
+
+  const { data: defaultSectionsData = [] } = useDefaultListSections({ onlyActive: true });
+
+  // Pre-load default sections when creating a new list
+  useEffect(() => {
+    if (!isNew || defaultsLoaded) return;
+    if (defaultSectionsData.length === 0) return;
+    const initial = defaultSectionsData.map((s, i) => ({
+      temp_id: `def-${s.id}`,
+      name_ca: pickSectionName(s, 'ca'),
+      name_es: pickSectionName(s, 'es'),
+      sort_order: i,
+    }));
+    setSections(initial);
+    setActiveSectionTempId(initial[0]?.temp_id ?? null);
+    setDefaultsLoaded(true);
+  }, [isNew, defaultsLoaded, defaultSectionsData]);
+
+  // Existing sections when editing
+  const { data: existingSections } = useQuery({
+    queryKey: ['admin-birth-list-sections', id],
+    enabled: !isNew && !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('list_sections')
+        .select('id, name_ca, name_es, sort_order')
+        .eq('list_id', id!)
+        .order('sort_order', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  useEffect(() => {
+    if (existingSections && existingSections.length > 0) {
+      const mapped: PendingSection[] = existingSections.map((s: any) => ({
+        temp_id: `ex-${s.id}`,
+        id: s.id,
+        name_ca: s.name_ca || '',
+        name_es: s.name_es || '',
+        sort_order: s.sort_order ?? 0,
+      }));
+      setSections(mapped);
+      setActiveSectionTempId(prev => prev ?? mapped[0]?.temp_id ?? null);
+      setDefaultsLoaded(true);
+    }
+  }, [existingSections]);
+
+  // Categories for the browse filter (same source as client)
+  const { data: browseCategories = [] } = useQuery({
+    queryKey: ['admin-birthlist-browse-cats'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('categories')
+        .select('id, slug, category_translations(language, name)')
+        .eq('is_active', true)
+        .order('sort_order');
+      return data || [];
+    },
+  });
+
+  // Browse products grid
+  const { data: browseProducts = [], isFetching: browseLoading } = useQuery({
+    queryKey: ['admin-birthlist-browse-products', browseCategory],
+    queryFn: async () => {
+      let q = supabase
+        .from('products')
+        .select(`id, base_price, slug, category_id, product_translations(language, name), product_images(image_url, is_primary, sort_order)`)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(60);
+      if (browseCategory !== 'all') q = q.eq('category_id', browseCategory);
+      const { data } = await q;
+      return data || [];
+    },
+  });
+
+  const filteredBrowse = useMemo(() => {
+    const q = browseSearch.trim().toLowerCase();
+    if (!q) return browseProducts;
+    return browseProducts.filter((p: any) => {
+      const tr = p.product_translations?.find((t: any) => t.language === lang)
+        || p.product_translations?.[0];
+      return (tr?.name || p.slug || '').toLowerCase().includes(q);
+    });
+  }, [browseProducts, browseSearch, lang]);
 
   // Load existing list
   const { data: existingList, isLoading } = useQuery({
@@ -117,10 +226,11 @@ const AdminBirthListForm: React.FC = () => {
       const { data, error } = await supabase
         .from('list_items')
         .select(`
-          id, product_id, variant_id, quantity_desired, quantity_purchased, priority, sort_order,
+          id, product_id, variant_id, section_id, quantity_desired, quantity_purchased, priority, sort_order,
           product:products(
             id, base_price,
-            product_translations(language, name)
+            product_translations(language, name),
+            product_images(image_url, is_primary, sort_order)
           )
         `)
         .eq('list_id', id!)
@@ -175,6 +285,8 @@ const AdminBirthListForm: React.FC = () => {
             sort_order: item.sort_order,
             productName: tr?.name || item.product_id,
             price: item.product?.base_price,
+            image_url: pickProductImage(item.product),
+            section_temp_id: item.section_id ? `ex-${item.section_id}` : null,
           };
         }),
       }));
@@ -201,9 +313,18 @@ const AdminBirthListForm: React.FC = () => {
     setSearchResults(filtered);
   };
 
-  const addProduct = (product: any) => {
-    const alreadyAdded = form.items.some(i => i.product_id === product.id);
-    if (alreadyAdded) { toast.info('Producte ja afegit'); return; }
+  const addProduct = (product: any, sectionTempId?: string | null) => {
+    const targetSection = sectionTempId !== undefined ? sectionTempId : activeSectionTempId;
+    const existingIdx = form.items.findIndex(i => i.product_id === product.id);
+    if (existingIdx >= 0) {
+      // Already added — reassign section to the target one.
+      setForm(prev => ({
+        ...prev,
+        items: prev.items.map((it, i) => i === existingIdx ? { ...it, section_temp_id: targetSection } : it),
+      }));
+      toast.success(lang === 'es' ? 'Producto reasignado' : 'Producte reassignat');
+      return;
+    }
 
     const tr = product.product_translations?.find((t: any) => t.language === lang)
       || product.product_translations?.[0];
@@ -218,10 +339,56 @@ const AdminBirthListForm: React.FC = () => {
         sort_order: prev.items.length,
         productName: tr?.name || product.slug,
         price: product.base_price,
+        image_url: pickProductImage(product),
+        section_temp_id: targetSection,
       }],
     }));
     setProductSearch('');
     setSearchResults([]);
+  };
+
+  // Section management
+  const addSection = () => {
+    const ca = window.prompt(lang === 'es' ? 'Nombre de la familia (catalán)' : 'Nom de la família (català)')?.trim();
+    if (!ca) return;
+    const es = window.prompt(lang === 'es' ? 'Nombre de la familia (castellano)' : 'Nom de la família (castellà)')?.trim() || ca;
+    setSections(prev => {
+      const next = [...prev, {
+        temp_id: `new-${Date.now()}-${prev.length}`,
+        name_ca: ca, name_es: es, sort_order: prev.length,
+      }];
+      if (!activeSectionTempId) setActiveSectionTempId(next[next.length - 1].temp_id);
+      return next;
+    });
+  };
+
+  const removeSection = (tempId: string) => {
+    if (!confirm(lang === 'es' ? 'Eliminar esta familia? Los productos asignados quedarán sin familia.' : 'Eliminar aquesta família? Els productes assignats quedaran sense família.')) return;
+    setSections(prev => prev.filter(s => s.temp_id !== tempId).map((x, i) => ({ ...x, sort_order: i })));
+    setForm(prev => ({
+      ...prev,
+      items: prev.items.map(it => it.section_temp_id === tempId ? { ...it, section_temp_id: null } : it),
+    }));
+    setActiveSectionTempId(prev => prev === tempId ? null : prev);
+  };
+
+  const moveSection = (tempId: string, dir: 'up' | 'down') => {
+    setSections(prev => {
+      const idx = prev.findIndex(s => s.temp_id === tempId);
+      if (idx < 0) return prev;
+      const target = dir === 'up' ? idx - 1 : idx + 1;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next.map((x, i) => ({ ...x, sort_order: i }));
+    });
+  };
+
+  const assignItemToSection = (idx: number, sectionTempId: string | null) => {
+    setForm(prev => ({
+      ...prev,
+      items: prev.items.map((it, i) => i === idx ? { ...it, section_temp_id: sectionTempId } : it),
+    }));
   };
 
   const removeItem = (idx: number) => {
@@ -325,8 +492,29 @@ const AdminBirthListForm: React.FC = () => {
         }
       }
 
-      // Upsert items: delete existing + insert new
+      // Sections: resync (delete all + insert with new ids; build temp_id->real id map)
       await supabase.from('list_items').delete().eq('list_id', listId!);
+      await supabase.from('list_sections').delete().eq('list_id', listId!);
+
+      const sectionIdMap = new Map<string, string>(); // temp_id -> real id
+      if (sections.length > 0) {
+        const toInsert = sections.map((s, i) => ({
+          list_id: listId!,
+          name_ca: s.name_ca || s.name_es || '',
+          name_es: s.name_es || s.name_ca || '',
+          sort_order: i,
+        }));
+        const { data: insertedSecs, error: secErr } = await supabase
+          .from('list_sections')
+          .insert(toInsert)
+          .select('id, sort_order');
+        if (secErr) throw secErr;
+        sections.forEach((s, i) => {
+          const match = insertedSecs?.find((x: any) => x.sort_order === i);
+          if (match) sectionIdMap.set(s.temp_id, match.id);
+        });
+      }
+
       if (form.items.length > 0) {
         const itemsToInsert = form.items.map((item, idx) => ({
           list_id: listId!,
@@ -335,6 +523,7 @@ const AdminBirthListForm: React.FC = () => {
           quantity_desired: item.quantity_desired,
           priority: item.priority,
           sort_order: idx,
+          section_id: item.section_temp_id ? (sectionIdMap.get(item.section_temp_id) || null) : null,
         }));
         const { error } = await supabase.from('list_items').insert(itemsToInsert);
         if (error) throw error;
@@ -635,34 +824,135 @@ const AdminBirthListForm: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Products */}
+        {/* Products + Sections */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{t('admin.listProducts')}</CardTitle>
+            <Button variant="outline" size="sm" onClick={addSection} className="gap-1">
+              <Plus className="h-4 w-4" /> {lang === 'es' ? 'Nueva familia' : 'Nova família'}
+            </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Product search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t('admin.searchProductToAdd')}
-                value={productSearch}
-                onChange={e => handleProductSearch(e.target.value)}
-                className="pl-10"
-              />
-              {searchResults.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-lg shadow-elevated max-h-48 overflow-y-auto">
-                  {searchResults.map(p => {
+          <CardContent className="space-y-5">
+            {/* Sections strip */}
+            {sections.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-xs">{lang === 'es' ? 'Familias' : 'Famílies'}</Label>
+                <div className="flex flex-wrap gap-2">
+                  {sections.map((s, idx) => {
+                    const isActive = activeSectionTempId === s.temp_id;
+                    const count = form.items.filter(it => it.section_temp_id === s.temp_id).length;
+                    return (
+                      <div
+                        key={s.temp_id}
+                        className={`group flex items-center gap-1 pl-2 pr-1 py-1 rounded-md border text-xs transition-colors ${
+                          isActive ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background hover:border-primary/40'
+                        }`}
+                      >
+                        <button type="button" onClick={() => setActiveSectionTempId(s.temp_id)} className="flex items-center gap-1.5">
+                          <FolderOpen className="h-3.5 w-3.5" />
+                          <span className="font-medium">{(lang === 'es' ? s.name_es : s.name_ca) || s.name_ca || s.name_es}</span>
+                          <Badge variant="outline" className="text-[10px] h-4 px-1">{count}</Badge>
+                        </button>
+                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" disabled={idx === 0} onClick={() => moveSection(s.temp_id, 'up')}>
+                          <ChevronUp className="h-3 w-3" />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" disabled={idx === sections.length - 1} onClick={() => moveSection(s.temp_id, 'down')}>
+                          <ChevronDown className="h-3 w-3" />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" onClick={() => removeSection(s.temp_id)}>
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => setActiveSectionTempId(null)}
+                    className={`px-2 py-1 rounded-md border text-xs ${activeSectionTempId === null ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background hover:border-primary/40'}`}
+                  >
+                    {lang === 'es' ? 'Sin familia' : 'Sense família'}
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {lang === 'es'
+                    ? 'Selecciona una familia y haz clic en un producto del catálogo para añadirlo a esa familia.'
+                    : 'Selecciona una família i fes clic en un producte del catàleg per afegir-lo a aquesta família.'}
+                </p>
+              </div>
+            )}
+
+            {/* Browse catalog (grid like client view) */}
+            <div className="space-y-3">
+              <Label className="text-xs">{lang === 'es' ? 'Catálogo de productos' : 'Catàleg de productes'}</Label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Select value={browseCategory} onValueChange={setBrowseCategory}>
+                  <SelectTrigger className="w-full sm:w-64">
+                    <SelectValue placeholder={lang === 'es' ? 'Todas las categorías' : 'Totes les categories'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{lang === 'es' ? 'Todas las categorías' : 'Totes les categories'}</SelectItem>
+                    {browseCategories.map((c: any) => {
+                      const ctr = c.category_translations?.find((t: any) => t.language === lang)
+                        || c.category_translations?.[0];
+                      return (
+                        <SelectItem key={c.id} value={c.id}>{ctr?.name || c.slug}</SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder={lang === 'es' ? 'Buscar producto...' : 'Cercar producte...'}
+                    value={browseSearch}
+                    onChange={e => setBrowseSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {browseLoading ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map(i => (
+                    <div key={i} className="h-40 rounded-md border border-border bg-muted/30 animate-pulse" />
+                  ))}
+                </div>
+              ) : filteredBrowse.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  {lang === 'es' ? 'No hay productos.' : 'No hi ha productes.'}
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {filteredBrowse.map((p: any) => {
                     const tr = p.product_translations?.find((t: any) => t.language === lang)
                       || p.product_translations?.[0];
+                    const img = pickProductImage(p);
+                    const inList = form.items.some(it => it.product_id === p.id);
                     return (
                       <button
                         key={p.id}
-                        className="w-full text-left px-3 py-2 hover:bg-muted/50 flex justify-between items-center text-sm"
+                        type="button"
                         onClick={() => addProduct(p)}
+                        className={`group text-left flex flex-col rounded-md border bg-background overflow-hidden hover:border-primary hover:shadow-sm transition-all ${
+                          inList ? 'border-primary/60 ring-1 ring-primary/30' : 'border-border'
+                        }`}
                       >
-                        <span>{tr?.name || p.slug}</span>
-                        <span className="text-muted-foreground">{p.base_price.toFixed(2)} €</span>
+                        <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
+                          {img ? (
+                            <img src={img} alt={tr?.name || p.slug} loading="lazy" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+                          ) : (
+                            <Package className="h-8 w-8 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="p-2 space-y-0.5">
+                          <p className="text-xs font-medium line-clamp-2">{tr?.name || p.slug}</p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-[11px] text-muted-foreground">{p.base_price?.toFixed(2)} €</p>
+                            {inList && (
+                              <Badge variant="outline" className="text-[9px] h-4 px-1 border-primary text-primary">✓</Badge>
+                            )}
+                          </div>
+                        </div>
                       </button>
                     );
                   })}
@@ -670,50 +960,102 @@ const AdminBirthListForm: React.FC = () => {
               )}
             </div>
 
-            {/* Items list */}
+            <Separator />
+
+            {/* Items grouped by section */}
             {form.items.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">{t('list.emptyList')}</p>
             ) : (
-              <div className="space-y-2">
-                {form.items.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.productName}</p>
-                      {item.price != null && (
-                        <p className="text-xs text-muted-foreground">{item.price.toFixed(2)} €</p>
+              <div className="space-y-4">
+                {[
+                  ...sections.map(s => ({ temp_id: s.temp_id, label: (lang === 'es' ? s.name_es : s.name_ca) || s.name_ca })),
+                  { temp_id: '__none__', label: lang === 'es' ? 'Sin familia' : 'Sense família' },
+                ].map((sec) => {
+                  const sectionItems = form.items
+                    .map((it, idx) => ({ it, idx }))
+                    .filter(({ it }) => sec.temp_id === '__none__' ? !it.section_temp_id : it.section_temp_id === sec.temp_id);
+                  if (sec.temp_id === '__none__' && sectionItems.length === 0) return null;
+                  return (
+                    <div key={sec.temp_id} className="space-y-2">
+                      <div className="flex items-center gap-2 px-2 py-1.5 border-l-4 border-primary bg-muted/40 rounded">
+                        <FolderOpen className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-semibold flex-1 truncate">{sec.label}</span>
+                        <Badge variant="outline" className="text-[10px]">{sectionItems.length}</Badge>
+                      </div>
+                      {sectionItems.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic pl-3">
+                          {lang === 'es' ? 'Sin productos en esta familia.' : 'Sense productes en aquesta família.'}
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {sectionItems.map(({ it: item, idx }) => (
+                            <div key={idx} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                              <div className="h-10 w-10 shrink-0 rounded-md overflow-hidden bg-muted flex items-center justify-center border border-border">
+                                {item.image_url ? (
+                                  <img src={item.image_url} alt={item.productName} className="h-full w-full object-cover" loading="lazy" />
+                                ) : (
+                                  <Package className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{item.productName}</p>
+                                {item.price != null && (
+                                  <p className="text-xs text-muted-foreground">{item.price.toFixed(2)} €</p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Select
+                                  value={item.section_temp_id || '__none__'}
+                                  onValueChange={v => assignItemToSection(idx, v === '__none__' ? null : v)}
+                                >
+                                  <SelectTrigger className="w-32 h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__none__">{lang === 'es' ? 'Sin familia' : 'Sense família'}</SelectItem>
+                                    {sections.map(s => (
+                                      <SelectItem key={s.temp_id} value={s.temp_id}>
+                                        {(lang === 'es' ? s.name_es : s.name_ca) || s.name_ca}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  value={item.quantity_desired}
+                                  onChange={e => updateItem(idx, 'quantity_desired', parseInt(e.target.value) || 1)}
+                                  className="w-14 h-8 text-center text-sm"
+                                />
+                                <Select
+                                  value={item.priority}
+                                  onValueChange={v => updateItem(idx, 'priority', v)}
+                                >
+                                  <SelectTrigger className="w-20 h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="high">{t('list.priorityHigh')}</SelectItem>
+                                    <SelectItem value="medium">{t('list.priorityMedium')}</SelectItem>
+                                    <SelectItem value="low">{t('list.priorityLow')}</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <Button variant="ghost" size="sm" onClick={() => removeItem(idx)}>
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        min={1}
-                        value={item.quantity_desired}
-                        onChange={e => updateItem(idx, 'quantity_desired', parseInt(e.target.value) || 1)}
-                        className="w-16 h-8 text-center text-sm"
-                      />
-                      <Select
-                        value={item.priority}
-                        onValueChange={v => updateItem(idx, 'priority', v)}
-                      >
-                        <SelectTrigger className="w-24 h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="high">{t('list.priorityHigh')}</SelectItem>
-                          <SelectItem value="medium">{t('list.priorityMedium')}</SelectItem>
-                          <SelectItem value="low">{t('list.priorityLow')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button variant="ghost" size="sm" onClick={() => removeItem(idx)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
         </Card>
+
 
         {/* Actions */}
         <div className="flex items-center justify-between">
