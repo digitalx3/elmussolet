@@ -246,13 +246,8 @@ function AdminSidebar() {
 
 const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(() => {
-    try {
-      const raw = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-      if (raw !== null) return raw === 'true';
-    } catch {
-      /* ignore */
-    }
-    return true;
+    const stored = readStoredSidebarOpen();
+    return stored ?? true;
   });
 
   const handleOpenChange = React.useCallback((value: boolean) => {
