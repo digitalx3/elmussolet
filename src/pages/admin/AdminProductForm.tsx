@@ -80,6 +80,61 @@ const AdminProductForm: React.FC = () => {
 
   const [translationErrors, setTranslationErrors] = useState<TranslationErrors>({});
   const [activeLang, setActiveLang] = useState<string | undefined>(undefined);
+  const [seoGenerating, setSeoGenerating] = useState<string | null>(null);
+  const { data: aiStatus } = useAiProvider();
+  const aiReady = isAiReady(aiStatus);
+
+  const { data: brandList = [] } = useBrands();
+  const { data: categoryList = [] } = useCategories();
+
+  const generateSeoDescriptions = async (lang: string) => {
+    const tr = form.translations[lang] ?? emptyTranslation;
+    const defaultTr = form.translations[defaultCode] ?? emptyTranslation;
+    const productName = tr.name?.trim() || defaultTr.name?.trim();
+    if (!productName) {
+      toast.error('Cal omplir el nom del producte abans de generar la descripció');
+      return;
+    }
+    if (!aiReady) {
+      toast.error("Configura un proveïdor d'IA a /admin/ia abans d'utilitzar aquesta funció");
+      return;
+    }
+    const language = languages.find(l => l.code === lang);
+    const brand = brandList.find(b => b.id === form.brand_id);
+    const category = categoryList.find(c => c.id === form.category_id);
+    setSeoGenerating(lang);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-product-seo', {
+        body: {
+          name: productName,
+          sku: form.sku || undefined,
+          brand: brand?.name || undefined,
+          category: (category as any)?.name || undefined,
+          language: lang,
+          language_name: language?.native_name || lang,
+          current_short: tr.short_description || '',
+          current_long: tr.description || '',
+        },
+      });
+      if (error) throw error;
+      setForm(prev => ({
+        ...prev,
+        translations: {
+          ...prev.translations,
+          [lang]: {
+            ...(prev.translations[lang] ?? emptyTranslation),
+            short_description: String(data?.short_description || ''),
+            description: String(data?.description || ''),
+          },
+        },
+      }));
+      toast.success(`Descripcions generades amb IA per ${language?.native_name || lang}`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Error generant descripcions');
+    } finally {
+      setSeoGenerating(null);
+    }
+  };
 
   // Ensure an entry exists for every enabled language
   useEffect(() => {
