@@ -4,8 +4,9 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   Package, LayoutDashboard, Tags, Bookmark, ListChecks,
   FileText, ShoppingCart, Users, Truck, Settings, ArrowLeft, SlidersHorizontal, Image as ImageIcon,
-  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database, Power,
+  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database, Power, Languages as LanguagesIcon,
 } from 'lucide-react';
+import AdminLanguageSwitcher from '@/components/admin/AdminLanguageSwitcher';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel,
   SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
@@ -49,19 +50,18 @@ const groups: NavGroup[] = [
     id: 'appearance',
     label: 'Aparença',
     items: [
-      { key: 'appearance', path: '/admin/aparenca', icon: Palette, label: 'Aparença' },
+      { key: 'appearance', path: '/admin/aparenca', icon: Palette },
       { key: 'heros', path: '/admin/heros', icon: ImageIcon },
-      { key: 'homeContent', path: '/admin/home', icon: Home, label: "Pàgina d'inici" },
-      { key: 'pages', path: '/admin/pagines', icon: FileEdit, label: 'Pàgines' },
-      { key: 'footerContact', path: '/admin/peu-contacte', icon: Mail, label: 'Peu i contacte' },
+      { key: 'homeContent', path: '/admin/home', icon: Home },
+      { key: 'pages', path: '/admin/pagines', icon: FileEdit },
+      { key: 'footerContact', path: '/admin/peu-contacte', icon: Mail },
     ],
   },
   {
     id: 'communication',
     label: 'Comunicació',
     items: [
-      { key: 'messages', path: '/admin/missatges', icon: Inbox, label: 'Missatges' },
-      { key: 'smtp', path: '/admin/smtp', icon: Server, label: 'Servidor SMTP' },
+      { key: 'messages', path: '/admin/missatges', icon: Inbox },
     ],
   },
   {
@@ -70,8 +70,10 @@ const groups: NavGroup[] = [
     items: [
       { key: 'users', path: '/admin/usuaris', icon: Users },
       { key: 'shipping', path: '/admin/enviaments', icon: Truck },
-      { key: 'backups', path: '/admin/backups', icon: Database, label: 'Còpies de seguretat' },
-      { key: 'maintenance', path: '/admin/manteniment', icon: Power, label: 'Mode manteniment' },
+      { key: 'languages', path: '/admin/idiomes', icon: LanguagesIcon },
+      { key: 'smtp', path: '/admin/smtp', icon: Server },
+      { key: 'backups', path: '/admin/backups', icon: Database },
+      { key: 'maintenance', path: '/admin/manteniment', icon: Power },
       { key: 'settings', path: '/admin/configuracio', icon: Settings },
     ],
   },
