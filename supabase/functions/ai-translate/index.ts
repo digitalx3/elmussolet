@@ -263,16 +263,22 @@ Deno.serve(async (req: Request) => {
 
     const CHUNK = 40;
     const out: string[] = [];
+    const failedItems: string[] = [];
     let chunkErrors = 0;
     let lastChunkErr = "";
     for (let i = 0; i < body.items.length; i += CHUNK) {
       const chunk = body.items.slice(i, i + CHUNK);
       try {
         const part = await translateBatch(provider, chunk, body.source_language, body.target_language, body.context);
+        // Treat empty strings returned by the model as failures too.
+        part.forEach((v, idx) => {
+          if (!v || !String(v).trim()) failedItems.push(chunk[idx]);
+        });
         out.push(...part);
       } catch (e: any) {
         chunkErrors += chunk.length;
         lastChunkErr = String(e?.message || e);
+        failedItems.push(...chunk);
         // pad with empty strings so caller index stays aligned
         out.push(...new Array(chunk.length).fill(""));
       }
@@ -294,6 +300,9 @@ Deno.serve(async (req: Request) => {
       provider,
       error_message: chunkErrors > 0 ? lastChunkErr.slice(0, 500) : null,
       duration_ms: Date.now() - started,
+      metadata: failedItems.length > 0
+        ? { failed_items: failedItems.slice(0, 200), context: body.context || null }
+        : null,
     });
 
     return json({ translations: out, provider, status, success_count: successCount, error_count: chunkErrors, error_message: chunkErrors > 0 ? lastChunkErr : null });
@@ -314,6 +323,9 @@ Deno.serve(async (req: Request) => {
         provider,
         error_message: msg.slice(0, 500),
         duration_ms: Date.now() - started,
+        metadata: body?.items?.length
+          ? { failed_items: body.items.slice(0, 200), context: body?.context || null }
+          : null,
       });
     }
     if (msg === "RATE_LIMIT" || msg.includes("RATE_LIMIT")) return json({ error: "RATE_LIMIT" }, 429);

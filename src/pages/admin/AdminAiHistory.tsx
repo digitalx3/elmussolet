@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   RefreshCw,
   ArrowLeft,
+  RotateCw,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,8 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { toast } from '@/components/ui/use-toast';
+import { invokeWithRetry, logAiTranslation } from '@/lib/aiTranslationLog';
 
 interface LogRow {
   id: string;
@@ -37,6 +40,7 @@ interface LogRow {
   provider: string | null;
   error_message: string | null;
   duration_ms: number | null;
+  metadata: any | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -63,6 +67,68 @@ const StatusBadge: React.FC<{ status: LogRow['status'] }> = ({ status }) => {
 const AdminAiHistory: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | LogRow['status']>('all');
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+
+  const canRetry = (r: LogRow): boolean => {
+    if (r.status === 'success') return false;
+    const meta = r.metadata || {};
+    if (r.function_name === 'ai-translate') {
+      return Array.isArray(meta.failed_items) && meta.failed_items.length > 0;
+    }
+    if (r.function_name === 'ai-product-seo') {
+      return !!meta.retry_payload;
+    }
+    return false;
+  };
+
+  const handleRetry = async (r: LogRow) => {
+    setRetryingId(r.id);
+    const started = Date.now();
+    try {
+      if (r.function_name === 'ai-translate') {
+        const failed: string[] = r.metadata?.failed_items || [];
+        const res = await invokeWithRetry<any>('ai-translate', {
+          items: failed,
+          source_language: r.source_language,
+          target_language: r.target_language,
+          context: r.metadata?.context || undefined,
+          scope: r.scope ? `${r.scope}:retry` : 'retry',
+        });
+        const okCount = (res?.translations || []).filter((s: string) => s && s.trim()).length;
+        const errCount = failed.length - okCount;
+        toast({
+          title: errCount === 0 ? 'Reintent completat' : 'Reintent parcial',
+          description: `${okCount}/${failed.length} traduccions recuperades.`,
+          variant: errCount === 0 ? 'default' : 'destructive',
+        });
+      } else if (r.function_name === 'ai-product-seo') {
+        await invokeWithRetry('ai-product-seo', r.metadata.retry_payload);
+        toast({ title: 'Reintent completat', description: 'Descripció generada correctament.' });
+      }
+    } catch (e: any) {
+      await logAiTranslation({
+        function_name: r.function_name,
+        scope: r.scope ? `${r.scope}:retry` : 'retry',
+        source_language: r.source_language,
+        target_language: r.target_language,
+        items_count: r.error_count,
+        success_count: 0,
+        error_count: r.error_count,
+        status: 'error',
+        provider: r.provider,
+        error_message: String(e?.message || e),
+        duration_ms: Date.now() - started,
+      });
+      toast({
+        title: 'El reintent ha fallat',
+        description: String(e?.message || e),
+        variant: 'destructive',
+      });
+    } finally {
+      setRetryingId(null);
+      refetch();
+    }
+  };
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['ai_translation_logs'],
@@ -167,19 +233,20 @@ const AdminAiHistory: React.FC = () => {
               <TableHead className="text-right">Durada</TableHead>
               <TableHead>Estat</TableHead>
               <TableHead>Error</TableHead>
+              <TableHead className="text-right">Accions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground py-6">
+                <TableCell colSpan={11} className="text-center text-muted-foreground py-6">
                   Carregant...
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground py-6">
+                <TableCell colSpan={11} className="text-center text-muted-foreground py-6">
                   Sense registres.
                 </TableCell>
               </TableRow>
@@ -216,6 +283,26 @@ const AdminAiHistory: React.FC = () => {
                         ? `${r.error_message.slice(0, 100)}…`
                         : r.error_message}
                     </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  {canRetry(r) ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleRetry(r)}
+                      disabled={retryingId === r.id}
+                      title={
+                        r.function_name === 'ai-translate'
+                          ? `Reintenta ${r.metadata?.failed_items?.length || 0} elements fallits`
+                          : 'Reintenta la generació'
+                      }
+                    >
+                      <RotateCw className={cn('h-3 w-3 mr-1', retryingId === r.id && 'animate-spin')} />
+                      {retryingId === r.id ? 'Reintentant…' : 'Reintentar'}
+                    </Button>
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>
                   )}
