@@ -129,10 +129,26 @@ Deno.serve(async (req: Request) => {
       if (body.phone !== undefined) profileUpdate.phone = body.phone;
       if (body.role !== undefined) profileUpdate.role = body.role;
       if (body.preferred_language !== undefined) profileUpdate.preferred_language = body.preferred_language;
+      if (body.address_line1 !== undefined) profileUpdate.address_line1 = body.address_line1;
+      if (body.address_line2 !== undefined) profileUpdate.address_line2 = body.address_line2;
+      if (body.city !== undefined) profileUpdate.city = body.city;
+      if (body.postal_code !== undefined) profileUpdate.postal_code = body.postal_code;
+      if (body.province !== undefined) profileUpdate.province = body.province;
+      if (body.nif !== undefined) profileUpdate.nif = body.nif;
+      if (body.company_name !== undefined) profileUpdate.company_name = body.company_name;
       if (Object.keys(profileUpdate).length > 0) {
         await admin.from("profiles").update(profileUpdate).eq("id", body.user_id);
       }
       return json({ ok: true });
+    }
+
+    if (body.action === "get") {
+      if (!body.user_id) return json({ error: "user_id required" }, 400);
+      const { data: u, error: gErr } = await admin.auth.admin.getUserById(body.user_id);
+      if (gErr) throw gErr;
+      const { data: prof } = await admin
+        .from("profiles").select("*").eq("id", body.user_id).single();
+      return json({ ok: true, email: u?.user?.email || "", profile: prof });
     }
 
     if (body.action === "delete") {
