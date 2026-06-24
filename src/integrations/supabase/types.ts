@@ -788,6 +788,8 @@ export type Database = {
       maintenance_settings: {
         Row: {
           allowed_ips: string[]
+          emergency_token: string | null
+          emergency_token_expires_at: string | null
           enabled: boolean
           id: string
           message_ca: string
@@ -799,6 +801,8 @@ export type Database = {
         }
         Insert: {
           allowed_ips?: string[]
+          emergency_token?: string | null
+          emergency_token_expires_at?: string | null
           enabled?: boolean
           id?: string
           message_ca?: string
@@ -810,6 +814,8 @@ export type Database = {
         }
         Update: {
           allowed_ips?: string[]
+          emergency_token?: string | null
+          emergency_token_expires_at?: string | null
           enabled?: boolean
           id?: string
           message_ca?: string

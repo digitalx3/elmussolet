@@ -13,6 +13,7 @@ interface MaintenanceState {
 }
 
 const CACHE_KEY = 'maintenance.state.v1';
+const TOKEN_KEY = 'maintenance.emergency_token.v1';
 const CACHE_TTL_MS = 60_000;
 
 function readCache(): MaintenanceState | null {
@@ -36,15 +37,55 @@ function writeCache(state: MaintenanceState) {
   }
 }
 
+function readStoredToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredToken(token: string) {
+  try {
+    localStorage.setItem(TOKEN_KEY, token);
+  } catch {
+    /* ignore */
+  }
+}
+
 const MaintenanceGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAdmin, isLoading } = useAuth();
   const { pathname } = useLocation();
   const [state, setState] = React.useState<MaintenanceState | null>(() => readCache());
   const [checked, setChecked] = React.useState<boolean>(() => readCache() !== null);
 
+  // Capture emergency token from URL once (?mt_token=...) and persist it.
+  React.useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const t = params.get('mt_token');
+      if (t) {
+        writeStoredToken(t);
+        try { sessionStorage.removeItem(CACHE_KEY); } catch { /* ignore */ }
+        params.delete('mt_token');
+        const newSearch = params.toString();
+        const newUrl =
+          window.location.pathname +
+          (newSearch ? `?${newSearch}` : '') +
+          window.location.hash;
+        window.history.replaceState({}, '', newUrl);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const fetchState = React.useCallback(async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('check-maintenance-access');
+      const token = readStoredToken();
+      const { data, error } = await supabase.functions.invoke('check-maintenance-access', {
+        headers: token ? { 'x-maintenance-token': token } : undefined,
+      });
       if (error) throw error;
       const next: MaintenanceState = {
         enabled: !!data?.enabled,
@@ -56,7 +97,6 @@ const MaintenanceGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
       setState(next);
       writeCache(next);
     } catch {
-      // fail-open: don't block the site if the function fails
       const fallback: MaintenanceState = {
         enabled: false, bypass: true, show_logo: true, message_ca: '', message_es: '',
       };
@@ -75,7 +115,6 @@ const MaintenanceGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
     return () => window.removeEventListener('focus', onFocus);
   }, [fetchState]);
 
-  // Always allow admin area & login routes so the admin can reach the gate
   const isAdminArea =
     pathname.startsWith('/admin') ||
     pathname === '/login' ||
