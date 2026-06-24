@@ -11,6 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ca } from 'date-fns/locale';
 
@@ -225,6 +230,9 @@ const AdminSmtpSettings: React.FC = () => {
 };
 
 const SmtpLogPanel: React.FC = () => {
+  const qc = useQueryClient();
+  const [purgeMode, setPurgeMode] = useState<'older30' | 'all'>('older30');
+
   const { data: logs = [], isLoading, refetch, isFetching } = useQuery({
     queryKey: ['smtp-send-log'],
     queryFn: async () => {
@@ -238,17 +246,84 @@ const SmtpLogPanel: React.FC = () => {
     },
   });
 
+  const purge = useMutation({
+    mutationFn: async () => {
+      let q = supabase.from('smtp_send_log').delete();
+      if (purgeMode === 'older30') {
+        const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        q = q.lt('created_at', cutoff);
+      } else {
+        // delete all rows: use a filter that always matches
+        q = q.not('id', 'is', null);
+      }
+      const { error } = await q;
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['smtp-send-log'] });
+      toast.success(purgeMode === 'all' ? 'Registre buidat' : 'Registres antics esborrats');
+    },
+    onError: (e: any) => toast.error(e?.message || 'Error esborrant'),
+  });
+
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
         <div>
           <CardTitle className="text-lg">Registre d'enviaments</CardTitle>
           <CardDescription>Últims 100 intents d'enviament SMTP (correctes i errors).</CardDescription>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1">
-          <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-          Actualitzar
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1">
+            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+            Actualitzar
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" className="gap-1" disabled={logs.length === 0}>
+                <Trash2 className="h-4 w-4" />
+                Esborrar logs
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Esborrar registres SMTP?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Aquesta acció no es pot desfer. Tria quins registres vols eliminar:
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="space-y-2 py-2">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="purge-mode"
+                    checked={purgeMode === 'older30'}
+                    onChange={() => setPurgeMode('older30')}
+                  />
+                  Esborrar només registres més antics de 30 dies
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="purge-mode"
+                    checked={purgeMode === 'all'}
+                    onChange={() => setPurgeMode('all')}
+                  />
+                  Esborrar <b>tots</b> els registres
+                </label>
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => purge.mutate()}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Confirmar esborrat
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
