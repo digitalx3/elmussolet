@@ -692,6 +692,14 @@ const AdminBirthListForm: React.FC = () => {
                         {t('admin.deleteListWithOrdersDesc', { count: ordersCount })}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
+                    <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
+                      <div className="font-medium mb-1">{t('admin.deletePreviewTitle', { defaultValue: 'Se eliminarán los siguientes registros:' })}</div>
+                      <div className="flex justify-between"><span>Orders</span><span className="font-mono">{previewCounts.orders}</span></div>
+                      <div className="flex justify-between"><span>Order items</span><span className="font-mono">{previewCounts.order_items}</span></div>
+                      <div className="flex justify-between"><span>List items</span><span className="font-mono">{previewCounts.list_items}</span></div>
+                      <div className="flex justify-between"><span>List sections</span><span className="font-mono">{previewCounts.list_sections}</span></div>
+                      <div className="flex justify-between"><span>List owners</span><span className="font-mono">{previewCounts.list_owners}</span></div>
+                    </div>
                     <AlertDialogFooter>
                       <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                       <AlertDialogAction onClick={() => setDeleteStep('final')}>
