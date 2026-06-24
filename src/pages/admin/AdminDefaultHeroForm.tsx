@@ -301,24 +301,43 @@ const AdminDefaultHeroForm: React.FC = () => {
 
             <div>
               <Label className="text-xs mb-1 block">Imatge principal</Label>
-              {state.image_url && (
+              {(pending.image || state.image_url) && (
                 <div className="mb-2 relative aspect-video rounded overflow-hidden border border-border">
-                  <img src={state.image_url} alt="" className="w-full h-full object-cover" />
+                  <img src={pending.image?.url ?? state.image_url ?? ''} alt="" className="w-full h-full object-cover" />
+                  {pending.image && (
+                    <div className="absolute top-2 left-2 bg-amber-500/95 text-white text-[10px] font-semibold px-2 py-0.5 rounded">
+                      VISTA PRÈVIA — sense pujar
+                    </div>
+                  )}
                 </div>
               )}
               <div className="flex items-center gap-2 flex-wrap">
                 <label className="inline-flex items-center gap-2 cursor-pointer text-sm px-3 py-2 rounded-md border border-border hover:bg-muted">
                   <Upload className="h-4 w-4" />
-                  {uploading === 'image' ? 'Pujant...' : state.image_url ? 'Canviar' : 'Pujar'}
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && upload('image', e.target.files[0])} />
+                  {state.image_url || pending.image ? 'Triar una altra' : 'Triar imatge'}
+                  <input
+                    type="file" accept="image/*" className="hidden"
+                    onChange={(e) => { if (e.target.files?.[0]) { pickFile('image', e.target.files[0]); e.target.value = ''; } }}
+                  />
                 </label>
-                {state.image_url && (
+                {pending.image && (
+                  <>
+                    <Button size="sm" onClick={() => confirmUpload('image')} disabled={uploading === 'image'}>
+                      {uploading === 'image' ? 'Pujant...' : 'Confirmar i pujar'}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => cancelPending('image')} disabled={uploading === 'image'}>
+                      Cancel·lar
+                    </Button>
+                  </>
+                )}
+                {!pending.image && state.image_url && (
                   <Button variant="ghost" size="sm" className="text-destructive" onClick={() => set('image_url', null)}>
                     Treure
                   </Button>
                 )}
               </div>
             </div>
+
 
             <div className="grid grid-cols-2 gap-2">
               <div>
