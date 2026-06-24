@@ -110,6 +110,23 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
+
+  const handleResendEmailChange = async () => {
+    if (!pendingEmail) return;
+    setResendingEmail(true);
+    // Re-trigger the email change to re-send confirmation links
+    const { error } = await supabase.auth.updateUser(
+      { email: pendingEmail },
+      { emailRedirectTo: `${window.location.origin}/account` },
+    );
+    setResendingEmail(false);
+    if (error) {
+      toast.error(error.message || 'No s\'ha pogut reenviar la confirmació');
+    } else {
+      toast.success('Correu de confirmació reenviat. Revisa la safata d\'entrada.');
+    }
+  };
 
   const loadAuthUser = async () => {
     const { data } = await supabase.auth.getUser();
@@ -253,8 +270,20 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
         <div className="pt-6 border-t">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Correu electrònic</h3>
           {pendingEmail && (
-            <div className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-              Canvi pendent de confirmació: <strong>{pendingEmail}</strong>. Revisa la safata d'entrada (i la carpeta de correu brossa) per acabar el canvi. Fins llavors continuaràs entrant amb <strong>{currentEmail}</strong>.
+            <div className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 flex items-start gap-3 flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                Canvi pendent de confirmació: <strong>{pendingEmail}</strong>. Revisa la safata d'entrada (i la carpeta de correu brossa) per acabar el canvi. Fins llavors continuaràs entrant amb <strong>{currentEmail}</strong>.
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleResendEmailChange}
+                disabled={resendingEmail}
+                className="shrink-0"
+              >
+                {resendingEmail ? t('common.loading') : 'Reenviar confirmació'}
+              </Button>
             </div>
           )}
           <div className="grid sm:grid-cols-[1fr_auto] gap-3 items-end">
