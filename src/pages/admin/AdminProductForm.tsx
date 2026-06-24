@@ -297,27 +297,49 @@ const AdminProductForm: React.FC = () => {
       <Card>
         <CardHeader><CardTitle>Traduccions</CardTitle></CardHeader>
         <CardContent>
-          <LanguageTabs>
+          <LanguageTabs value={activeLang} onChange={setActiveLang}>
             {(lang) => {
               const tr = form.translations[lang] ?? emptyTranslation;
-              const isDefault = lang === defaultCode;
+              const errs = translationErrors[lang] ?? {};
               return (
                 <div className="space-y-4">
                   <div>
-                    <Label>Nom {isDefault && '*'}</Label>
+                    <Label>Nom *</Label>
                     <Input
                       value={tr.name}
                       onChange={e => updateTranslation(lang, 'name', e.target.value)}
-                      onBlur={isDefault ? autoSlug : undefined}
+                      onBlur={lang === defaultCode ? autoSlug : undefined}
                       placeholder={`Nom (${lang.toUpperCase()})`}
+                      maxLength={MAX_NAME}
+                      aria-invalid={!!errs.name}
+                      className={cn(errs.name && 'border-destructive focus-visible:ring-destructive')}
                     />
+                    <div className="flex justify-between mt-1">
+                      {errs.name ? (
+                        <p className="text-[11px] text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" /> {errs.name}
+                        </p>
+                      ) : <span />}
+                      <span className="text-[11px] text-muted-foreground">{tr.name.length}/{MAX_NAME}</span>
+                    </div>
                   </div>
                   <div>
                     <Label>Descripció curta</Label>
                     <Input
                       value={tr.short_description}
                       onChange={e => updateTranslation(lang, 'short_description', e.target.value)}
+                      maxLength={MAX_SHORT}
+                      aria-invalid={!!errs.short_description}
+                      className={cn(errs.short_description && 'border-destructive focus-visible:ring-destructive')}
                     />
+                    <div className="flex justify-between mt-1">
+                      {errs.short_description ? (
+                        <p className="text-[11px] text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" /> {errs.short_description}
+                        </p>
+                      ) : <span />}
+                      <span className="text-[11px] text-muted-foreground">{tr.short_description.length}/{MAX_SHORT}</span>
+                    </div>
                   </div>
                   <div>
                     <Label>Descripció</Label>
@@ -325,7 +347,18 @@ const AdminProductForm: React.FC = () => {
                       value={tr.description}
                       onChange={e => updateTranslation(lang, 'description', e.target.value)}
                       rows={5}
+                      maxLength={MAX_DESC}
+                      aria-invalid={!!errs.description}
+                      className={cn(errs.description && 'border-destructive focus-visible:ring-destructive')}
                     />
+                    <div className="flex justify-between mt-1">
+                      {errs.description ? (
+                        <p className="text-[11px] text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" /> {errs.description}
+                        </p>
+                      ) : <span />}
+                      <span className="text-[11px] text-muted-foreground">{tr.description.length}/{MAX_DESC}</span>
+                    </div>
                   </div>
                 </div>
               );
