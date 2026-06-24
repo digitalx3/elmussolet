@@ -686,7 +686,7 @@ const AdminBirthListForm: React.FC = () => {
                 </Button>
 
                 {/* Step 1 (with orders): warn that orders will be deleted */}
-                <AlertDialog open={deleteStep === 'orders'} onOpenChange={(o) => !o && setDeleteStep('idle')}>
+                <AlertDialog open={deleteStep === 'orders'} onOpenChange={(o) => { if (!o && !deleting) setDeleteStep('idle'); }}>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>{t('admin.deleteListWithOrdersTitle')}</AlertDialogTitle>
