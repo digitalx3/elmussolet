@@ -250,7 +250,7 @@ const MyBirthListPage: React.FC = () => {
     queryFn: async () => {
       const listIdLocal = editingListId!;
       const [{ data: list }, { data: owner }, { data: items }, { data: secs }] = await Promise.all([
-        supabase.from('birth_lists').select('*').eq('id', listIdLocal).single(),
+        supabase.from('birth_lists').select('id, list_code, status, baby_name, expected_date, template_id, notes, created_by, created_at, updated_at').eq('id', listIdLocal).single(),
         supabase.from('list_owners').select('first_name, last_name').eq('list_id', listIdLocal).eq('user_id', user!.id).maybeSingle(),
         supabase
           .from('list_items')
