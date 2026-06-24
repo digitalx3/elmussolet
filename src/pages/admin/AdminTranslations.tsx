@@ -285,30 +285,72 @@ const ProductsTranslationsPanel: React.FC = () => {
                   <LanguageTabs>
                     {(code) => {
                       const cur = getDraft(p, code);
+                      const errs = fieldErrors[p.id]?.[code] || {};
+                      const isPrimary = code === primaryCode;
                       return (
                         <div className="space-y-3">
                           <div>
-                            <Label className="text-xs">{t('admin.name', 'Nom')}</Label>
+                            <Label className="text-xs flex items-center gap-1">
+                              {t('admin.name', 'Nom')}
+                              {isPrimary && <span className="text-destructive">*</span>}
+                              <span className="text-muted-foreground ml-auto text-[10px]">
+                                {cur.name.length}/{NAME_MAX}
+                              </span>
+                            </Label>
                             <Input
                               value={cur.name}
+                              maxLength={NAME_MAX}
+                              aria-invalid={!!errs.name}
+                              className={errs.name ? 'border-destructive focus-visible:ring-destructive' : ''}
                               onChange={e => updateDraft(p.id, code, 'name', e.target.value)}
                             />
+                            {errs.name && (
+                              <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
+                                <AlertCircle className="h-3 w-3" /> {errs.name}
+                              </p>
+                            )}
                           </div>
                           <div>
-                            <Label className="text-xs">{t('admin.shortDescription', 'Descripció curta')}</Label>
+                            <Label className="text-xs flex items-center gap-1">
+                              {t('admin.shortDescription', 'Descripció curta')}
+                              <span className="text-muted-foreground ml-auto text-[10px]">
+                                {cur.short_description.length}/{SHORT_DESC_MAX}
+                              </span>
+                            </Label>
                             <Textarea
                               rows={2}
                               value={cur.short_description}
+                              maxLength={SHORT_DESC_MAX}
+                              aria-invalid={!!errs.short_description}
+                              className={errs.short_description ? 'border-destructive focus-visible:ring-destructive' : ''}
                               onChange={e => updateDraft(p.id, code, 'short_description', e.target.value)}
                             />
+                            {errs.short_description && (
+                              <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
+                                <AlertCircle className="h-3 w-3" /> {errs.short_description}
+                              </p>
+                            )}
                           </div>
                           <div>
-                            <Label className="text-xs">{t('admin.description', 'Descripció')}</Label>
+                            <Label className="text-xs flex items-center gap-1">
+                              {t('admin.description', 'Descripció')}
+                              <span className="text-muted-foreground ml-auto text-[10px]">
+                                {cur.description.length}/{DESC_MAX}
+                              </span>
+                            </Label>
                             <Textarea
                               rows={4}
                               value={cur.description}
+                              maxLength={DESC_MAX}
+                              aria-invalid={!!errs.description}
+                              className={errs.description ? 'border-destructive focus-visible:ring-destructive' : ''}
                               onChange={e => updateDraft(p.id, code, 'description', e.target.value)}
                             />
+                            {errs.description && (
+                              <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
+                                <AlertCircle className="h-3 w-3" /> {errs.description}
+                              </p>
+                            )}
                           </div>
                         </div>
                       );
