@@ -69,6 +69,16 @@ const AdminDefaultHeroForm: React.FC = () => {
   const set = <K extends keyof HeroState>(k: K, v: HeroState[K]) =>
     setStates((s) => ({ ...s, [activeVariant]: { ...s[activeVariant], [k]: v } }));
 
+  const setTr = (code: string, field: keyof HeroLanguageContent, val: string) =>
+    setStates((s) => {
+      const prev = s[activeVariant];
+      const trs = { ...(prev.translations ?? {}) };
+      trs[code] = { ...(trs[code] ?? {}), [field]: val };
+      return { ...s, [activeVariant]: { ...prev, translations: trs } };
+    });
+  const trVal = (code: string, field: keyof HeroLanguageContent): string =>
+    state.translations?.[code]?.[field] ?? '';
+
   // Clear pending previews when switching variant
   useEffect(() => {
     setPending((p) => {
