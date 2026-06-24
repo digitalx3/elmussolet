@@ -108,6 +108,8 @@ const AdminBirthListForm: React.FC = () => {
   const [browseCategory, setBrowseCategory] = useState<string>('all');
   const [browseSearch, setBrowseSearch] = useState('');
   const [defaultsLoaded, setDefaultsLoaded] = useState(false);
+  const [translatingTempId, setTranslatingTempId] = useState<string | null>(null);
+  const { data: enabledLanguages = [] } = useLanguages({ onlyEnabled: true });
 
   const { data: defaultSectionsData = [] } = useDefaultListSections({ onlyActive: true });
 
