@@ -1218,6 +1218,52 @@ const AdminBirthListForm: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <Dialog open={!!translatingTempId} onOpenChange={(v) => !v && setTranslatingTempId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{lang === 'es' ? 'Traducciones de la familia' : 'Traduccions de la família'}</DialogTitle>
+          </DialogHeader>
+          {(() => {
+            const sec = sections.find(s => s.temp_id === translatingTempId);
+            if (!sec) return null;
+            const setName = (code: string, value: string) => {
+              setSections(prev => prev.map(x => {
+                if (x.temp_id !== sec.temp_id) return x;
+                const next: PendingSection = {
+                  ...x,
+                  translations: { ...x.translations, [code]: value },
+                };
+                if (code === 'ca') next.name_ca = value;
+                if (code === 'es') next.name_es = value;
+                return next;
+              }));
+            };
+            return (
+              <LanguageTabs>
+                {(code) => {
+                  const fallback = code === 'ca' ? sec.name_ca : code === 'es' ? sec.name_es : '';
+                  const value = sec.translations[code] ?? fallback ?? '';
+                  return (
+                    <div className="space-y-2">
+                      <Label className="text-xs">{lang === 'es' ? 'Nombre' : 'Nom'}</Label>
+                      <Input value={value} onChange={e => setName(code, e.target.value)} />
+                      <p className="text-[11px] text-muted-foreground">
+                        {lang === 'es'
+                          ? 'Se mostrará en la vista pública cuando el visitante use este idioma.'
+                          : 'Es mostrarà a la vista pública quan el visitant utilitzi aquest idioma.'}
+                      </p>
+                    </div>
+                  );
+                }}
+              </LanguageTabs>
+            );
+          })()}
+          <DialogFooter>
+            <Button onClick={() => setTranslatingTempId(null)}>{t('common.close', 'Tancar')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
