@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Plus, Trash2, MapPin, Save, KeyRound, Copy, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Plus, Trash2, MapPin, Save, KeyRound, Copy, RefreshCw, ShieldCheck } from 'lucide-react';
 import RichTextEditor from '@/components/ui/rich-text-editor';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -16,16 +16,24 @@ interface MaintenanceSettings {
   message_ca: string;
   message_es: string;
   allowed_ips: string[];
-  emergency_token: string | null;
+  emergency_token_hash: string | null;
   emergency_token_expires_at: string | null;
+  emergency_token_single_use: boolean;
+  emergency_token_used_at: string | null;
 }
 
 const IP_OR_CIDR = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d?\d)(?:\/(?:[0-9]|[12]\d|3[0-2]))?$/;
 
-function generateToken(): string {
+function generatePlainToken(): string {
   const bytes = new Uint8Array(24);
   crypto.getRandomValues(bytes);
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const buf = new TextEncoder().encode(input);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 const AdminMaintenance: React.FC = () => {
@@ -37,18 +45,22 @@ const AdminMaintenance: React.FC = () => {
     message_ca: '',
     message_es: '',
     allowed_ips: [],
-    emergency_token: null,
+    emergency_token_hash: null,
     emergency_token_expires_at: null,
+    emergency_token_single_use: false,
+    emergency_token_used_at: null,
   });
   const [newIp, setNewIp] = React.useState('');
   const [myIp, setMyIp] = React.useState<string | null>(null);
   const [tokenHours, setTokenHours] = React.useState<number>(24);
+  // Plain token is held in memory ONLY right after generation. Never persisted.
+  const [plainToken, setPlainToken] = React.useState<string | null>(null);
 
   const load = React.useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('maintenance_settings')
-      .select('enabled, show_logo, message_ca, message_es, allowed_ips, emergency_token, emergency_token_expires_at')
+      .select('enabled, show_logo, message_ca, message_es, allowed_ips, emergency_token_hash, emergency_token_expires_at, emergency_token_single_use, emergency_token_used_at')
       .limit(1)
       .maybeSingle();
     if (error) {
@@ -60,8 +72,10 @@ const AdminMaintenance: React.FC = () => {
         message_ca: data.message_ca ?? '',
         message_es: data.message_es ?? '',
         allowed_ips: data.allowed_ips ?? [],
-        emergency_token: (data as any).emergency_token ?? null,
-        emergency_token_expires_at: (data as any).emergency_token_expires_at ?? null,
+        emergency_token_hash: data.emergency_token_hash ?? null,
+        emergency_token_expires_at: data.emergency_token_expires_at ?? null,
+        emergency_token_single_use: !!data.emergency_token_single_use,
+        emergency_token_used_at: data.emergency_token_used_at ?? null,
       });
     }
     setLoading(false);
@@ -71,15 +85,13 @@ const AdminMaintenance: React.FC = () => {
     load();
     supabase.functions
       .invoke('check-maintenance-access')
-      .then(({ data }) => {
-        if (data?.client_ip) setMyIp(data.client_ip);
-      })
+      .then(({ data }) => { if (data?.client_ip) setMyIp(data.client_ip); })
       .catch(() => {});
   }, [load]);
 
   const save = async () => {
     setSaving(true);
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('maintenance_settings')
       .update({
         enabled: state.enabled,
@@ -87,10 +99,12 @@ const AdminMaintenance: React.FC = () => {
         message_ca: state.message_ca,
         message_es: state.message_es,
         allowed_ips: state.allowed_ips,
-        emergency_token: state.emergency_token,
+        emergency_token_hash: state.emergency_token_hash,
         emergency_token_expires_at: state.emergency_token_expires_at,
+        emergency_token_single_use: state.emergency_token_single_use,
+        emergency_token_used_at: state.emergency_token_used_at,
         updated_by: (await supabase.auth.getUser()).data.user?.id ?? null,
-      } as any)
+      })
       .eq('id', '00000000-0000-0000-0000-000000000001');
     setSaving(false);
     if (error) {
@@ -120,38 +134,49 @@ const AdminMaintenance: React.FC = () => {
     setState((s) => ({ ...s, allowed_ips: s.allowed_ips.filter((x) => x !== ip) }));
   };
 
-  const regenerateToken = () => {
+  const regenerateToken = async () => {
     const hours = Math.max(1, Math.min(720, Number(tokenHours) || 24));
     const expires = new Date(Date.now() + hours * 3600 * 1000).toISOString();
-    setState((s) => ({ ...s, emergency_token: generateToken(), emergency_token_expires_at: expires }));
-    toast.info(`Token generat (vàlid ${hours}h). Recorda Desar canvis.`);
+    const plain = generatePlainToken();
+    const hash = await sha256Hex(plain);
+    setPlainToken(plain);
+    setState((s) => ({
+      ...s,
+      emergency_token_hash: hash,
+      emergency_token_expires_at: expires,
+      emergency_token_used_at: null,
+    }));
+    toast.info(`Token generat (vàlid ${hours}h). Recorda Desar canvis — el token només es mostra ara.`);
   };
 
   const clearToken = () => {
-    setState((s) => ({ ...s, emergency_token: null, emergency_token_expires_at: null }));
+    setPlainToken(null);
+    setState((s) => ({
+      ...s,
+      emergency_token_hash: null,
+      emergency_token_expires_at: null,
+      emergency_token_used_at: null,
+    }));
+    toast.info('Token revocat. Recorda Desar canvis per aplicar.');
   };
 
   const tokenUrl =
-    state.emergency_token
-      ? `${window.location.origin}/?mt_token=${encodeURIComponent(state.emergency_token)}`
+    plainToken
+      ? `${window.location.origin}/?mt_token=${encodeURIComponent(plainToken)}`
       : '';
 
   const tokenExpired =
     !!state.emergency_token_expires_at &&
     new Date(state.emergency_token_expires_at).getTime() <= Date.now();
 
+  const tokenUsed = state.emergency_token_single_use && !!state.emergency_token_used_at;
+
   const copy = async (text: string, label = 'Copiat al porta-retalls') => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success(label);
-    } catch {
-      toast.error('No s\'ha pogut copiar');
-    }
+    try { await navigator.clipboard.writeText(text); toast.success(label); }
+    catch { toast.error('No s\'ha pogut copiar'); }
   };
 
-  if (loading) {
-    return <div className="p-4 text-muted-foreground">Carregant...</div>;
-  }
+  if (loading) return <div className="p-4 text-muted-foreground">Carregant...</div>;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -259,27 +284,29 @@ const AdminMaintenance: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Genera un token temporal per accedir a la web encara que la teva IP no estigui autoritzada.
-            Obre l'enllaç al navegador i quedarà autoritzat fins que el token caduqui o el revoquis.
-          </p>
+          <Alert>
+            <ShieldCheck className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              El token només es guarda <strong>hashejat</strong> (SHA-256) al servidor.
+              Es mostra en pla <strong>una sola vegada</strong> en generar-lo: copia'l ara o regenera'l si el perds.
+              Pots revocar-lo a l'instant amb el botó "Revocar" + Desar canvis.
+            </AlertDescription>
+          </Alert>
 
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <Label className="mb-1 block">Vàlid durant (hores)</Label>
               <Input
-                type="number"
-                min={1}
-                max={720}
+                type="number" min={1} max={720}
                 value={tokenHours}
                 onChange={(e) => setTokenHours(Number(e.target.value))}
               />
             </div>
             <Button type="button" onClick={regenerateToken}>
               <RefreshCw className="h-4 w-4 mr-2" />
-              {state.emergency_token ? 'Regenerar token' : 'Generar token'}
+              {state.emergency_token_hash ? 'Regenerar token' : 'Generar token'}
             </Button>
-            {state.emergency_token && (
+            {state.emergency_token_hash && (
               <Button type="button" variant="outline" onClick={clearToken}>
                 <Trash2 className="h-4 w-4 mr-2" />
                 Revocar
@@ -287,12 +314,27 @@ const AdminMaintenance: React.FC = () => {
             )}
           </div>
 
-          {state.emergency_token ? (
+          <div className="flex items-center justify-between rounded-md border p-3">
+            <div>
+              <Label className="text-base">Token d'un sol ús</Label>
+              <p className="text-sm text-muted-foreground">
+                Si està actiu, el token deixa de funcionar després del primer accés correcte.
+              </p>
+            </div>
+            <Switch
+              checked={state.emergency_token_single_use}
+              onCheckedChange={(v) => setState((s) => ({ ...s, emergency_token_single_use: v, emergency_token_used_at: v ? s.emergency_token_used_at : null }))}
+            />
+          </div>
+
+          {state.emergency_token_hash ? (
             <div className="space-y-3 border rounded-md p-3 bg-muted/30">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs uppercase tracking-wide text-muted-foreground">Estat</span>
                 {tokenExpired ? (
                   <span className="text-xs font-semibold text-destructive">CADUCAT</span>
+                ) : tokenUsed ? (
+                  <span className="text-xs font-semibold text-destructive">JA USAT</span>
                 ) : (
                   <span className="text-xs font-semibold text-primary">ACTIU</span>
                 )}
@@ -303,27 +345,47 @@ const AdminMaintenance: React.FC = () => {
                   <span className="font-medium">{new Date(state.emergency_token_expires_at).toLocaleString()}</span>
                 </div>
               )}
-              <div>
-                <Label className="mb-1 block text-xs">Token</Label>
-                <div className="flex gap-2">
-                  <Input readOnly value={state.emergency_token} className="font-mono text-xs" />
-                  <Button type="button" variant="outline" size="icon" onClick={() => copy(state.emergency_token!, 'Token copiat')}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
+              {state.emergency_token_used_at && (
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Primer ús: </span>
+                  <span className="font-medium">{new Date(state.emergency_token_used_at).toLocaleString()}</span>
                 </div>
+              )}
+              <div>
+                <Label className="mb-1 block text-xs">Hash emmagatzemat</Label>
+                <Input readOnly value={state.emergency_token_hash} className="font-mono text-xs" />
               </div>
-              <div>
-                <Label className="mb-1 block text-xs">Enllaç d'accés</Label>
-                <div className="flex gap-2">
-                  <Input readOnly value={tokenUrl} className="font-mono text-xs" />
-                  <Button type="button" variant="outline" size="icon" onClick={() => copy(tokenUrl, 'Enllaç copiat')}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Obrint aquesta URL en qualsevol dispositiu, l'usuari saltarà el bloqueig fins que caduqui el token.
+
+              {plainToken ? (
+                <>
+                  <div>
+                    <Label className="mb-1 block text-xs">Token en pla (visible una sola vegada)</Label>
+                    <div className="flex gap-2">
+                      <Input readOnly value={plainToken} className="font-mono text-xs" />
+                      <Button type="button" variant="outline" size="icon" onClick={() => copy(plainToken, 'Token copiat')}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="mb-1 block text-xs">Enllaç d'accés</Label>
+                    <div className="flex gap-2">
+                      <Input readOnly value={tokenUrl} className="font-mono text-xs" />
+                      <Button type="button" variant="outline" size="icon" onClick={() => copy(tokenUrl, 'Enllaç copiat')}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Copia l'enllaç ara. Quan recarreguis aquesta pàgina, ja no es podrà tornar a veure el token.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">
+                  Hi ha un token actiu però no es pot mostrar en pla (només es veu en el moment de generar-lo).
+                  Regenera'l si necessites un nou enllaç.
                 </p>
-              </div>
+              )}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground italic">No hi ha cap token actiu.</p>

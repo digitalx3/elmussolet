@@ -49,6 +49,12 @@ function constantTimeEq(a: string, b: string): boolean {
   return r === 0;
 }
 
+async function sha256Hex(input: string): Promise<string> {
+  const buf = new TextEncoder().encode(input);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -60,7 +66,7 @@ Deno.serve(async (req) => {
 
     const { data, error } = await supabase
       .from('maintenance_settings')
-      .select('enabled, show_logo, message_ca, message_es, allowed_ips, emergency_token, emergency_token_expires_at')
+      .select('id, enabled, show_logo, message_ca, message_es, allowed_ips, emergency_token_hash, emergency_token_expires_at, emergency_token_single_use, emergency_token_used_at')
       .limit(1)
       .maybeSingle();
 
@@ -70,21 +76,32 @@ Deno.serve(async (req) => {
     const allowed: string[] = data?.allowed_ips ?? [];
     const ipBypass = !!ip && allowed.some((r) => ipMatches(ip, r));
 
-    // Token bypass: from URL query (?token=) or header x-maintenance-token
     const url = new URL(req.url);
     const providedToken =
       url.searchParams.get('token') ||
       req.headers.get('x-maintenance-token') ||
       '';
+
     let tokenBypass = false;
     if (
       providedToken &&
-      data?.emergency_token &&
+      data?.emergency_token_hash &&
       data?.emergency_token_expires_at &&
       new Date(data.emergency_token_expires_at).getTime() > Date.now() &&
-      constantTimeEq(providedToken, data.emergency_token)
+      (!data.emergency_token_single_use || !data.emergency_token_used_at)
     ) {
-      tokenBypass = true;
+      const providedHash = await sha256Hex(providedToken);
+      if (constantTimeEq(providedHash, data.emergency_token_hash)) {
+        tokenBypass = true;
+        if (data.emergency_token_single_use && !data.emergency_token_used_at) {
+          // Mark first use — subsequent calls with the same token will be rejected.
+          await supabase
+            .from('maintenance_settings')
+            .update({ emergency_token_used_at: new Date().toISOString() })
+            .eq('id', data.id)
+            .is('emergency_token_used_at', null);
+        }
+      }
     }
 
     return new Response(
