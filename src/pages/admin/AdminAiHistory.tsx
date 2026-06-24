@@ -67,6 +67,68 @@ const StatusBadge: React.FC<{ status: LogRow['status'] }> = ({ status }) => {
 const AdminAiHistory: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | LogRow['status']>('all');
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+
+  const canRetry = (r: LogRow): boolean => {
+    if (r.status === 'success') return false;
+    const meta = r.metadata || {};
+    if (r.function_name === 'ai-translate') {
+      return Array.isArray(meta.failed_items) && meta.failed_items.length > 0;
+    }
+    if (r.function_name === 'ai-product-seo') {
+      return !!meta.retry_payload;
+    }
+    return false;
+  };
+
+  const handleRetry = async (r: LogRow) => {
+    setRetryingId(r.id);
+    const started = Date.now();
+    try {
+      if (r.function_name === 'ai-translate') {
+        const failed: string[] = r.metadata?.failed_items || [];
+        const res = await invokeWithRetry<any>('ai-translate', {
+          items: failed,
+          source_language: r.source_language,
+          target_language: r.target_language,
+          context: r.metadata?.context || undefined,
+          scope: r.scope ? `${r.scope}:retry` : 'retry',
+        });
+        const okCount = (res?.translations || []).filter((s: string) => s && s.trim()).length;
+        const errCount = failed.length - okCount;
+        toast({
+          title: errCount === 0 ? 'Reintent completat' : 'Reintent parcial',
+          description: `${okCount}/${failed.length} traduccions recuperades.`,
+          variant: errCount === 0 ? 'default' : 'destructive',
+        });
+      } else if (r.function_name === 'ai-product-seo') {
+        await invokeWithRetry('ai-product-seo', r.metadata.retry_payload);
+        toast({ title: 'Reintent completat', description: 'Descripció generada correctament.' });
+      }
+    } catch (e: any) {
+      await logAiTranslation({
+        function_name: r.function_name,
+        scope: r.scope ? `${r.scope}:retry` : 'retry',
+        source_language: r.source_language,
+        target_language: r.target_language,
+        items_count: r.error_count,
+        success_count: 0,
+        error_count: r.error_count,
+        status: 'error',
+        provider: r.provider,
+        error_message: String(e?.message || e),
+        duration_ms: Date.now() - started,
+      });
+      toast({
+        title: 'El reintent ha fallat',
+        description: String(e?.message || e),
+        variant: 'destructive',
+      });
+    } finally {
+      setRetryingId(null);
+      refetch();
+    }
+  };
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['ai_translation_logs'],
