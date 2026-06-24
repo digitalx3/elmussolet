@@ -115,12 +115,19 @@ const AdminBirthListForm: React.FC = () => {
   useEffect(() => {
     if (!isNew || defaultsLoaded) return;
     if (defaultSectionsData.length === 0) return;
-    const initial = defaultSectionsData.map((s, i) => ({
-      temp_id: `def-${s.id}`,
-      name_ca: pickSectionName(s, 'ca'),
-      name_es: pickSectionName(s, 'es'),
-      sort_order: i,
-    }));
+    const initial: PendingSection[] = defaultSectionsData.map((s, i) => {
+      const translations: Record<string, string> = {};
+      (s.translations || []).forEach(tr => {
+        if (tr?.name) translations[tr.language] = tr.name;
+      });
+      return {
+        temp_id: `def-${s.id}`,
+        name_ca: pickSectionName(s, 'ca'),
+        name_es: pickSectionName(s, 'es'),
+        sort_order: i,
+        translations,
+      };
+    });
     setSections(initial);
     setActiveSectionTempId(initial[0]?.temp_id ?? null);
     setDefaultsLoaded(true);
