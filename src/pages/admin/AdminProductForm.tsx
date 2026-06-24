@@ -233,11 +233,32 @@ const AdminProductForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const defaultName = form.translations[defaultCode]?.name?.trim();
-    if (!defaultName || !form.slug || !form.sku) {
-      toast.error(`Omple els camps obligatoris: nom (${defaultCode.toUpperCase()}), slug i SKU`);
+
+    // Validate each enabled language
+    const newErrors: TranslationErrors = {};
+    let firstInvalidLang: string | null = null;
+    for (const lng of languages) {
+      const tr = form.translations[lng.code] ?? emptyTranslation;
+      const langLabel = (lng.native_name || lng.name || lng.code).toString();
+      const errs = validateTranslation(tr, { requireName: true, langLabel });
+      if (Object.keys(errs).length > 0) {
+        newErrors[lng.code] = errs;
+        if (!firstInvalidLang) firstInvalidLang = lng.code;
+      }
+    }
+    setTranslationErrors(newErrors);
+
+    if (firstInvalidLang) {
+      setActiveLang(firstInvalidLang);
+      toast.error('Revisa les traduccions: hi ha camps amb errors.');
       return;
     }
+
+    if (!form.slug || !form.sku) {
+      toast.error('Omple els camps obligatoris: slug i SKU');
+      return;
+    }
+
     try {
       await saveProduct.mutateAsync({ id: isNew ? undefined : id, data: form });
       toast.success(isNew ? 'Producte creat' : 'Producte actualitzat');
