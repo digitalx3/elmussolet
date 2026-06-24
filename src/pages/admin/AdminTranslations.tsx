@@ -103,6 +103,18 @@ const ProductsTranslationsPanel: React.FC = () => {
         [code]: { ...(d[productId]?.[code] || { name: '', short_description: '', description: '' }), [field]: value },
       },
     }));
+    // Clear the specific field error as the user edits.
+    setFieldErrors(prev => {
+      const langErrs = prev[productId]?.[code];
+      if (!langErrs || !langErrs[field]) return prev;
+      const { [field]: _, ...restFields } = langErrs;
+      const nextLangErrs = Object.keys(restFields).length > 0 ? restFields : undefined;
+      const productErrs = { ...prev[productId] };
+      if (nextLangErrs) productErrs[code] = nextLangErrs; else delete productErrs[code];
+      const next = { ...prev };
+      if (Object.keys(productErrs).length > 0) next[productId] = productErrs; else delete next[productId];
+      return next;
+    });
   };
 
   const saveProduct = async (p: ProductRow) => {
