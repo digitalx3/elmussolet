@@ -451,6 +451,24 @@ const AdminBirthListForm: React.FC = () => {
       toast.error('Mínim un propietari'); return;
     }
 
+    // Validate every section has at least the default-language name filled
+    // so the public list never renders a blank family header.
+    const defaultCode = (enabledLanguages.find(l => l.is_default)?.code) || enabledLanguages[0]?.code || 'ca';
+    const invalidSection = sections.find(s => {
+      const value = s.translations?.[defaultCode]
+        ?? (defaultCode === 'ca' ? s.name_ca : defaultCode === 'es' ? s.name_es : '');
+      return !value || !value.trim();
+    });
+    if (invalidSection) {
+      toast.error(
+        lang === 'es'
+          ? `Una familia no tiene nombre en el idioma principal (${defaultCode.toUpperCase()}). Edita sus traducciones antes de guardar.`
+          : `Una família no té nom en l'idioma principal (${defaultCode.toUpperCase()}). Edita'n les traduccions abans de desar.`,
+      );
+      setTranslatingTempId(invalidSection.temp_id);
+      return;
+    }
+
     setSaving(true);
     try {
       let listId = id;
