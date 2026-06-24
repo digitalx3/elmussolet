@@ -183,16 +183,16 @@ async function callAnthropic(prompt: string): Promise<string> {
 
 async function translateBatch(provider: Provider, items: string[], source: string, target: string, ctx?: string): Promise<string[]> {
   const prompt = buildPrompt(items, source, target, ctx);
-  let raw = "";
-  if (provider === "openai") raw = await callOpenAI(prompt);
-  else if (provider === "anthropic") raw = await callAnthropic(prompt);
-  else raw = await callLovable(prompt);
+  const raw = await withRetry(`call ${provider}`, async () => {
+    if (provider === "openai") return await callOpenAI(prompt);
+    if (provider === "anthropic") return await callAnthropic(prompt);
+    return await callLovable(prompt);
+  });
 
   const parsed = parseJsonLoose(raw);
   const arr = parsed?.translations;
   if (!Array.isArray(arr)) throw new Error("Model response missing 'translations' array");
   if (arr.length !== items.length) {
-    // pad/truncate defensively
     const out = new Array(items.length).fill("");
     for (let i = 0; i < Math.min(arr.length, items.length); i++) out[i] = String(arr[i] ?? "");
     return out;
