@@ -287,16 +287,16 @@ Deno.serve(async (req: Request) => {
       }).eq("id", body.user_id);
       if (profErr) {
         console.error("profile restore failed", profErr);
-        return json({ error: profErr.message }, 500);
+        return json({ error: profErr.message }, 200);
       }
 
       return json({ ok: true });
     }
 
-    return json({ error: "Unknown action" }, 400);
+    return json({ error: "Unknown action" }, 200);
   } catch (e: any) {
     console.error("admin-manage-users error", e);
-    return json({ error: e?.message ?? "Unknown error" }, 500);
+    return json({ error: e?.message ?? "Unknown error" }, 200);
   }
 });
 
