@@ -14,6 +14,8 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import ImageUploader from '@/components/admin/ImageUploader';
+import LanguageTabs from '@/components/admin/LanguageTabs';
+import { useLanguages, useDefaultLanguage } from '@/hooks/useLanguages';
 
 interface Block {
   id: string;
@@ -35,6 +37,16 @@ interface Block {
   background_color: string | null;
   background_gradient: string | null;
 }
+
+interface BlockTranslation {
+  block_id: string;
+  language_code: string;
+  title: string | null;
+  subtitle: string | null;
+  cta_label: string | null;
+}
+
+type TranslationMap = Record<string, Record<string, { title: string; subtitle: string; cta_label: string }>>;
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Package, Store, Heart, Truck, Gift, Sparkles, ShieldCheck, Clock, Award,
@@ -70,40 +82,133 @@ const IconPicker: React.FC<{ value: string; onChange: (v: string) => void }> = (
 const AdminHomeContent: React.FC = () => {
   const qc = useQueryClient();
   const [blocks, setBlocks] = useState<Block[]>([]);
+  const [translations, setTranslations] = useState<TranslationMap>({});
+
+  const { data: languages = [] } = useLanguages({ onlyEnabled: true });
+  const { data: defaultLang } = useDefaultLanguage();
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-home-blocks'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: blocksData, error } = await supabase
         .from('cms_blocks')
         .select('*')
         .in('kind', ['home_feature', 'home_cta'])
         .order('kind').order('sort_order');
       if (error) throw error;
-      return data as Block[];
+
+      const blockIds = (blocksData ?? []).map((b: any) => b.id);
+      let trs: BlockTranslation[] = [];
+      if (blockIds.length > 0) {
+        const { data: trData, error: trErr } = await supabase
+          .from('cms_block_translations')
+          .select('block_id, language_code, title, subtitle, cta_label')
+          .in('block_id', blockIds);
+        if (trErr) throw trErr;
+        trs = (trData ?? []) as BlockTranslation[];
+      }
+      return { blocks: (blocksData ?? []) as Block[], translations: trs };
     },
   });
 
-  useEffect(() => { if (data) setBlocks(data); }, [data]);
+  useEffect(() => {
+    if (!data) return;
+    setBlocks(data.blocks);
+    const map: TranslationMap = {};
+    data.blocks.forEach((b) => {
+      map[b.id] = {};
+      // Seed from legacy *_ca/*_es columns so initial state isn't empty.
+      map[b.id]['ca'] = {
+        title: b.title_ca ?? '', subtitle: b.subtitle_ca ?? '', cta_label: b.cta_label_ca ?? '',
+      };
+      map[b.id]['es'] = {
+        title: b.title_es ?? '', subtitle: b.subtitle_es ?? '', cta_label: b.cta_label_es ?? '',
+      };
+    });
+    data.translations.forEach((tr) => {
+      if (!map[tr.block_id]) map[tr.block_id] = {};
+      map[tr.block_id][tr.language_code] = {
+        title: tr.title ?? '',
+        subtitle: tr.subtitle ?? '',
+        cta_label: tr.cta_label ?? '',
+      };
+    });
+    setTranslations(map);
+  }, [data]);
 
   const updateBlock = (id: string, patch: Partial<Block>) => {
     setBlocks(prev => prev.map(b => b.id === id ? { ...b, ...patch } : b));
   };
 
+  const updateTr = (
+    blockId: string,
+    code: string,
+    field: 'title' | 'subtitle' | 'cta_label',
+    val: string,
+  ) => {
+    setTranslations((prev) => ({
+      ...prev,
+      [blockId]: {
+        ...(prev[blockId] ?? {}),
+        [code]: {
+          ...(prev[blockId]?.[code] ?? { title: '', subtitle: '', cta_label: '' }),
+          [field]: val,
+        },
+      },
+    }));
+  };
+
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const defaultCode = defaultLang?.code ?? 'ca';
       for (const b of blocks) {
+        const trs = translations[b.id] ?? {};
+        // Sync legacy ca/es columns from the translations map.
+        const ca = trs['ca'] ?? { title: b.title_ca ?? '', subtitle: b.subtitle_ca ?? '', cta_label: b.cta_label_ca ?? '' };
+        const es = trs['es'] ?? { title: b.title_es ?? '', subtitle: b.subtitle_es ?? '', cta_label: b.cta_label_es ?? '' };
+
         const { error } = await supabase.from('cms_blocks').update({
           icon: b.icon, sort_order: b.sort_order, is_active: b.is_active,
-          title_ca: b.title_ca, title_es: b.title_es,
-          subtitle_ca: b.subtitle_ca, subtitle_es: b.subtitle_es,
-          cta_label_ca: b.cta_label_ca, cta_label_es: b.cta_label_es,
+          title_ca: ca.title || null,
+          title_es: es.title || null,
+          subtitle_ca: ca.subtitle || null,
+          subtitle_es: es.subtitle || null,
+          cta_label_ca: ca.cta_label || null,
+          cta_label_es: es.cta_label || null,
           cta_url: b.cta_url,
           custom_class: b.custom_class,
           image_url: b.image_url, image_url_2: b.image_url_2,
           background_color: b.background_color, background_gradient: b.background_gradient,
         }).eq('id', b.id);
         if (error) throw error;
+
+        // Upsert / clean translations for every enabled language.
+        const rows = languages.map((lng) => {
+          const t = trs[lng.code] ?? { title: '', subtitle: '', cta_label: '' };
+          return {
+            block_id: b.id,
+            language_code: lng.code,
+            title: t.title?.trim() || null,
+            subtitle: t.subtitle?.trim() || null,
+            cta_label: t.cta_label?.trim() || null,
+          };
+        });
+        const meaningful = rows.filter((r) => r.title || r.subtitle || r.cta_label);
+        if (meaningful.length > 0) {
+          const { error: upErr } = await supabase
+            .from('cms_block_translations')
+            .upsert(meaningful, { onConflict: 'block_id,language_code' });
+          if (upErr) throw upErr;
+        }
+        const emptyCodes = rows.filter((r) => !r.title && !r.subtitle && !r.cta_label).map((r) => r.language_code);
+        if (emptyCodes.length > 0) {
+          await supabase
+            .from('cms_block_translations')
+            .delete()
+            .eq('block_id', b.id)
+            .in('language_code', emptyCodes);
+        }
+        void defaultCode;
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-home-blocks'] }); qc.invalidateQueries({ queryKey: ['home-blocks'] }); toast.success('Contingut desat'); },
@@ -149,27 +254,33 @@ const AdminHomeContent: React.FC = () => {
                     <Input type="number" value={b.sort_order} onChange={e => updateBlock(b.id, { sort_order: Number(e.target.value) })} />
                   </div>
                 </div>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <div>
-                    <Label>Títol (CA)</Label>
-                    <Input value={b.title_ca ?? ''} onChange={e => updateBlock(b.id, { title_ca: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>Títol (ES)</Label>
-                    <Input value={b.title_es ?? ''} onChange={e => updateBlock(b.id, { title_es: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>Descripció (CA)</Label>
-                    <Textarea value={b.subtitle_ca ?? ''} onChange={e => updateBlock(b.id, { subtitle_ca: e.target.value })} rows={2} />
-                  </div>
-                  <div>
-                    <Label>Descripció (ES)</Label>
-                    <Textarea value={b.subtitle_es ?? ''} onChange={e => updateBlock(b.id, { subtitle_es: e.target.value })} rows={2} />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label>Classe CSS personalitzada</Label>
-                    <Input placeholder="bloc-enviament" value={b.custom_class ?? ''} onChange={e => updateBlock(b.id, { custom_class: e.target.value })} />
-                  </div>
+                <div>
+                  <Label className="mb-2 block">Traduccions</Label>
+                  <LanguageTabs>
+                    {(code) => (
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div className="sm:col-span-2">
+                          <Label className="text-xs">Títol ({code.toUpperCase()})</Label>
+                          <Input
+                            value={translations[b.id]?.[code]?.title ?? ''}
+                            onChange={(e) => updateTr(b.id, code, 'title', e.target.value)}
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <Label className="text-xs">Descripció ({code.toUpperCase()})</Label>
+                          <Textarea
+                            rows={2}
+                            value={translations[b.id]?.[code]?.subtitle ?? ''}
+                            onChange={(e) => updateTr(b.id, code, 'subtitle', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </LanguageTabs>
+                </div>
+                <div>
+                  <Label>Classe CSS personalitzada</Label>
+                  <Input placeholder="bloc-enviament" value={b.custom_class ?? ''} onChange={e => updateBlock(b.id, { custom_class: e.target.value })} />
                 </div>
               </div>
             ))}
@@ -187,31 +298,38 @@ const AdminHomeContent: React.FC = () => {
                     <Switch checked={b.is_active} onCheckedChange={v => updateBlock(b.id, { is_active: v })} /> Actiu
                   </Label>
                 </div>
+                <div>
+                  <Label className="mb-2 block">Traduccions</Label>
+                  <LanguageTabs>
+                    {(code) => (
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div className="sm:col-span-2">
+                          <Label className="text-xs">Títol ({code.toUpperCase()})</Label>
+                          <Input
+                            value={translations[b.id]?.[code]?.title ?? ''}
+                            onChange={(e) => updateTr(b.id, code, 'title', e.target.value)}
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <Label className="text-xs">Descripció ({code.toUpperCase()})</Label>
+                          <Textarea
+                            rows={3}
+                            value={translations[b.id]?.[code]?.subtitle ?? ''}
+                            onChange={(e) => updateTr(b.id, code, 'subtitle', e.target.value)}
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <Label className="text-xs">Botó ({code.toUpperCase()})</Label>
+                          <Input
+                            value={translations[b.id]?.[code]?.cta_label ?? ''}
+                            onChange={(e) => updateTr(b.id, code, 'cta_label', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </LanguageTabs>
+                </div>
                 <div className="grid sm:grid-cols-2 gap-3">
-                  <div>
-                    <Label>Títol (CA)</Label>
-                    <Input value={b.title_ca ?? ''} onChange={e => updateBlock(b.id, { title_ca: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>Títol (ES)</Label>
-                    <Input value={b.title_es ?? ''} onChange={e => updateBlock(b.id, { title_es: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>Descripció (CA)</Label>
-                    <Textarea value={b.subtitle_ca ?? ''} onChange={e => updateBlock(b.id, { subtitle_ca: e.target.value })} rows={3} />
-                  </div>
-                  <div>
-                    <Label>Descripció (ES)</Label>
-                    <Textarea value={b.subtitle_es ?? ''} onChange={e => updateBlock(b.id, { subtitle_es: e.target.value })} rows={3} />
-                  </div>
-                  <div>
-                    <Label>Botó (CA)</Label>
-                    <Input value={b.cta_label_ca ?? ''} onChange={e => updateBlock(b.id, { cta_label_ca: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>Botó (ES)</Label>
-                    <Input value={b.cta_label_es ?? ''} onChange={e => updateBlock(b.id, { cta_label_es: e.target.value })} />
-                  </div>
                   <div className="sm:col-span-2">
                     <Label>URL del botó</Label>
                     <Input value={b.cta_url ?? ''} onChange={e => updateBlock(b.id, { cta_url: e.target.value })} />
