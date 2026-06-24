@@ -94,6 +94,7 @@ const MyBirthListPage: React.FC = () => {
   const [customSectionEs, setCustomSectionEs] = useState('');
   const [deletingList, setDeletingList] = useState<{ id: string; label: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const { data: defaultSectionsData = [] } = useDefaultListSections({ onlyActive: true });
 
   const handleDeleteList = async () => {
     if (!deletingList) return;
