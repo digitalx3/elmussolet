@@ -75,6 +75,9 @@ const groups: NavGroup[] = [
   },
 ];
 
+const SIDEBAR_STORAGE_KEY = 'admin.sidebar.open';
+const GROUPS_STORAGE_KEY = 'admin.sidebar.groups';
+
 function MenuLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
   const { t } = useTranslation();
   return (
