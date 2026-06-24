@@ -47,8 +47,8 @@ interface OrderRow {
   notes: string | null;
   shipping_address: any;
   created_at: string;
-  user_id: string;
-  profiles: { full_name: string | null } | null;
+  customer_id: string;
+  customers: { id: string; full_name: string | null; email: string | null } | null;
 }
 
 interface OrderItemRow {
