@@ -712,7 +712,7 @@ const AdminBirthListForm: React.FC = () => {
                 </AlertDialog>
 
                 {/* Final step: double confirmation (checkbox + typed phrase) */}
-                <AlertDialog open={deleteStep === 'final'} onOpenChange={(o) => !o && setDeleteStep('idle')}>
+                <AlertDialog open={deleteStep === 'final'} onOpenChange={(o) => { if (!o && !deleting) setDeleteStep('idle'); }}>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>{t('admin.deleteListFinalTitle')}</AlertDialogTitle>
