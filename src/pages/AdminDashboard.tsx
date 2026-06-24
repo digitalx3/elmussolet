@@ -65,6 +65,7 @@ const AdminDashboard: React.FC = () => {
         <Route path="peu-contacte" element={<AdminContactSettings />} />
         <Route path="missatges" element={<AdminContactMessages />} />
         <Route path="smtp" element={<AdminSmtpSettings />} />
+        <Route path="backups" element={<AdminBackups />} />
       </Routes>
     </AdminLayout>
   );
