@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, Trash2, Search, Copy, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Search, Copy, Eye, EyeOff, Package, FolderOpen, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
 
 interface Owner {
   id?: string;
@@ -34,11 +35,28 @@ interface ListItem {
   quantity_desired: number;
   priority: string;
   sort_order: number;
+  section_temp_id?: string | null;
   // joined
   productName?: string;
   variantLabel?: string;
   price?: number;
+  image_url?: string | null;
 }
+
+interface PendingSection {
+  temp_id: string;
+  id?: string;
+  name_ca: string;
+  name_es: string;
+  sort_order: number;
+}
+
+const pickProductImage = (p: any): string | null => {
+  const imgs = p?.product_images || [];
+  if (!imgs.length) return null;
+  const primary = imgs.find((i: any) => i.is_primary);
+  return (primary || imgs[0])?.image_url || null;
+};
 
 interface ListForm {
   list_code: string;
