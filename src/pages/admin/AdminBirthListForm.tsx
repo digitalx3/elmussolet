@@ -356,6 +356,14 @@ const AdminBirthListForm: React.FC = () => {
   const [deleting, setDeleting] = useState(false);
   const [confirmChecked, setConfirmChecked] = useState(false);
   const [confirmPhrase, setConfirmPhrase] = useState('');
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [previewCounts, setPreviewCounts] = useState<{
+    orders: number;
+    order_items: number;
+    list_items: number;
+    list_sections: number;
+    list_owners: number;
+  }>({ orders: 0, order_items: 0, list_items: 0, list_sections: 0, list_owners: 0 });
   const REQUIRED_PHRASE = 'ELIMINAR';
   const canConfirmDelete = confirmChecked && confirmPhrase.trim().toUpperCase() === REQUIRED_PHRASE;
 
@@ -369,17 +377,56 @@ const AdminBirthListForm: React.FC = () => {
 
   const openDeleteDialog = async () => {
     if (isNew || !id) return;
-    const { count, error } = await supabase
-      .from('orders')
-      .select('id', { count: 'exact', head: true })
-      .eq('list_id', id);
-    if (error) {
-      toast.error(error.message || t('errors.generic'));
-      return;
+    setLoadingPreview(true);
+    try {
+      // Get orders + their ids (to count order_items)
+      const { data: ordersData, error: ordersErr } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('list_id', id);
+      if (ordersErr) throw ordersErr;
+      const orderIds = (ordersData ?? []).map((o: any) => o.id);
+
+      const headCount = async (table: any, col: string, val: any) => {
+        const { count, error } = await supabase
+          .from(table)
+          .select('id', { count: 'exact', head: true })
+          .eq(col, val);
+        if (error) throw error;
+        return count ?? 0;
+      };
+
+      let orderItemsCount = 0;
+      if (orderIds.length > 0) {
+        const { count, error } = await supabase
+          .from('order_items')
+          .select('id', { count: 'exact', head: true })
+          .in('order_id', orderIds);
+        if (error) throw error;
+        orderItemsCount = count ?? 0;
+      }
+
+      const [listItems, listSections, listOwners] = await Promise.all([
+        headCount('list_items', 'list_id', id),
+        headCount('list_sections', 'list_id', id),
+        headCount('list_owners', 'list_id', id),
+      ]);
+
+      const counts = {
+        orders: orderIds.length,
+        order_items: orderItemsCount,
+        list_items: listItems,
+        list_sections: listSections,
+        list_owners: listOwners,
+      };
+      setPreviewCounts(counts);
+      setOrdersCount(counts.orders);
+      setDeleteStep(counts.orders > 0 ? 'orders' : 'final');
+    } catch (err: any) {
+      toast.error(err?.message || t('errors.generic'));
+    } finally {
+      setLoadingPreview(false);
     }
-    const n = count ?? 0;
-    setOrdersCount(n);
-    setDeleteStep(n > 0 ? 'orders' : 'final');
   };
 
   const performDelete = async () => {
