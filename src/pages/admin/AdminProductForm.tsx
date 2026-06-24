@@ -356,6 +356,28 @@ const AdminProductForm: React.FC = () => {
               const errs = translationErrors[lang] ?? {};
               return (
                 <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-2 pb-2 border-b">
+                    <div className="text-xs text-muted-foreground">
+                      {aiReady
+                        ? "Genera la descripció curta i llarga optimitzades per SEO/GEO amb IA."
+                        : "Configura un proveïdor d'IA per habilitar la generació amb IA."}
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={!aiReady || seoGenerating === lang || !(tr.name?.trim() || (form.translations[defaultCode]?.name?.trim()))}
+                      onClick={() => generateSeoDescriptions(lang)}
+                      title={!aiReady ? "Cal configurar un proveïdor d'IA a /admin/ia" : 'Generar descripcions amb IA'}
+                    >
+                      {seoGenerating === lang ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 mr-2" />
+                      )}
+                      Generar descripció amb IA
+                    </Button>
+                  </div>
                   <div>
                     <Label>Nom *</Label>
                     <Input
