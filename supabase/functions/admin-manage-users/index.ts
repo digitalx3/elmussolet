@@ -40,13 +40,19 @@ Deno.serve(async (req: Request) => {
 
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace("Bearer ", "");
-    if (!token) return json({ error: "Missing auth" }, 401);
+    if (!token) return json({ error: "Missing auth" }, 200);
 
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: `Bearer ${token}` } },
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData.user) return json({ error: "Unauthorized" }, 401);
+    if (userErr || !userData?.user) {
+      console.error("auth.getUser failed", userErr);
+      return json({
+        error:
+          "La teva sessió ha caducat. Tanca sessió i torna a entrar per continuar.",
+      }, 200);
+    }
 
     const admin = createClient(supabaseUrl, serviceKey);
 
@@ -55,7 +61,7 @@ Deno.serve(async (req: Request) => {
       .select("role")
       .eq("id", userData.user.id)
       .single();
-    if (profile?.role !== "admin") return json({ error: "Forbidden" }, 403);
+    if (profile?.role !== "admin") return json({ error: "Forbidden" }, 200);
 
     const body = (await req.json()) as Body;
 
