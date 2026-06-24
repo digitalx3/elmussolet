@@ -220,6 +220,41 @@ const AdminOrders: React.FC = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const deleteOrderMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      // Fetch all items so we can delete them one-by-one and let the
+      // order_items_stock_trigger restore stock / unlock list items.
+      const { data: items, error: itemsErr } = await supabase
+        .from('order_items')
+        .select('id')
+        .eq('order_id', orderId);
+      if (itemsErr) throw itemsErr;
+
+      for (const it of items || []) {
+        const { error: delErr } = await supabase
+          .from('order_items')
+          .delete()
+          .eq('id', it.id);
+        if (delErr) throw delErr;
+      }
+
+      const { error: ordErr } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+      if (ordErr) throw ordErr;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-orders'] });
+      qc.invalidateQueries({ queryKey: ['admin-order-items'] });
+      qc.invalidateQueries({ queryKey: ['admin-stock-movements'] });
+      setSelectedOrder(null);
+      setEditing(false);
+      toast.success(t('admin.orderDeleted', 'Comanda eliminada i estoc alliberat'));
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const addItemMutation = useMutation({
     mutationFn: async (product: any) => {
       if (!selectedOrder) return;
