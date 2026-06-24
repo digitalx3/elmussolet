@@ -32,17 +32,14 @@ const modules = {
 };
 
 // Quill (and many WYSIWYG editors) insert &nbsp; / U+00A0 between words to
-// preserve visual spacing. For our CMS we always want regular spaces so the
-// rendered HTML wraps correctly and stays clean.
+// preserve visual spacing. We only strip these non-breaking-space entities and
+// the raw U+00A0 char — newlines, indentation and consecutive spaces from the
+// original HTML are kept intact so the source is preserved as the user wrote it.
 const normalizeHtml = (html: string): string => {
   if (!html) return html;
   return html
-    // numeric / named non-breaking space entities → normal space
     .replace(/&nbsp;|&#160;|&#xA0;/gi, ' ')
-    // raw U+00A0 char
-    .replace(/\u00A0/g, ' ')
-    // collapse runs of spaces (but keep newlines)
-    .replace(/ {2,}/g, ' ');
+    .replace(/\u00A0/g, ' ');
 };
 
 export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, className }) => {
