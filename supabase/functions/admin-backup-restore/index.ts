@@ -21,7 +21,6 @@ const json = (status: number, body: unknown) =>
 interface RestoreRequest {
   backup_id: string;
   groups: Array<{ id: BackupGroupId; mode: "upsert" | "wipe" }>;
-  dry_run?: boolean;
 }
 
 Deno.serve(async (req) => {
