@@ -287,6 +287,13 @@ Deno.serve(async (req: Request) => {
     const successCount = body.items.length - chunkErrors;
     const status = chunkErrors === 0 ? "success" : (successCount > 0 ? "partial" : "error");
 
+    const isRetry = !!(body.scope && body.scope.includes("retry"));
+    const recoveredItems: string[] = [];
+    if (isRetry) {
+      const failedSet = new Set(failedItems);
+      body.items.forEach((it) => { if (!failedSet.has(it)) recoveredItems.push(it); });
+    }
+
     await logCall(admin, {
       user_id: userId,
       function_name: "ai-translate",
@@ -300,9 +307,16 @@ Deno.serve(async (req: Request) => {
       provider,
       error_message: chunkErrors > 0 ? lastChunkErr.slice(0, 500) : null,
       duration_ms: Date.now() - started,
-      metadata: failedItems.length > 0
-        ? { failed_items: failedItems.slice(0, 200), context: body.context || null }
-        : null,
+      metadata: {
+        ...(failedItems.length > 0 ? { failed_items: failedItems.slice(0, 200) } : {}),
+        ...(isRetry ? {
+          retried_items: body.items.slice(0, 200),
+          recovered_items: recoveredItems.slice(0, 200),
+          retried_count: body.items.length,
+          recovered_count: recoveredItems.length,
+        } : {}),
+        context: body.context || null,
+      },
     });
 
     return json({ translations: out, provider, status, success_count: successCount, error_count: chunkErrors, error_message: chunkErrors > 0 ? lastChunkErr : null });
