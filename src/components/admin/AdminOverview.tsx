@@ -28,7 +28,7 @@ function useAdminStats() {
         supabase.from('orders').select('id', { count: 'exact', head: true }).gte('created_at', `${today}T00:00:00`),
         supabase.from('orders').select('total').gte('created_at', `${monthStart}T00:00:00`),
         supabase.from('products').select('id, sku, slug, stock_quantity, base_price, product_translations(name, language)').eq('is_active', true).lte('stock_quantity', LOW_STOCK_THRESHOLD).order('stock_quantity', { ascending: true }).limit(10),
-        supabase.from('orders').select('id, order_number, total, status, created_at, profiles(full_name)').order('created_at', { ascending: false }).limit(5),
+        supabase.from('orders').select('id, order_number, total, status, created_at, customers(full_name)').order('created_at', { ascending: false }).limit(5),
         supabase.from('orders').select('total, created_at').gte('created_at', `${thirtyDaysAgo}T00:00:00`),
       ]);
 
@@ -158,7 +158,7 @@ const AdminOverview: React.FC = () => {
                     <div>
                       <p className="font-medium text-sm">{order.order_number}</p>
                       <p className="text-xs text-muted-foreground">
-                        {order.profiles?.full_name || '—'} · {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: ca })}
+                        {order.customers?.full_name || '—'} · {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: ca })}
                       </p>
                     </div>
                     <div className="text-right">

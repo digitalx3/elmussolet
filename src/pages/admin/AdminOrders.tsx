@@ -47,8 +47,8 @@ interface OrderRow {
   notes: string | null;
   shipping_address: any;
   created_at: string;
-  user_id: string;
-  profiles: { full_name: string | null } | null;
+  customer_id: string;
+  customers: { id: string; full_name: string | null; email: string | null } | null;
 }
 
 interface OrderItemRow {
@@ -89,7 +89,7 @@ const AdminOrders: React.FC = () => {
     queryFn: async () => {
       let query = supabase
         .from('orders')
-        .select('*, profiles(full_name)')
+        .select('*, customers(id, full_name, email)')
         .order('created_at', { ascending: false });
 
       if (statusFilter !== 'all') {
@@ -293,7 +293,7 @@ const AdminOrders: React.FC = () => {
           order_status: orderSnap?.status ?? null,
           payment_status: orderSnap?.payment_status ?? null,
           list_id: orderSnap?.list_id ?? null,
-          user_id: orderSnap?.user_id ?? null,
+          user_id: null,
           total: orderSnap?.total ?? null,
           order_items_deleted: itemsList.length,
           stock_movements_created: stockCount ?? 0,
@@ -375,7 +375,7 @@ const AdminOrders: React.FC = () => {
     const s = search.toLowerCase();
     return (
       o.order_number.toLowerCase().includes(s) ||
-      o.profiles?.full_name?.toLowerCase().includes(s)
+      o.customers?.full_name?.toLowerCase().includes(s)
     );
   });
 
@@ -472,7 +472,7 @@ const AdminOrders: React.FC = () => {
             {filteredOrders.map(order => (
               <TableRow key={order.id}>
                 <TableCell className="font-mono text-sm font-medium">{order.order_number}</TableCell>
-                <TableCell>{order.profiles?.full_name || '—'}</TableCell>
+                <TableCell>{order.customers?.full_name || '—'}</TableCell>
                 <TableCell className="text-sm">
                   {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: dateFnsLocale })}
                 </TableCell>
@@ -601,7 +601,7 @@ const AdminOrders: React.FC = () => {
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">{t('admin.customer')}</p>
-                  <p className="text-sm font-medium">{selectedOrder.profiles?.full_name || '—'}</p>
+                  <p className="text-sm font-medium">{selectedOrder.customers?.full_name || '—'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">{t('admin.deliveryMethod')}</p>
@@ -658,7 +658,7 @@ const AdminOrders: React.FC = () => {
                                   onSuccess: async () => {
                                     const { data: fresh } = await supabase
                                       .from('orders')
-                                      .select('*, profiles(full_name)')
+                                      .select('*, customers(id, full_name, email)')
                                       .eq('id', selectedOrder.id)
                                       .single();
                                     if (fresh) setSelectedOrder(fresh as OrderRow);

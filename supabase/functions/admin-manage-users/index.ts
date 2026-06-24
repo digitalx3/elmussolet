@@ -206,16 +206,31 @@ Deno.serve(async (req: Request) => {
       };
 
       try {
-        // 1) Orders + order_items owned by this user
-        const { data: ordersToDelete } = await admin
-          .from("orders").select("id").eq("user_id", body.user_id);
-        const orderIds = (ordersToDelete || []).map((o: any) => o.id);
+        // 0) Find linked customer(s) for this auth user (orders no longer reference auth.users)
+        const { data: linkedCustomers } = await admin
+          .from("customers").select("id").eq("auth_user_id", body.user_id);
+        const customerIds = (linkedCustomers || []).map((c: any) => c.id);
+
+        // 1) Orders + order_items owned by this user's customer(s)
+        let orderIds: string[] = [];
+        if (customerIds.length > 0) {
+          const { data: ordersToDelete } = await admin
+            .from("orders").select("id").in("customer_id", customerIds);
+          orderIds = (ordersToDelete || []).map((o: any) => o.id);
+        }
         if (orderIds.length > 0) {
           await step("delete user order_items", () =>
             admin.from("order_items").delete().in("order_id", orderIds));
           await step("delete user orders", () =>
             admin.from("orders").delete().in("id", orderIds));
         }
+
+        // Detach customer(s) from auth user (don't delete; preserves history)
+        if (customerIds.length > 0) {
+          await step("detach customer(s) from auth user", () =>
+            admin.from("customers").update({ auth_user_id: null }).in("id", customerIds));
+        }
+
 
         // 2) Birth lists owned by this user
         const { data: ownerRows } = await admin
