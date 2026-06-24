@@ -106,29 +106,73 @@ const ProductsTranslationsPanel: React.FC = () => {
   };
 
   const saveProduct = async (p: ProductRow) => {
+    const productDrafts = drafts[p.id] || {};
+    const rows: Array<{ product_id: string; language: string; name: string; short_description: string | null; description: string | null }> = [];
+    const deletes: string[] = [];
+    const errors: Record<string, Record<string, string>> = {};
+
+    const resolved = languages.map(l => {
+      const cur = productDrafts[l.code] ?? (() => {
+        const tr = p.product_translations.find(x => x.language === l.code);
+        return tr
+          ? { name: tr.name ?? '', short_description: tr.short_description ?? '', description: tr.description ?? '' }
+          : { name: '', short_description: '', description: '' };
+      })();
+      return { code: l.code, cur };
+    });
+
+    // Validate per-language fields against schema and enforce the primary
+    // language has a non-empty name so the catalog never falls back to a slug.
+    resolved.forEach(({ code, cur }) => {
+      const parsed = translationFieldsSchema.safeParse(cur);
+      if (!parsed.success) {
+        const langErrors: Record<string, string> = {};
+        parsed.error.issues.forEach(iss => {
+          const key = iss.path[0] as string;
+          if (key) langErrors[key] = iss.message;
+        });
+        errors[code] = langErrors;
+      }
+    });
+
+    const primaryDraft = resolved.find(r => r.code === primaryCode)?.cur;
+    if (!primaryDraft || !primaryDraft.name.trim()) {
+      errors[primaryCode] = {
+        ...(errors[primaryCode] || {}),
+        name: t(
+          'admin.translationPrimaryRequired',
+          `Cal omplir el nom en l'idioma principal (${primaryCode.toUpperCase()})`,
+        ),
+      };
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(prev => ({ ...prev, [p.id]: errors }));
+      const firstLang = Object.keys(errors)[0];
+      const firstField = Object.keys(errors[firstLang])[0];
+      toast({
+        title: t('admin.validationFailed', 'Revisa els camps marcats'),
+        description: `${firstLang.toUpperCase()} · ${errors[firstLang][firstField]}`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setFieldErrors(prev => { const { [p.id]: _, ...rest } = prev; return rest; });
     setSavingId(p.id);
     try {
-      const productDrafts = drafts[p.id] || {};
-      const rows: Array<{ product_id: string; language: string; name: string; short_description: string | null; description: string | null }> = [];
-      const deletes: string[] = [];
-
-      languages.forEach(l => {
-        const cur = productDrafts[l.code] ?? (() => {
-          const tr = p.product_translations.find(x => x.language === l.code);
-          return tr ? { name: tr.name, short_description: tr.short_description ?? '', description: tr.description ?? '' } : null;
-        })();
-        if (!cur) return;
+      resolved.forEach(({ code, cur }) => {
         const name = cur.name.trim();
         if (name) {
           rows.push({
             product_id: p.id,
-            language: l.code,
+            language: code,
             name,
             short_description: cur.short_description.trim() || null,
             description: cur.description.trim() || null,
           });
-        } else if (p.product_translations.some(x => x.language === l.code)) {
-          deletes.push(l.code);
+        } else if (p.product_translations.some(x => x.language === code)) {
+          deletes.push(code);
         }
       });
 
@@ -151,7 +195,12 @@ const ProductsTranslationsPanel: React.FC = () => {
       await qc.invalidateQueries({ queryKey: ['admin-translations-products'] });
       toast({ title: t('common.success', 'Desat correctament') });
     } catch (e: any) {
-      toast({ title: e.message || 'Error', variant: 'destructive' });
+      const msg = e?.message || e?.error_description || 'Error desconegut';
+      toast({
+        title: t('admin.saveFailed', 'No s’han pogut desar les traduccions'),
+        description: msg,
+        variant: 'destructive',
+      });
     } finally {
       setSavingId(null);
     }
