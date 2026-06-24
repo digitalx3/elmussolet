@@ -140,7 +140,7 @@ const AdminBirthListForm: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('list_sections')
-        .select('id, name_ca, name_es, sort_order')
+        .select('id, name_ca, name_es, sort_order, list_section_translations(language_code, name)')
         .eq('list_id', id!)
         .order('sort_order', { ascending: true });
       if (error) throw error;
@@ -150,13 +150,22 @@ const AdminBirthListForm: React.FC = () => {
 
   useEffect(() => {
     if (existingSections && existingSections.length > 0) {
-      const mapped: PendingSection[] = existingSections.map((s: any) => ({
-        temp_id: `ex-${s.id}`,
-        id: s.id,
-        name_ca: s.name_ca || '',
-        name_es: s.name_es || '',
-        sort_order: s.sort_order ?? 0,
-      }));
+      const mapped: PendingSection[] = existingSections.map((s: any) => {
+        const translations: Record<string, string> = {};
+        (s.list_section_translations || []).forEach((tr: any) => {
+          if (tr?.name) translations[tr.language_code] = tr.name;
+        });
+        if (s.name_ca && !translations.ca) translations.ca = s.name_ca;
+        if (s.name_es && !translations.es) translations.es = s.name_es;
+        return {
+          temp_id: `ex-${s.id}`,
+          id: s.id,
+          name_ca: s.name_ca || '',
+          name_es: s.name_es || '',
+          sort_order: s.sort_order ?? 0,
+          translations,
+        };
+      });
       setSections(mapped);
       setActiveSectionTempId(prev => prev ?? mapped[0]?.temp_id ?? null);
       setDefaultsLoaded(true);
