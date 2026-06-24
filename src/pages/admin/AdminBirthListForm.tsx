@@ -52,6 +52,7 @@ interface PendingSection {
   name_ca: string;
   name_es: string;
   sort_order: number;
+  translations: Record<string, string>; // language_code -> name
 }
 
 const pickProductImage = (p: any): string | null => {
