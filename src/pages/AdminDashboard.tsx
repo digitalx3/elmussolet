@@ -78,6 +78,7 @@ const AdminDashboard: React.FC = () => {
         <Route path="families-defecte" element={<AdminDefaultListSections />} />
         <Route path="traduccions" element={<AdminTranslations />} />
         <Route path="ia" element={<AdminAiSettings />} />
+        <Route path="ia/historial" element={<AdminAiHistory />} />
         <Route path="idiomes/:code/traduccions" element={<AdminLanguageTranslations />} />
       </Routes>
     </AdminLayout>
