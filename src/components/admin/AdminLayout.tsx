@@ -80,7 +80,6 @@ const GROUPS_STORAGE_KEY = 'admin.sidebar.groups';
 
 function MenuLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
   const { t } = useTranslation();
-  // — exposed below: kept here so helpers can stay module-scoped
 
   return (
     <SidebarMenuItem>
