@@ -366,27 +366,40 @@ const AdminProductForm: React.FC = () => {
               const errs = translationErrors[lang] ?? {};
               return (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-2 pb-2 border-b">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b">
                     <div className="text-xs text-muted-foreground">
                       {aiReady
-                        ? "Genera la descripció curta i llarga optimitzades per SEO/GEO amb IA."
+                        ? "Genera amb IA: selecciona quins camps vols regenerar."
                         : "Configura un proveïdor d'IA per habilitar la generació amb IA."}
                     </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={!aiReady || seoGenerating === lang || !(tr.name?.trim() || (form.translations[defaultCode]?.name?.trim()))}
-                      onClick={() => generateSeoDescriptions(lang)}
-                      title={!aiReady ? "Cal configurar un proveïdor d'IA a /admin/ia" : 'Generar descripcions amb IA'}
-                    >
-                      {seoGenerating === lang ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-4 w-4 mr-2" />
-                      )}
-                      Generar descripció amb IA
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button" size="sm" variant="outline"
+                        disabled={!aiReady || seoGenerating === lang || !(tr.name?.trim() || (form.translations[defaultCode]?.name?.trim()))}
+                        onClick={() => generateSeoDescriptions(lang, ['short'])}
+                        title="Genera només la descripció curta"
+                      >
+                        {seoGenerating === lang ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                        IA: Curta
+                      </Button>
+                      <Button
+                        type="button" size="sm" variant="outline"
+                        disabled={!aiReady || seoGenerating === lang || !(tr.name?.trim() || (form.translations[defaultCode]?.name?.trim()))}
+                        onClick={() => generateSeoDescriptions(lang, ['long'])}
+                        title="Genera només la descripció llarga"
+                      >
+                        {seoGenerating === lang ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                        IA: Llarga
+                      </Button>
+                      <Button
+                        type="button" size="sm"
+                        disabled={!aiReady || seoGenerating === lang || !(tr.name?.trim() || (form.translations[defaultCode]?.name?.trim()))}
+                        onClick={() => generateSeoDescriptions(lang, ['short', 'long'])}
+                      >
+                        {seoGenerating === lang ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                        Generar tot
+                      </Button>
+                    </div>
                   </div>
                   <div>
                     <Label>Nom *</Label>
@@ -409,7 +422,19 @@ const AdminProductForm: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <Label>Descripció curta</Label>
+                    <div className="flex items-center justify-between">
+                      <Label>Descripció curta</Label>
+                      <Button
+                        type="button" size="sm" variant="ghost"
+                        className="h-7 px-2 text-xs"
+                        disabled={!aiReady || seoGenerating === lang || !(tr.name?.trim() || (form.translations[defaultCode]?.name?.trim()))}
+                        onClick={() => generateSeoDescriptions(lang, ['short'])}
+                        title="Regenera només aquest camp amb IA"
+                      >
+                        {seoGenerating === lang ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                        IA
+                      </Button>
+                    </div>
                     <Input
                       value={tr.short_description}
                       onChange={e => updateTranslation(lang, 'short_description', e.target.value)}
@@ -427,7 +452,19 @@ const AdminProductForm: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <Label>Descripció</Label>
+                    <div className="flex items-center justify-between">
+                      <Label>Descripció</Label>
+                      <Button
+                        type="button" size="sm" variant="ghost"
+                        className="h-7 px-2 text-xs"
+                        disabled={!aiReady || seoGenerating === lang || !(tr.name?.trim() || (form.translations[defaultCode]?.name?.trim()))}
+                        onClick={() => generateSeoDescriptions(lang, ['long'])}
+                        title="Regenera només aquest camp amb IA"
+                      >
+                        {seoGenerating === lang ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                        IA
+                      </Button>
+                    </div>
                     <Textarea
                       value={tr.description}
                       onChange={e => updateTranslation(lang, 'description', e.target.value)}
