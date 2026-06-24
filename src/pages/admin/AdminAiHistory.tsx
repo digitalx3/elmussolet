@@ -70,6 +70,15 @@ const AdminAiHistory: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | LogRow['status']>('all');
   const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggleExpanded = (id: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const canRetry = (r: LogRow): boolean => {
     if (r.status === 'success') return false;
