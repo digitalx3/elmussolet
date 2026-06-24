@@ -149,10 +149,18 @@ const AdminUsers: React.FC = () => {
         phone: form.phone,
         role: form.role,
         preferred_language: form.preferred_language,
+        address_line1: form.address_line1,
+        address_line2: form.address_line2,
+        city: form.city,
+        postal_code: form.postal_code,
+        province: form.province,
+        nif: form.nif,
+        company_name: form.company_name,
       };
       if (editMode) {
         body.user_id = form.id;
         if (form.password) body.password = form.password;
+        if (form.email) body.email = form.email;
       } else {
         body.email = form.email;
         body.password = form.password;
