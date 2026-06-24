@@ -355,7 +355,7 @@ const BirthListViewPage: React.FC = () => {
               {grouped.map(g => g.items.length > 0 && (
                 <section key={g.section.id}>
                   <h2 className="font-display text-xl font-semibold mb-3 pb-2 border-b border-border">
-                    {lang === 'es' ? g.section.name_es : g.section.name_ca}
+                    {resolveSectionName(g.section)}
                     <span className="ml-2 text-xs font-normal text-muted-foreground">({g.items.length})</span>
                   </h2>
                   <div className="space-y-3">{g.items.map(renderItem)}</div>
