@@ -78,8 +78,49 @@ const groups: NavGroup[] = [
 const SIDEBAR_STORAGE_KEY = 'admin.sidebar.open';
 const GROUPS_STORAGE_KEY = 'admin.sidebar.groups';
 
+const VALID_GROUP_IDS = new Set(groups.map(g => g.id));
+
+function readStoredSidebarOpen(): boolean | null {
+  try {
+    const raw = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    if (raw === 'true') return true;
+    if (raw === 'false') return false;
+    if (raw !== null) localStorage.removeItem(SIDEBAR_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function readStoredGroups(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(GROUPS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      localStorage.removeItem(GROUPS_STORAGE_KEY);
+      return {};
+    }
+    const sanitized: Record<string, boolean> = {};
+    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+      if (VALID_GROUP_IDS.has(key) && typeof value === 'boolean') {
+        sanitized[key] = value;
+      }
+    }
+    return sanitized;
+  } catch {
+    try {
+      localStorage.removeItem(GROUPS_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    return {};
+  }
+}
+
 function MenuLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
   const { t } = useTranslation();
+
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild>
@@ -106,16 +147,12 @@ function AdminSidebar() {
     path === '/admin' ? pathname === '/admin' : pathname === path || pathname.startsWith(path + '/');
 
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>(() => {
-    let saved: Record<string, boolean> = {};
-    try {
-      const raw = localStorage.getItem(GROUPS_STORAGE_KEY);
-      if (raw) saved = JSON.parse(raw) ?? {};
-    } catch {
-      /* ignore */
-    }
+    const saved = readStoredGroups();
     const initial: Record<string, boolean> = {};
     groups.forEach(g => {
-      initial[g.id] = saved[g.id] ?? g.items.some(i => isItemActive(i.path));
+      initial[g.id] = typeof saved[g.id] === 'boolean'
+        ? saved[g.id]
+        : g.items.some(i => isItemActive(i.path));
     });
     return initial;
   });
@@ -209,13 +246,8 @@ function AdminSidebar() {
 
 const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(() => {
-    try {
-      const raw = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-      if (raw !== null) return raw === 'true';
-    } catch {
-      /* ignore */
-    }
-    return true;
+    const stored = readStoredSidebarOpen();
+    return stored ?? true;
   });
 
   const handleOpenChange = React.useCallback((value: boolean) => {
