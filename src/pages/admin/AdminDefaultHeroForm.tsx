@@ -33,41 +33,44 @@ const AdminDefaultHeroForm: React.FC = () => {
     2: { ...DEFAULT_HERO, enabled: false },
   });
   const [uploading, setUploading] = useState<'image' | 'logo' | null>(null);
+  const [pending, setPending] = useState<{ image?: { file: File; url: string }; logo?: { file: File; url: string } }>({});
 
   const state = states[activeVariant];
   const set = <K extends keyof HeroState>(k: K, v: HeroState[K]) =>
     setStates((s) => ({ ...s, [activeVariant]: { ...s[activeVariant], [k]: v } }));
 
-  const { data: existing } = useQuery({
-    queryKey: ['default-hero-overrides-all'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('site_settings')
-        .select('key, value')
-        .in('key', [DEFAULT_HERO_OVERRIDES_KEY, DEFAULT_HERO_OVERRIDES_KEY_2]);
-      if (error) throw error;
-      const map: Record<string, DefaultHeroOverrides | null> = {};
-      (data ?? []).forEach((row) => {
-        try { map[row.key] = JSON.parse(row.value as unknown as string) as DefaultHeroOverrides; }
-        catch { map[row.key] = null; }
-      });
-      return map;
-    },
-  });
-
+  // Clear pending previews when switching variant
   useEffect(() => {
-    if (!existing) return;
-    setStates((prev) => ({
-      1: { ...prev[1], ...(existing[DEFAULT_HERO_OVERRIDES_KEY] ?? {}) },
-      2: { ...prev[2], ...(existing[DEFAULT_HERO_OVERRIDES_KEY_2] ?? {}) },
-    }));
-  }, [existing]);
+    setPending((p) => {
+      if (p.image) URL.revokeObjectURL(p.image.url);
+      if (p.logo) URL.revokeObjectURL(p.logo.url);
+      return {};
+    });
+  }, [activeVariant]);
 
-  const currentKey = activeVariant === 1 ? DEFAULT_HERO_OVERRIDES_KEY : DEFAULT_HERO_OVERRIDES_KEY_2;
+  const pickFile = (kind: 'image' | 'logo', rawFile: File) => {
+    setPending((p) => {
+      const prev = p[kind];
+      if (prev) URL.revokeObjectURL(prev.url);
+      return { ...p, [kind]: { file: rawFile, url: URL.createObjectURL(rawFile) } };
+    });
+  };
 
-  const upload = async (kind: 'image' | 'logo', rawFile: File) => {
+  const cancelPending = (kind: 'image' | 'logo') => {
+    setPending((p) => {
+      const prev = p[kind];
+      if (prev) URL.revokeObjectURL(prev.url);
+      const { [kind]: _, ...rest } = p;
+      return rest;
+    });
+  };
+
+  const confirmUpload = async (kind: 'image' | 'logo') => {
+    const item = pending[kind];
+    if (!item) return;
     setUploading(kind);
     try {
+      const rawFile = item.file;
       const file = rawFile.type === 'image/svg+xml'
         ? rawFile
         : await optimizeImage(rawFile, {
@@ -83,7 +86,8 @@ const AdminDefaultHeroForm: React.FC = () => {
       const { data } = supabase.storage.from('site-assets').getPublicUrl(path);
       if (kind === 'image') set('image_url', data.publicUrl);
       else set('card_logo_url', data.publicUrl);
-      toast.success('Imatge pujada');
+      cancelPending(kind);
+      toast.success('Imatge pujada. Recorda desar els canvis.');
     } catch (e) {
       console.error(e);
       toast.error('Error pujant la imatge');
