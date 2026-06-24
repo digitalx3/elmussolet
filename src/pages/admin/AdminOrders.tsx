@@ -509,6 +509,7 @@ const AdminOrders: React.FC = () => {
                                     if (fresh) setSelectedOrder(fresh as OrderRow);
                                     await Promise.all([
                                       qc.refetchQueries({ queryKey: ['admin-order-items', selectedOrder.id] }),
+                                      qc.refetchQueries({ queryKey: ['admin-stock-movements', selectedOrder.id] }),
                                       qc.refetchQueries({ queryKey: ['admin-orders'] }),
                                     ]);
                                     toast.success(t('admin.stockReleased', 'Estoc alliberat'));
