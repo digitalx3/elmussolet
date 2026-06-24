@@ -15,10 +15,13 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
+import { useLanguages } from '@/hooks/useLanguages';
+import LanguageTabs from '@/components/admin/LanguageTabs';
 
 interface Owner {
   id?: string;
