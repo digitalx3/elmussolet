@@ -46,7 +46,17 @@ const ProductDetailPage: React.FC = () => {
   const basePrice = selectedVariant?.priceOverride ?? product?.basePrice ?? 0;
   const taxPct = product?.taxPercentage ?? 0;
   const currentPrice = basePrice * (1 + taxPct / 100);
-  const currentStock = selectedVariant ? selectedVariant.stockQuantity : (product?.stockQuantity ?? 0);
+
+  // When the product has variants, the effective stock is the sum of variant stocks.
+  // Otherwise we trust the product-level stock.
+  const variantStockTotal = (product?.variants ?? []).reduce((s, v) => s + (v.stockQuantity ?? 0), 0);
+  const hasUsableVariants = !!product?.hasVariants && variantGroups.length > 0;
+  const effectiveOutOfStock = hasUsableVariants
+    ? variantStockTotal === 0
+    : product?.stockStatus === 'out_of_stock';
+  const currentStock = selectedVariant
+    ? selectedVariant.stockQuantity
+    : (hasUsableVariants ? variantStockTotal : (product?.stockQuantity ?? 0));
 
   const handleAddToCart = () => {
     if (!product) return;
