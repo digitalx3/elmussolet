@@ -436,12 +436,11 @@ const AdminProductForm: React.FC = () => {
                         IA
                       </Button>
                     </div>
-                    <Input
-                      value={tr.short_description}
-                      onChange={e => updateTranslation(lang, 'short_description', e.target.value)}
-                      maxLength={MAX_SHORT}
-                      aria-invalid={!!errs.short_description}
-                      className={cn(errs.short_description && 'border-destructive focus-visible:ring-destructive')}
+                    <RichTextEditor
+                      value={tr.short_description || ''}
+                      onChange={(html) => updateTranslation(lang, 'short_description', html)}
+                      placeholder="Descripció curta (admet HTML / format ric)"
+                      className={cn(errs.short_description && 'border-destructive')}
                     />
                     <div className="flex justify-between mt-1">
                       {errs.short_description ? (
@@ -449,7 +448,7 @@ const AdminProductForm: React.FC = () => {
                           <AlertCircle className="h-3 w-3" /> {errs.short_description}
                         </p>
                       ) : <span />}
-                      <span className="text-[11px] text-muted-foreground">{tr.short_description.length}/{MAX_SHORT}</span>
+                      <span className="text-[11px] text-muted-foreground">{(tr.short_description || '').length}/{MAX_SHORT}</span>
                     </div>
                   </div>
                   <div>
@@ -466,13 +465,11 @@ const AdminProductForm: React.FC = () => {
                         IA
                       </Button>
                     </div>
-                    <Textarea
-                      value={tr.description}
-                      onChange={e => updateTranslation(lang, 'description', e.target.value)}
-                      rows={5}
-                      maxLength={MAX_DESC}
-                      aria-invalid={!!errs.description}
-                      className={cn(errs.description && 'border-destructive focus-visible:ring-destructive')}
+                    <RichTextEditor
+                      value={tr.description || ''}
+                      onChange={(html) => updateTranslation(lang, 'description', html)}
+                      placeholder="Descripció llarga (admet HTML / format ric)"
+                      className={cn(errs.description && 'border-destructive')}
                     />
                     <div className="flex justify-between mt-1">
                       {errs.description ? (
@@ -480,7 +477,7 @@ const AdminProductForm: React.FC = () => {
                           <AlertCircle className="h-3 w-3" /> {errs.description}
                         </p>
                       ) : <span />}
-                      <span className="text-[11px] text-muted-foreground">{tr.description.length}/{MAX_DESC}</span>
+                      <span className="text-[11px] text-muted-foreground">{(tr.description || '').length}/{MAX_DESC}</span>
                     </div>
                   </div>
                 </div>
