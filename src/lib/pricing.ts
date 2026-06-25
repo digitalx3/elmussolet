@@ -63,6 +63,7 @@ export function computePrice(input: PriceInputs, now: Date = new Date()): PriceR
     }
   }
 
+  if (final < 0) final = 0;
   const onSale = active && final < base;
   const savings = Math.max(0, base - final);
   const discountPct = base > 0 ? Math.round((savings / base) * 100) : 0;

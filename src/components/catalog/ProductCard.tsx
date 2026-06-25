@@ -53,7 +53,7 @@ const PriceBlock: React.FC<{ product: TranslatedProduct; size?: 'sm' | 'md' }> =
 
 const ProductCard: React.FC<Props> = ({ product, view }) => {
   const { t } = useTranslation();
-  const { addStandardItem } = useCart();
+  const { addStandardItem, requestUpsell } = useCart();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -68,6 +68,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
       taxPercentage: product.taxPercentage ?? 0,
       quantity: 1,
     });
+    requestUpsell(product.id);
   };
 
   if (view === 'list') {
