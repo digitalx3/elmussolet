@@ -273,20 +273,27 @@ const ProductDetailPage: React.FC = () => {
             </Button>
           </div>
 
-          <Separator />
-
-          {/* Full description */}
-          <div>
-            <h2 className="font-display text-lg font-semibold mb-2">Descripció</h2>
-            <div className="prose prose-sm text-muted-foreground whitespace-pre-wrap">
-              {product.description}
-            </div>
-          </div>
-
           {/* SKU */}
           <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
         </motion.div>
       </div>
+
+      {/* Full description — full width below the columns */}
+      {product.description && (
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="mt-10 lg:mt-14"
+        >
+          <Separator className="mb-6" />
+          <h2 className="font-display text-xl md:text-2xl font-semibold mb-4">Descripció</h2>
+          <div
+            className="prose prose-sm md:prose-base max-w-none text-foreground"
+            dangerouslySetInnerHTML={{ __html: product.description }}
+          />
+        </motion.section>
+      )}
     </div>
   );
 };
