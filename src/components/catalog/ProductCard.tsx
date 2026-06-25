@@ -153,17 +153,19 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
         <h3 className="font-display text-sm font-semibold text-card-foreground mt-0.5 line-clamp-2 group-hover:text-primary transition-colors">
           {product.name}
         </h3>
+        <div className="mt-auto pt-2 flex items-center justify-between gap-2">
           <PriceBlock product={product} size="sm" />
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8"
+            className="h-8 w-8 flex-shrink-0"
             onClick={handleAddToCart}
             disabled={product.stockStatus === 'out_of_stock'}
           >
             <ShoppingBag className="h-4 w-4" />
           </Button>
         </div>
+      </div>
       </div>
     </Link>
   );
