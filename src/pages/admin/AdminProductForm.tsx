@@ -23,6 +23,7 @@ import { useLanguages, useDefaultLanguage } from '@/hooks/useLanguages';
 import LanguageTabs from '@/components/admin/LanguageTabs';
 import { useAiProvider, isAiReady } from '@/hooks/useAiProvider';
 import RichTextEditor from '@/components/ui/rich-text-editor';
+import RelatedProductsEditor from '@/components/admin/RelatedProductsEditor';
 
 const emptyTranslation = { name: '', short_description: '', description: '' };
 
