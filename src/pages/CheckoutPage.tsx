@@ -313,6 +313,11 @@ const CheckoutPage: React.FC = () => {
       clearList();
       setOrderNumber(num);
       setStep('confirmation');
+
+      // Fire-and-forget: notify admin & list owners if any product is now out of stock
+      supabase.functions.invoke('notify-list-stock-depleted', {
+        body: { order_id: order.id },
+      }).catch(err => console.warn('notify-list-stock-depleted failed', err));
     } catch (err) {
       console.error('Order creation failed:', err);
       toast.error(t('errors.generic'));
