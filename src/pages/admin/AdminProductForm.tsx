@@ -587,6 +587,80 @@ const AdminProductForm: React.FC = () => {
             <Switch checked={form.is_active} onCheckedChange={v => updateField('is_active', v)} />
             <Label>Producte actiu</Label>
           </div>
+          <div className="flex items-center gap-3 sm:col-span-2">
+            <Switch checked={form.is_featured} onCheckedChange={v => updateField('is_featured', v)} />
+            <Label className="flex items-center gap-1">
+              <Star className={cn('h-4 w-4', form.is_featured && 'fill-yellow-400 text-yellow-500')} />
+              Producte destacat (apareix a portada)
+            </Label>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sale price */}
+      <Card>
+        <CardHeader><CardTitle>Preu en oferta</CardTitle></CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label>Tipus d'oferta</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={form.sale_price_type ?? ''}
+              onChange={e => updateField('sale_price_type', (e.target.value || null) as any)}
+            >
+              <option value="">— Sense oferta —</option>
+              <option value="fixed">Preu fix (€)</option>
+              <option value="percent">Percentatge (%)</option>
+            </select>
+          </div>
+          <div>
+            <Label>Valor {form.sale_price_type === 'percent' ? '(%)' : '(€)'}</Label>
+            <Input
+              type="number" step="0.01" min="0"
+              max={form.sale_price_type === 'percent' ? 100 : undefined}
+              disabled={!form.sale_price_type}
+              value={form.sale_value ?? ''}
+              onChange={e => updateField('sale_value', e.target.value ? parseFloat(e.target.value) : null)}
+              placeholder={form.sale_price_type === 'percent' ? 'ex: 15' : 'ex: 19.99'}
+            />
+          </div>
+          <div>
+            <Label>Inici (opcional)</Label>
+            <Input
+              type="datetime-local"
+              disabled={!form.sale_price_type}
+              value={form.sale_starts_at ? form.sale_starts_at.slice(0, 16) : ''}
+              onChange={e => updateField('sale_starts_at', e.target.value ? new Date(e.target.value).toISOString() : null)}
+            />
+          </div>
+          <div>
+            <Label>Fi (opcional)</Label>
+            <Input
+              type="datetime-local"
+              disabled={!form.sale_price_type}
+              value={form.sale_ends_at ? form.sale_ends_at.slice(0, 16) : ''}
+              onChange={e => updateField('sale_ends_at', e.target.value ? new Date(e.target.value).toISOString() : null)}
+            />
+          </div>
+          {form.sale_price_type && form.sale_value != null && form.base_price > 0 && (() => {
+            const base = form.base_price;
+            const final = form.sale_price_type === 'percent'
+              ? base * (1 - Math.max(0, Math.min(100, form.sale_value)) / 100)
+              : Math.max(0, form.sale_value);
+            const pct = base > 0 ? Math.round((1 - final / base) * 100) : 0;
+            const invalid = final >= base;
+            return (
+              <div className={cn(
+                "sm:col-span-2 p-3 rounded-lg text-sm",
+                invalid ? "bg-destructive/10 text-destructive" : "bg-muted/50"
+              )}>
+                <span className="text-muted-foreground">Preu resultant (sense IVA): </span>
+                <span className="font-bold">{final.toFixed(2)} €</span>
+                {!invalid && <span className="ml-2 text-muted-foreground">(estalvi {pct}% sobre {base.toFixed(2)} €)</span>}
+                {invalid && <span className="ml-2">⚠ El preu oferta ha de ser inferior al preu base</span>}
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
@@ -663,6 +737,18 @@ const AdminProductForm: React.FC = () => {
                     <Label className="text-xs">Preu (€, buit = base)</Label>
                     <Input type="number" step="0.01" value={v.price_override ?? ''}
                       onChange={e => updateVariant(i, 'price_override', e.target.value ? parseFloat(e.target.value) : null)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs" title="Si la variant no té preu fix, aquest valor (positiu o negatiu) se suma al preu base">
+                      Modificador (±€)
+                    </Label>
+                    <Input
+                      type="number" step="0.01"
+                      value={v.price_modifier ?? 0}
+                      onChange={e => updateVariant(i, 'price_modifier', e.target.value ? parseFloat(e.target.value) : 0)}
+                      placeholder="0"
+                      disabled={v.price_override != null}
+                    />
                   </div>
                   <div>
                     <Label className="text-xs">Estoc</Label>
