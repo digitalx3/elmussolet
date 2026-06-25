@@ -467,7 +467,7 @@ const MyBirthListPage: React.FC = () => {
           .from('list_template_items')
           .select(`
             section_id, product_id, variant_id, quantity, sort_order,
-            product:products(id, base_price, slug, product_translations(language, name), product_images(image_url, is_primary, sort_order))
+            product:products(id, base_price, slug, stock_quantity, has_variants, product_translations(language, name), product_images(image_url, is_primary, sort_order), product_variants(stock_quantity, is_active))
           `)
           .eq('template_id', tplId)
           .order('sort_order', { ascending: true }),
@@ -480,25 +480,40 @@ const MyBirthListPage: React.FC = () => {
         sort_order: s.sort_order,
       }));
 
-      const newItems: ListItem[] = (tplItems || []).map((it: any, idx: number) => {
+      const skipped: string[] = [];
+      const newItems: ListItem[] = [];
+      (tplItems || []).forEach((it: any, idx: number) => {
         const tr = it.product?.product_translations?.find((tt: any) => tt.language === lang)
           || it.product?.product_translations?.[0];
-        return {
+        const name = tr?.name || it.product?.slug || it.product_id;
+        if (getEffectiveStock(it.product) <= 0) {
+          skipped.push(name);
+          return;
+        }
+        newItems.push({
           product_id: it.product_id,
           variant_id: it.variant_id || null,
           quantity_desired: it.quantity || 1,
           priority: 'medium',
           sort_order: idx,
-          productName: tr?.name || it.product?.slug || it.product_id,
+          productName: name,
           price: it.product?.base_price,
           image_url: pickProductImage(it.product),
           section_temp_id: it.section_id ? `tpl-${it.section_id}` : null,
-        };
+        });
       });
 
       setSections(newSections);
       setForm(prev => ({ ...prev, items: newItems }));
       toast.success(t('list.templateLoaded'));
+      if (skipped.length > 0) {
+        toast.warning(
+          (lang === 'es'
+            ? `${skipped.length} producto(s) sin stock no se han añadido: `
+            : `${skipped.length} producte(s) sense estoc no s'han afegit: `) + skipped.join(', '),
+          { duration: 8000 },
+        );
+      }
     } catch (e: any) {
       toast.error(e.message || t('errors.generic'));
     } finally {
