@@ -74,9 +74,12 @@ const AdminProductForm: React.FC = () => {
     slug: '', sku: '', base_price: 0, stock_quantity: 0, stock_status: 'in_stock',
     is_active: true, has_variants: false, weight_grams: 0,
     category_id: null, brand_id: null, tax_rate_id: null,
+    sale_price_type: null, sale_value: null, sale_starts_at: null, sale_ends_at: null,
+    is_featured: false, featured_order: null,
     translations: {},
     images: [],
     variants: [],
+    related_product_ids: [],
   });
 
   const [translationErrors, setTranslationErrors] = useState<TranslationErrors>({});
@@ -175,6 +178,10 @@ const AdminProductForm: React.FC = () => {
           description: tr.description || '',
         };
       }
+      const relatedSorted = ((product as any).product_relations || [])
+        .slice()
+        .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+        .map((r: any) => r.related_product_id as string);
       setForm({
         slug: product.slug,
         sku: product.sku,
@@ -187,15 +194,23 @@ const AdminProductForm: React.FC = () => {
         category_id: product.category_id,
         brand_id: product.brand_id,
         tax_rate_id: (product as any).tax_rate_id ?? null,
+        sale_price_type: (product as any).sale_price_type ?? null,
+        sale_value: (product as any).sale_value != null ? Number((product as any).sale_value) : null,
+        sale_starts_at: (product as any).sale_starts_at ?? null,
+        sale_ends_at: (product as any).sale_ends_at ?? null,
+        is_featured: !!(product as any).is_featured,
+        featured_order: (product as any).featured_order ?? null,
         translations,
         images: (product.product_images || []).sort((a, b) => a.sort_order - b.sort_order).map(img => ({
           id: img.id, image_url: img.image_url, alt_text: img.alt_text || '', is_primary: img.is_primary, sort_order: img.sort_order,
         })),
         variants: (product.product_variants || []).map(v => ({
           id: v.id, value: v.value, price_override: v.price_override,
+          price_modifier: (v as any).price_modifier != null ? Number((v as any).price_modifier) : 0,
           stock_quantity: v.stock_quantity, sku_suffix: v.sku_suffix || '',
           is_active: v.is_active, variant_type_id: v.variant_type_id,
         })),
+        related_product_ids: relatedSorted,
       });
     }
   }, [product, isNew, languages]);
@@ -277,12 +292,13 @@ const AdminProductForm: React.FC = () => {
     setForm(prev => ({
       ...prev,
       variants: [...prev.variants, {
-        value: '', price_override: null, stock_quantity: 0,
+        value: '', price_override: null, price_modifier: 0, stock_quantity: 0,
         sku_suffix: '', is_active: true,
         variant_type_id: variantTypes[0]?.id || '',
       }],
     }));
   };
+
 
   const updateVariant = (index: number, field: string, value: any) => {
     setForm(prev => ({
