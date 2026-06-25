@@ -202,16 +202,16 @@ const ProductDetailPage: React.FC = () => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {product.stockStatus === 'in_stock' && currentStock === 1 && (
+            {!effectiveOutOfStock && currentStock === 1 && (
               <Badge variant="secondary" className="bg-last-unit text-last-unit-foreground">{t('products.lastUnit')}</Badge>
             )}
-            {product.stockStatus === 'in_stock' && currentStock !== 1 && (
+            {!effectiveOutOfStock && currentStock !== 1 && product.stockStatus !== 'on_order' && (
               <Badge variant="secondary" className="bg-sage text-sage-foreground">{t('products.inStock')}</Badge>
             )}
-            {product.stockStatus === 'on_order' && (
+            {!effectiveOutOfStock && product.stockStatus === 'on_order' && (
               <Badge variant="secondary" className="bg-warm text-warm-foreground">{t('products.onOrder')}</Badge>
             )}
-            {product.stockStatus === 'out_of_stock' && (
+            {effectiveOutOfStock && (
               <Badge variant="destructive">{t('products.outOfStock')}</Badge>
             )}
           </div>
