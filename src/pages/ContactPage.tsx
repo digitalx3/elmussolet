@@ -154,24 +154,10 @@ const ContactPage: React.FC = () => {
           </Card>
 
           {mapIsIframe && mapRaw && (
-            <div
-              className="rounded-lg overflow-hidden border border-border aspect-[4/3] bg-muted [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:block [&_iframe]:border-0"
-              dangerouslySetInnerHTML={{ __html: mapRaw }}
-            />
+            <ConsentedMap iframeHtml={mapRaw} />
           )}
           {mapUrl && (
-            <div className="rounded-lg overflow-hidden border border-border aspect-[4/3] bg-muted">
-              <iframe
-                src={mapUrl}
-                title="Map"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
+            <ConsentedMap iframeUrl={mapUrl} />
           )}
         </div>
       </div>
