@@ -773,6 +773,13 @@ const AdminProductForm: React.FC = () => {
         )}
       </Card>
 
+      {/* Related products */}
+      <RelatedProductsEditor
+        productId={isNew ? undefined : id}
+        value={form.related_product_ids}
+        onChange={(ids) => updateField('related_product_ids', ids)}
+      />
+
       {/* Bottom actions */}
       <div className="flex justify-end gap-2 pb-8">
         <Button type="button" variant="outline" onClick={() => navigate('/admin/productes')}>
