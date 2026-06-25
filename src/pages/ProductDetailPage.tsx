@@ -94,6 +94,7 @@ const ProductDetailPage: React.FC = () => {
     }
     addStandardItem(payload);
     toast.success(t('products.addToCart'));
+    requestUpsell(product.id);
   };
 
   const handleShare = async () => {
