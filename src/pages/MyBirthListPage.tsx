@@ -1991,14 +1991,16 @@ const MyBirthListPage: React.FC = () => {
                       const imgs = (p.product_images || []).slice().sort((a: any, b: any) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order || 0) - (b.sort_order || 0));
                       const img = imgs[0]?.image_url;
                       const added = form.items.some(it => it.product_id === p.id);
+                      const oos = getEffectiveStock(p) <= 0;
+                      const disabled = added || oos;
                       return (
                         <div
                           key={p.id}
-                          draggable
-                          onDragStart={() => { productDragRef.current = { kind: 'add', product: p }; }}
+                          draggable={!oos}
+                          onDragStart={() => { if (!oos) productDragRef.current = { kind: 'add', product: p }; }}
                           onDragEnd={() => { productDragRef.current = null; }}
-                          onClick={() => !added && addProduct(p)}
-                          className={`group relative flex flex-col items-stretch gap-1 p-2 rounded-md border-2 bg-background transition-colors text-left cursor-grab ${added ? 'border-primary/40 opacity-70 cursor-not-allowed' : 'border-border hover:border-primary hover:bg-primary/5'}`}
+                          onClick={() => { if (oos) { toast.error(lang === 'es' ? 'Sin stock. Busca otro similar.' : 'Sense estoc. Busca\'n un de similar.'); return; } if (!added) addProduct(p); }}
+                          className={`group relative flex flex-col items-stretch gap-1 p-2 rounded-md border-2 bg-background transition-colors text-left ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-grab hover:border-primary hover:bg-primary/5'} ${added ? 'border-primary/40' : 'border-border'}`}
                         >
                           <div className="aspect-square w-full bg-muted rounded overflow-hidden flex items-center justify-center">
                             {img ? (
@@ -2009,15 +2011,20 @@ const MyBirthListPage: React.FC = () => {
                           </div>
                           <span className="text-xs font-medium line-clamp-2">{tr?.name || p.slug}</span>
                           <span className="text-[11px] text-muted-foreground">{formatPrice(p.base_price)}</span>
+                          {oos && (
+                            <span className="absolute bottom-1 left-1 right-1 text-center text-[10px] font-semibold bg-destructive text-destructive-foreground rounded px-1 py-0.5">
+                              {lang === 'es' ? 'Sin stock' : 'Sense estoc'}
+                            </span>
+                          )}
                           {added ? (
                             <span className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
                               <Check className="h-3 w-3" />
                             </span>
-                          ) : (
+                          ) : !oos ? (
                             <span className="absolute top-1 right-1 bg-background/90 border border-border rounded-full p-0.5 opacity-0 group-hover:opacity-100">
                               <Plus className="h-3 w-3" />
                             </span>
-                          )}
+                          ) : null}
                         </div>
                       );
                     })}
