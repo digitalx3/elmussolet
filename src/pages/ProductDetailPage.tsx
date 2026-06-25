@@ -207,7 +207,10 @@ const ProductDetailPage: React.FC = () => {
           </div>
 
           {product.shortDescription && (
-            <p className="text-muted-foreground leading-relaxed">{product.shortDescription}</p>
+            <div
+              className="prose prose-sm max-w-none text-muted-foreground leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: product.shortDescription }}
+            />
           )}
 
           <Separator />

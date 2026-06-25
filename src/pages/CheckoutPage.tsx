@@ -245,10 +245,34 @@ const CheckoutPage: React.FC = () => {
       if (orderError) throw orderError;
 
       // Create order items
+      // Fallback: if buying from a list, auto-link any item missing its list_item_id
+      // by matching on product + variant against the active list_items.
+      let listItemMap: Map<string, string> | null = null;
+      if (activeListId) {
+        const { data: liRows } = await supabase
+          .from('list_items')
+          .select('id, product_id, variant_id, quantity_desired, quantity_purchased')
+          .eq('list_id', activeListId);
+        if (liRows && liRows.length > 0) {
+          listItemMap = new Map();
+          for (const li of liRows) {
+            const remaining = (li.quantity_desired ?? 0) - (li.quantity_purchased ?? 0);
+            if (remaining <= 0) continue;
+            const key = `${li.product_id}:${li.variant_id ?? ''}`;
+            if (!listItemMap.has(key)) listItemMap.set(key, li.id);
+          }
+        }
+      }
+
       const dbItems = orderItems.map(item => {
         const baseUnit = item.basePriceNoTax ?? item.price;
         const taxPct = item.taxPercentage ?? 0;
         const lineTax = baseUnit * (taxPct / 100) * item.quantity;
+        let resolvedListItemId = item.listItemId || null;
+        if (!resolvedListItemId && listItemMap) {
+          const key = `${item.productId}:${item.variantId ?? ''}`;
+          resolvedListItemId = listItemMap.get(key) || null;
+        }
         return {
           order_id: order.id,
           product_id: item.productId,
@@ -259,7 +283,7 @@ const CheckoutPage: React.FC = () => {
           base_unit_price: baseUnit,
           tax_percentage: taxPct,
           tax_amount: lineTax,
-          list_item_id: item.listItemId || null,
+          list_item_id: resolvedListItemId,
         };
       });
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, GripVertical, Upload, Star, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, GripVertical, Upload, Star, AlertCircle, Sparkles, Loader2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,7 @@ import { optimizeImage } from '@/lib/optimizeImage';
 import { useLanguages, useDefaultLanguage } from '@/hooks/useLanguages';
 import LanguageTabs from '@/components/admin/LanguageTabs';
 import { useAiProvider, isAiReady } from '@/hooks/useAiProvider';
+import RichTextEditor from '@/components/ui/rich-text-editor';
 
 const emptyTranslation = { name: '', short_description: '', description: '' };
 
@@ -347,6 +348,18 @@ const AdminProductForm: React.FC = () => {
           </h1>
         </div>
         <div className="flex gap-2">
+          {!isNew && form.slug && (
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-1"
+              onClick={() => window.open(`/producte/${form.slug}`, '_blank', 'noopener,noreferrer')}
+              title="Veure al catàleg"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Preview
+            </Button>
+          )}
           <Button type="button" variant="outline" onClick={() => navigate('/admin/productes')}>
             {t('common.cancel')}
           </Button>
@@ -435,12 +448,11 @@ const AdminProductForm: React.FC = () => {
                         IA
                       </Button>
                     </div>
-                    <Input
-                      value={tr.short_description}
-                      onChange={e => updateTranslation(lang, 'short_description', e.target.value)}
-                      maxLength={MAX_SHORT}
-                      aria-invalid={!!errs.short_description}
-                      className={cn(errs.short_description && 'border-destructive focus-visible:ring-destructive')}
+                    <RichTextEditor
+                      value={tr.short_description || ''}
+                      onChange={(html) => updateTranslation(lang, 'short_description', html)}
+                      placeholder="Descripció curta (admet HTML / format ric)"
+                      className={cn(errs.short_description && 'border-destructive')}
                     />
                     <div className="flex justify-between mt-1">
                       {errs.short_description ? (
@@ -448,7 +460,7 @@ const AdminProductForm: React.FC = () => {
                           <AlertCircle className="h-3 w-3" /> {errs.short_description}
                         </p>
                       ) : <span />}
-                      <span className="text-[11px] text-muted-foreground">{tr.short_description.length}/{MAX_SHORT}</span>
+                      <span className="text-[11px] text-muted-foreground">{(tr.short_description || '').length}/{MAX_SHORT}</span>
                     </div>
                   </div>
                   <div>
@@ -465,13 +477,11 @@ const AdminProductForm: React.FC = () => {
                         IA
                       </Button>
                     </div>
-                    <Textarea
-                      value={tr.description}
-                      onChange={e => updateTranslation(lang, 'description', e.target.value)}
-                      rows={5}
-                      maxLength={MAX_DESC}
-                      aria-invalid={!!errs.description}
-                      className={cn(errs.description && 'border-destructive focus-visible:ring-destructive')}
+                    <RichTextEditor
+                      value={tr.description || ''}
+                      onChange={(html) => updateTranslation(lang, 'description', html)}
+                      placeholder="Descripció llarga (admet HTML / format ric)"
+                      className={cn(errs.description && 'border-destructive')}
                     />
                     <div className="flex justify-between mt-1">
                       {errs.description ? (
@@ -479,7 +489,7 @@ const AdminProductForm: React.FC = () => {
                           <AlertCircle className="h-3 w-3" /> {errs.description}
                         </p>
                       ) : <span />}
-                      <span className="text-[11px] text-muted-foreground">{tr.description.length}/{MAX_DESC}</span>
+                      <span className="text-[11px] text-muted-foreground">{(tr.description || '').length}/{MAX_DESC}</span>
                     </div>
                   </div>
                 </div>

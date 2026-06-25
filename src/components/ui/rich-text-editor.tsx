@@ -31,6 +31,18 @@ const modules = {
   },
 };
 
+// Whitelist of formats Quill is allowed to render. Without this, Quill drops
+// unknown tags and may merge/flatten structures (e.g. lists wrapped in <p>).
+const formats = [
+  'header', 'font', 'size',
+  'bold', 'italic', 'underline', 'strike',
+  'color', 'background',
+  'align',
+  'list', 'indent',
+  'blockquote', 'code-block', 'code',
+  'link', 'image',
+];
+
 export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, className }) => {
   const [mode, setMode] = useState<'visual' | 'code'>('visual');
   // Tracks whether the user has actually interacted with the visual editor.
@@ -104,10 +116,12 @@ export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, 
           }}
         >
           <ReactQuill
+            key={`quill-${mode}`}
             theme="snow"
             value={value}
             onChange={handleVisualChange}
             modules={modules}
+            formats={formats}
             placeholder={placeholder}
           />
         </div>
