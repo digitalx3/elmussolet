@@ -22,6 +22,7 @@ import { optimizeImage } from '@/lib/optimizeImage';
 import { useLanguages, useDefaultLanguage } from '@/hooks/useLanguages';
 import LanguageTabs from '@/components/admin/LanguageTabs';
 import { useAiProvider, isAiReady } from '@/hooks/useAiProvider';
+import RichTextEditor from '@/components/ui/rich-text-editor';
 
 const emptyTranslation = { name: '', short_description: '', description: '' };
 
