@@ -272,7 +272,7 @@ const ProductDetailPage: React.FC = () => {
               size="lg"
               className="flex-1 gap-2"
               onClick={handleAddToCart}
-              disabled={product.stockStatus === 'out_of_stock'}
+              disabled={effectiveOutOfStock || (selectedVariant ? selectedVariant.stockQuantity === 0 : false)}
             >
               <ShoppingBag className="h-4 w-4" />
               {t('products.addToCart')}
