@@ -340,6 +340,35 @@ const AdminProductForm: React.FC = () => {
       return;
     }
 
+    // Sale price validation
+    if (form.sale_price_type) {
+      const v = form.sale_value;
+      if (v == null || isNaN(v)) {
+        toast.error("Indica el valor de l'oferta o desactiva-la.");
+        return;
+      }
+      if (v <= 0) {
+        toast.error("El valor de l'oferta ha de ser superior a 0.");
+        return;
+      }
+      if (form.sale_price_type === 'percent' && v >= 100) {
+        toast.error('El percentatge de descompte ha de ser inferior a 100.');
+        return;
+      }
+      if (form.sale_price_type === 'fixed' && form.base_price > 0 && v >= form.base_price) {
+        toast.error("El preu d'oferta ha de ser inferior al preu base.");
+        return;
+      }
+      if (form.sale_starts_at && form.sale_ends_at) {
+        const s = new Date(form.sale_starts_at).getTime();
+        const e2 = new Date(form.sale_ends_at).getTime();
+        if (!isNaN(s) && !isNaN(e2) && s > e2) {
+          toast.error("La data d'inici de l'oferta ha de ser anterior a la data de fi.");
+          return;
+        }
+      }
+    }
+
     try {
       await saveProduct.mutateAsync({ id: isNew ? undefined : id, data: form });
       toast.success(isNew ? 'Producte creat' : 'Producte actualitzat');
