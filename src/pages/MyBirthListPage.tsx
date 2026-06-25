@@ -1073,6 +1073,23 @@ const MyBirthListPage: React.FC = () => {
                   {l.expected_date && <p>{t('list.expectedDate')}: {l.expected_date}</p>}
                   <p className="flex items-center gap-1"><Package className="h-3 w-3" />{l.item_count || 0} {(l.item_count || 0) === 1 ? (lang === 'es' ? 'producto' : 'producte') : (lang === 'es' ? 'productos' : 'productes')}</p>
                 </div>
+                {(l.total_desired || 0) > 0 && (() => {
+                  const desiredQty = l.total_desired || 0;
+                  const purchasedQty = Math.min(l.total_purchased || 0, desiredQty);
+                  const pct = Math.round((purchasedQty / desiredQty) * 100);
+                  return (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{t('list.progress')}</span>
+                        <span className="font-medium">{pct}%</span>
+                      </div>
+                      <Progress value={pct} className="h-1.5" />
+                      <p className="text-[11px] text-muted-foreground">
+                        {purchasedQty} / {desiredQty} {t('list.itemsPurchased')}
+                      </p>
+                    </div>
+                  );
+                })()}
                 <div className="flex gap-2 pt-1">
                   <Button
                     size="sm"
