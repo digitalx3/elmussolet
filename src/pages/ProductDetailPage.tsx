@@ -46,7 +46,17 @@ const ProductDetailPage: React.FC = () => {
   const basePrice = selectedVariant?.priceOverride ?? product?.basePrice ?? 0;
   const taxPct = product?.taxPercentage ?? 0;
   const currentPrice = basePrice * (1 + taxPct / 100);
-  const currentStock = selectedVariant ? selectedVariant.stockQuantity : (product?.stockQuantity ?? 0);
+
+  // When the product has variants, the effective stock is the sum of variant stocks.
+  // Otherwise we trust the product-level stock.
+  const variantStockTotal = (product?.variants ?? []).reduce((s, v) => s + (v.stockQuantity ?? 0), 0);
+  const hasUsableVariants = !!product?.hasVariants && variantGroups.length > 0;
+  const effectiveOutOfStock = hasUsableVariants
+    ? variantStockTotal === 0
+    : product?.stockStatus === 'out_of_stock';
+  const currentStock = selectedVariant
+    ? selectedVariant.stockQuantity
+    : (hasUsableVariants ? variantStockTotal : (product?.stockQuantity ?? 0));
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -192,16 +202,16 @@ const ProductDetailPage: React.FC = () => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {product.stockStatus === 'in_stock' && currentStock === 1 && (
+            {!effectiveOutOfStock && currentStock === 1 && (
               <Badge variant="secondary" className="bg-last-unit text-last-unit-foreground">{t('products.lastUnit')}</Badge>
             )}
-            {product.stockStatus === 'in_stock' && currentStock !== 1 && (
+            {!effectiveOutOfStock && currentStock !== 1 && product.stockStatus !== 'on_order' && (
               <Badge variant="secondary" className="bg-sage text-sage-foreground">{t('products.inStock')}</Badge>
             )}
-            {product.stockStatus === 'on_order' && (
+            {!effectiveOutOfStock && product.stockStatus === 'on_order' && (
               <Badge variant="secondary" className="bg-warm text-warm-foreground">{t('products.onOrder')}</Badge>
             )}
-            {product.stockStatus === 'out_of_stock' && (
+            {effectiveOutOfStock && (
               <Badge variant="destructive">{t('products.outOfStock')}</Badge>
             )}
           </div>
@@ -262,7 +272,7 @@ const ProductDetailPage: React.FC = () => {
               size="lg"
               className="flex-1 gap-2"
               onClick={handleAddToCart}
-              disabled={product.stockStatus === 'out_of_stock'}
+              disabled={effectiveOutOfStock || (selectedVariant ? selectedVariant.stockQuantity === 0 : false)}
             >
               <ShoppingBag className="h-4 w-4" />
               {t('products.addToCart')}

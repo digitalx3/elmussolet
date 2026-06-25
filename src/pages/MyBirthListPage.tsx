@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -230,16 +231,26 @@ const MyBirthListPage: React.FC = () => {
       });
       const rows = Array.from(rowsById.values())
         .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
-      // Item counts
+      // Item counts and purchase progress
       if (rows.length > 0) {
         const ids = rows.map((r: any) => r.id);
         const { data: items } = await supabase
           .from('list_items')
-          .select('list_id')
+          .select('list_id, quantity_desired, quantity_purchased')
           .in('list_id', ids);
         const counts: Record<string, number> = {};
-        (items || []).forEach((i: any) => { counts[i.list_id] = (counts[i.list_id] || 0) + 1; });
-        rows.forEach((r: any) => { r.item_count = counts[r.id] || 0; });
+        const desired: Record<string, number> = {};
+        const purchased: Record<string, number> = {};
+        (items || []).forEach((i: any) => {
+          counts[i.list_id] = (counts[i.list_id] || 0) + 1;
+          desired[i.list_id] = (desired[i.list_id] || 0) + (i.quantity_desired || 0);
+          purchased[i.list_id] = (purchased[i.list_id] || 0) + Math.min(i.quantity_purchased || 0, i.quantity_desired || 0);
+        });
+        rows.forEach((r: any) => {
+          r.item_count = counts[r.id] || 0;
+          r.total_desired = desired[r.id] || 0;
+          r.total_purchased = purchased[r.id] || 0;
+        });
       }
       return rows;
     },
@@ -1062,6 +1073,23 @@ const MyBirthListPage: React.FC = () => {
                   {l.expected_date && <p>{t('list.expectedDate')}: {l.expected_date}</p>}
                   <p className="flex items-center gap-1"><Package className="h-3 w-3" />{l.item_count || 0} {(l.item_count || 0) === 1 ? (lang === 'es' ? 'producto' : 'producte') : (lang === 'es' ? 'productos' : 'productes')}</p>
                 </div>
+                {(l.total_desired || 0) > 0 && (() => {
+                  const desiredQty = l.total_desired || 0;
+                  const purchasedQty = Math.min(l.total_purchased || 0, desiredQty);
+                  const pct = Math.round((purchasedQty / desiredQty) * 100);
+                  return (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{t('list.progress')}</span>
+                        <span className="font-medium">{pct}%</span>
+                      </div>
+                      <Progress value={pct} className="h-1.5" />
+                      <p className="text-[11px] text-muted-foreground">
+                        {purchasedQty} / {desiredQty} {t('list.itemsPurchased')}
+                      </p>
+                    </div>
+                  );
+                })()}
                 <div className="flex gap-2 pt-1">
                   <Button
                     size="sm"
