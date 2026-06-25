@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
+import { computePrice, isSaleActive, type SalePriceType } from '@/lib/pricing';
 
 export interface ProductFilters {
   categoryId?: string;
@@ -18,10 +19,19 @@ export interface TranslatedProduct {
   id: string;
   slug: string;
   sku: string;
-  basePrice: number;
-  priceWithTax: number;
+  basePrice: number;        // pre-tax base before any sale
+  priceWithTax: number;     // tax-inclusive original (no sale)
+  finalPriceWithTax: number;// tax-inclusive after sale
   taxPercentage: number;
   taxName: string | null;
+  onSale: boolean;
+  discountPct: number;
+  salePriceType: SalePriceType;
+  saleValue: number | null;
+  saleStartsAt: string | null;
+  saleEndsAt: string | null;
+  isFeatured: boolean;
+  featuredOrder: number | null;
   stockQuantity: number;
   stockStatus: string;
   isActive: boolean;
@@ -38,6 +48,56 @@ export interface TranslatedProduct {
   createdAt: string;
 }
 
+function mapProduct(p: any, translation: any): TranslatedProduct {
+  const images = p.product_images || [];
+  const primaryImg = images.find((i: any) => i.is_primary) || images.sort((a: any, b: any) => a.sort_order - b.sort_order)[0];
+
+  const basePrice = Number(p.base_price);
+  const taxPct = (p as any).tax_rates?.percentage ?? 0;
+  const taxName = (p as any).tax_rates?.name ?? null;
+
+  const pricing = computePrice({
+    basePrice,
+    salePriceType: p.sale_price_type,
+    saleValue: p.sale_value != null ? Number(p.sale_value) : null,
+    saleStartsAt: p.sale_starts_at,
+    saleEndsAt: p.sale_ends_at,
+  });
+
+  return {
+    id: p.id,
+    slug: p.slug,
+    sku: p.sku,
+    basePrice,
+    priceWithTax: pricing.base * (1 + taxPct / 100),
+    finalPriceWithTax: pricing.final * (1 + taxPct / 100),
+    taxPercentage: taxPct,
+    taxName,
+    onSale: pricing.onSale,
+    discountPct: pricing.discountPct,
+    salePriceType: p.sale_price_type ?? null,
+    saleValue: p.sale_value != null ? Number(p.sale_value) : null,
+    saleStartsAt: p.sale_starts_at ?? null,
+    saleEndsAt: p.sale_ends_at ?? null,
+    isFeatured: !!p.is_featured,
+    featuredOrder: p.featured_order ?? null,
+    stockQuantity: p.stock_quantity ?? 0,
+    stockStatus: p.stock_status ?? 'in_stock',
+    isActive: p.is_active,
+    hasVariants: p.has_variants ?? false,
+    weightGrams: p.weight_grams ?? 0,
+    categoryId: p.category_id,
+    brandId: p.brand_id,
+    brandName: p.brands?.name ?? null,
+    brandLogo: p.brands?.logo_url ?? null,
+    name: translation?.name ?? '',
+    shortDescription: translation?.short_description ?? null,
+    description: translation?.description ?? '',
+    primaryImage: primaryImg?.image_url ?? null,
+    createdAt: p.created_at,
+  };
+}
+
 export function useTranslatedProducts(filters: ProductFilters = {}) {
   const { i18n } = useTranslation();
   const lang = i18n.language === 'es' ? 'es' : 'ca';
@@ -47,7 +107,6 @@ export function useTranslatedProducts(filters: ProductFilters = {}) {
   return useQuery({
     queryKey: ['products', lang, filters],
     queryFn: async () => {
-      // Build query
       let query = supabase
         .from('products')
         .select(`
@@ -60,77 +119,28 @@ export function useTranslatedProducts(filters: ProductFilters = {}) {
         .eq('is_active', true)
         .eq('product_translations.language', lang);
 
-      if (filters.categoryId) {
-        query = query.eq('category_id', filters.categoryId);
-      }
-      if (filters.brandId) {
-        query = query.eq('brand_id', filters.brandId);
-      }
-      if (filters.availability) {
-        query = query.eq('stock_status', filters.availability);
-      }
-      // Note: price filter is applied client-side below using priceWithTax (tax-inclusive)
+      if (filters.categoryId) query = query.eq('category_id', filters.categoryId);
+      if (filters.brandId) query = query.eq('brand_id', filters.brandId);
+      if (filters.availability) query = query.eq('stock_status', filters.availability);
 
-      // Sorting
       switch (filters.sortBy) {
-        case 'price_asc':
-          query = query.order('base_price', { ascending: true });
-          break;
-        case 'price_desc':
-          query = query.order('base_price', { ascending: false });
-          break;
-        case 'newest':
-          query = query.order('created_at', { ascending: false });
-          break;
+        case 'price_asc': query = query.order('base_price', { ascending: true }); break;
+        case 'price_desc': query = query.order('base_price', { ascending: false }); break;
+        case 'newest': query = query.order('created_at', { ascending: false }); break;
         case 'name_asc':
         case 'name_desc':
-          // Will sort client-side by translated name
-          query = query.order('created_at', { ascending: false });
-          break;
-        default:
-          query = query.order('created_at', { ascending: false });
+          query = query.order('created_at', { ascending: false }); break;
+        default: query = query.order('created_at', { ascending: false });
       }
 
       const { data, error } = await query;
       if (error) throw error;
 
       let products: TranslatedProduct[] = (data || []).map((p: any) => {
-        const translation = Array.isArray(p.product_translations)
-          ? p.product_translations[0]
-          : p.product_translations;
-        const images = p.product_images || [];
-        const primaryImg = images.find((i: any) => i.is_primary) || images.sort((a: any, b: any) => a.sort_order - b.sort_order)[0];
-
-        const basePrice = Number(p.base_price);
-        const taxPct = (p as any).tax_rates?.percentage ?? 0;
-        const taxName = (p as any).tax_rates?.name ?? null;
-
-        return {
-          id: p.id,
-          slug: p.slug,
-          sku: p.sku,
-          basePrice,
-          priceWithTax: basePrice * (1 + taxPct / 100),
-          taxPercentage: taxPct,
-          taxName,
-          stockQuantity: p.stock_quantity ?? 0,
-          stockStatus: p.stock_status ?? 'in_stock',
-          isActive: p.is_active,
-          hasVariants: p.has_variants ?? false,
-          weightGrams: p.weight_grams ?? 0,
-          categoryId: p.category_id,
-          brandId: p.brand_id,
-          brandName: p.brands?.name ?? null,
-          brandLogo: p.brands?.logo_url ?? null,
-          name: translation?.name ?? '',
-          shortDescription: translation?.short_description ?? null,
-          description: translation?.description ?? '',
-          primaryImage: primaryImg?.image_url ?? null,
-          createdAt: p.created_at,
-        };
+        const tr = Array.isArray(p.product_translations) ? p.product_translations[0] : p.product_translations;
+        return mapProduct(p, tr);
       });
 
-      // Client-side text search on translated name
       if (filters.search) {
         const s = filters.search.toLowerCase();
         products = products.filter(p =>
@@ -139,20 +149,15 @@ export function useTranslatedProducts(filters: ProductFilters = {}) {
         );
       }
 
-      // Client-side price filter (tax-inclusive) so slider matches displayed prices
       if (filters.minPrice !== undefined) {
-        products = products.filter(p => p.priceWithTax >= filters.minPrice!);
+        products = products.filter(p => p.finalPriceWithTax >= filters.minPrice!);
       }
       if (filters.maxPrice !== undefined) {
-        products = products.filter(p => p.priceWithTax <= filters.maxPrice!);
+        products = products.filter(p => p.finalPriceWithTax <= filters.maxPrice!);
       }
 
-      // Client-side name sort
-      if (filters.sortBy === 'name_asc') {
-        products.sort((a, b) => a.name.localeCompare(b.name));
-      } else if (filters.sortBy === 'name_desc') {
-        products.sort((a, b) => b.name.localeCompare(a.name));
-      }
+      if (filters.sortBy === 'name_asc') products.sort((a, b) => a.name.localeCompare(b.name));
+      else if (filters.sortBy === 'name_desc') products.sort((a, b) => b.name.localeCompare(a.name));
 
       const total = products.length;
       const start = (page - 1) * perPage;
@@ -180,7 +185,7 @@ export function useProductBySlug(slug: string | undefined) {
           brands(name, logo_url),
           tax_rates(id, name, percentage),
           product_variants(
-            id, value, price_override, stock_quantity, sku_suffix, is_active,
+            id, value, price_override, price_modifier, stock_quantity, sku_suffix, is_active,
             variant_types(slug, variant_type_translations(name, language))
           )
         `)
@@ -204,7 +209,8 @@ export function useProductBySlug(slug: string | undefined) {
           return {
             id: v.id,
             value: v.value,
-            priceOverride: v.price_override ? Number(v.price_override) : null,
+            priceOverride: v.price_override != null ? Number(v.price_override) : null,
+            priceModifier: v.price_modifier != null ? Number(v.price_modifier) : 0,
             stockQuantity: v.stock_quantity ?? 0,
             skuSuffix: v.sku_suffix,
             typeName: vtName,
@@ -215,6 +221,12 @@ export function useProductBySlug(slug: string | undefined) {
       const basePrice = Number(data.base_price);
       const taxPct = (data as any).tax_rates?.percentage ?? 0;
       const taxName = (data as any).tax_rates?.name ?? null;
+      const saleActive = isSaleActive(
+        (data as any).sale_price_type,
+        (data as any).sale_value,
+        (data as any).sale_starts_at,
+        (data as any).sale_ends_at,
+      );
 
       return {
         id: data.id,
@@ -224,6 +236,12 @@ export function useProductBySlug(slug: string | undefined) {
         priceWithTax: basePrice * (1 + taxPct / 100),
         taxPercentage: taxPct,
         taxName,
+        salePriceType: (data as any).sale_price_type ?? null,
+        saleValue: (data as any).sale_value != null ? Number((data as any).sale_value) : null,
+        saleStartsAt: (data as any).sale_starts_at ?? null,
+        saleEndsAt: (data as any).sale_ends_at ?? null,
+        saleActive,
+        isFeatured: !!(data as any).is_featured,
         stockQuantity: data.stock_quantity ?? 0,
         stockStatus: data.stock_status ?? 'in_stock',
         hasVariants: data.has_variants ?? false,
@@ -238,6 +256,81 @@ export function useProductBySlug(slug: string | undefined) {
         images,
         variants,
       };
+    },
+  });
+}
+
+// Featured products for the home page (translated, ordered).
+export function useFeaturedProducts(limit: number = 8) {
+  const { i18n } = useTranslation();
+  const lang = i18n.language === 'es' ? 'es' : 'ca';
+
+  return useQuery({
+    queryKey: ['featured-products', lang, limit],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          *,
+          product_translations!inner(name, short_description, description, language),
+          product_images(image_url, is_primary, sort_order),
+          brands(name, logo_url),
+          tax_rates(id, name, percentage)
+        `)
+        .eq('is_active', true)
+        .eq('is_featured', true)
+        .eq('product_translations.language', lang)
+        .order('featured_order', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return ((data || []) as any[]).map(p => {
+        const tr = Array.isArray(p.product_translations) ? p.product_translations[0] : p.product_translations;
+        return mapProduct(p, tr);
+      });
+    },
+  });
+}
+
+// Related products for a given product (used in product page + upsell dialog).
+export function useRelatedProducts(productId: string | undefined) {
+  const { i18n } = useTranslation();
+  const lang = i18n.language === 'es' ? 'es' : 'ca';
+
+  return useQuery({
+    queryKey: ['related-products', productId, lang],
+    enabled: !!productId,
+    queryFn: async () => {
+      const { data: rels, error: relErr } = await supabase
+        .from('product_relations')
+        .select('related_product_id, position')
+        .eq('product_id', productId!)
+        .order('position', { ascending: true });
+      if (relErr) throw relErr;
+      const ids = (rels ?? []).map((r: any) => r.related_product_id);
+      if (ids.length === 0) return [] as TranslatedProduct[];
+
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          *,
+          product_translations!inner(name, short_description, description, language),
+          product_images(image_url, is_primary, sort_order),
+          brands(name, logo_url),
+          tax_rates(id, name, percentage)
+        `)
+        .in('id', ids)
+        .eq('is_active', true)
+        .eq('product_translations.language', lang);
+      if (error) throw error;
+
+      const byId = new Map<string, TranslatedProduct>();
+      (data || []).forEach((p: any) => {
+        const tr = Array.isArray(p.product_translations) ? p.product_translations[0] : p.product_translations;
+        byId.set(p.id, mapProduct(p, tr));
+      });
+      // Preserve admin-defined order
+      return ids.map(id => byId.get(id)).filter(Boolean) as TranslatedProduct[];
     },
   });
 }

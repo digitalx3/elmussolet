@@ -29,6 +29,10 @@ interface CartContextType {
   standardTotal: number;
   listTotal: number;
   totalItemsCount: number;
+  // Upsell signal — set when something is added; cleared by the dialog after handling.
+  upsellTrigger: { productId: string; nonce: number } | null;
+  requestUpsell: (productId: string) => void;
+  clearUpsell: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -46,6 +50,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [standardItems, setStandardItems] = useState<CartItem[]>(() => loadFromStorage('cart_standard'));
   const [listItems, setListItems] = useState<CartItem[]>(() => loadFromStorage('cart_list'));
   const [activeListId, setActiveListId] = useState<string | null>(() => localStorage.getItem('cart_list_id'));
+  const [upsellTrigger, setUpsellTrigger] = useState<{ productId: string; nonce: number } | null>(null);
 
   const persist = (key: string, items: CartItem[]) => localStorage.setItem(key, JSON.stringify(items));
 
@@ -59,12 +64,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [...items, item];
   };
 
+  const requestUpsell = useCallback((productId: string) => {
+    setUpsellTrigger({ productId, nonce: Date.now() });
+  }, []);
+
+  const clearUpsell = useCallback(() => setUpsellTrigger(null), []);
+
   const addStandardItem = useCallback((item: CartItem) => {
     setStandardItems(prev => {
       const next = addItem(prev, item);
       persist('cart_standard', next);
       return next;
     });
+    setUpsellTrigger({ productId: item.productId, nonce: Date.now() });
   }, []);
 
   const addListItem = useCallback((item: CartItem, listId: string) => {
@@ -141,6 +153,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       standardTotal: sum(standardItems),
       listTotal: sum(listItems),
       totalItemsCount: standardItems.reduce((s, i) => s + i.quantity, 0) + listItems.reduce((s, i) => s + i.quantity, 0),
+      upsellTrigger, requestUpsell, clearUpsell,
     }}>
       {children}
     </CartContext.Provider>
