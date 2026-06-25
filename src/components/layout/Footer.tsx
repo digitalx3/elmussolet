@@ -100,6 +100,8 @@ const Footer: React.FC = () => {
                   </Link>
                 </li>
               ))}
+              <li><Link to="/politica-cookies" className="text-muted-foreground hover:text-primary transition-colors">{t('cookies.footer.policy', 'Política de cookies')}</Link></li>
+              <li><CookiePrefsLink /></li>
             </ul>
           </div>
 
@@ -145,6 +147,23 @@ const Footer: React.FC = () => {
       </div>
     </footer>
   );
+};
+
+const CookiePrefsLink: React.FC = () => {
+  const { t } = useTranslation();
+  // Lazy import to avoid context coupling in case Footer is rendered outside the provider in tests.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+  const { useCookieConsent } = require('@/contexts/CookieConsentContext') as typeof import('@/contexts/CookieConsentContext');
+  try {
+    const { openPreferences } = useCookieConsent();
+    return (
+      <button type="button" onClick={openPreferences} className="text-muted-foreground hover:text-primary transition-colors text-left">
+        {t('cookies.footer.configure', 'Configurar cookies')}
+      </button>
+    );
+  } catch {
+    return null;
+  }
 };
 
 export default Footer;

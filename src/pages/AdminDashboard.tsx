@@ -34,6 +34,7 @@ import AdminLanguageTranslations from '@/pages/admin/AdminLanguageTranslations';
 import AdminAiHistory from '@/pages/admin/AdminAiHistory';
 import AdminStockNotifications from '@/pages/admin/AdminStockNotifications';
 import AdminFeaturedProducts from '@/pages/admin/AdminFeaturedProducts';
+import AdminCookies from '@/pages/admin/AdminCookies';
 
 const AdminPlaceholder: React.FC<{ titleKey: string }> = ({ titleKey }) => {
   const { t } = useTranslation();
@@ -84,6 +85,7 @@ const AdminDashboard: React.FC = () => {
         <Route path="ia/historial" element={<AdminAiHistory />} />
         <Route path="notificacions-stock" element={<AdminStockNotifications />} />
         <Route path="idiomes/:code/traduccions" element={<AdminLanguageTranslations />} />
+        <Route path="cookies" element={<AdminCookies />} />
       </Routes>
     </AdminLayout>
   );

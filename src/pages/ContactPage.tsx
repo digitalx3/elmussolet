@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import ConsentedMap from '@/components/cookies/ConsentedMap';
 
 const schema = z.object({
   name: z.string().trim().min(2, 'Nom massa curt').max(150),

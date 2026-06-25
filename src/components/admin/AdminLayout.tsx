@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   Package, LayoutDashboard, Tags, Bookmark, ListChecks,
   FileText, ShoppingCart, Users, Truck, Settings, ArrowLeft, SlidersHorizontal, Image as ImageIcon,
-  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database, Power, Languages as LanguagesIcon, Globe, Sparkles, PackageX, Star,
+  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database, Power, Languages as LanguagesIcon, Globe, Sparkles, PackageX, Star, Cookie,
 } from 'lucide-react';
 import AdminLanguageSwitcher from '@/components/admin/AdminLanguageSwitcher';
 import {
@@ -78,6 +78,7 @@ const groups: NavGroup[] = [
       { key: 'aiSettings', path: '/admin/ia', icon: Sparkles, label: "IA" },
       { key: 'aiHistory', path: '/admin/ia/historial', icon: Sparkles, label: "Historial IA" },
       { key: 'smtp', path: '/admin/smtp', icon: Server },
+      { key: 'cookies', path: '/admin/cookies', icon: Cookie, label: 'Cookies' },
       { key: 'backups', path: '/admin/backups', icon: Database },
       { key: 'maintenance', path: '/admin/manteniment', icon: Power },
       { key: 'settings', path: '/admin/configuracio', icon: Settings },
