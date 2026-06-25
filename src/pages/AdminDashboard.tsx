@@ -80,6 +80,7 @@ const AdminDashboard: React.FC = () => {
         <Route path="traduccions" element={<AdminTranslations />} />
         <Route path="ia" element={<AdminAiSettings />} />
         <Route path="ia/historial" element={<AdminAiHistory />} />
+        <Route path="notificacions-stock" element={<AdminStockNotifications />} />
         <Route path="idiomes/:code/traduccions" element={<AdminLanguageTranslations />} />
       </Routes>
     </AdminLayout>
