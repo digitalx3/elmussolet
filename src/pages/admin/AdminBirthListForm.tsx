@@ -424,7 +424,7 @@ const AdminBirthListForm: React.FC = () => {
 
     const { data } = await supabase
       .from('products')
-      .select(`id, base_price, slug, product_translations(language, name)`)
+      .select(`id, base_price, slug, stock_quantity, has_variants, product_translations(language, name), product_variants(stock_quantity, is_active)`)
       .eq('is_active', true)
       .limit(10);
 
@@ -447,6 +447,13 @@ const AdminBirthListForm: React.FC = () => {
         items: prev.items.map((it, i) => i === existingIdx ? { ...it, section_temp_id: targetSection } : it),
       }));
       toast.success(lang === 'es' ? 'Producto reasignado' : 'Producte reassignat');
+      return;
+    }
+
+    if (getEffectiveStock(product) <= 0) {
+      toast.error(lang === 'es'
+        ? 'Este producto no tiene stock. Busca uno similar.'
+        : 'Aquest producte no té estoc. Busca\'n un de similar.');
       return;
     }
 
