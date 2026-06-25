@@ -116,10 +116,12 @@ export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, 
           }}
         >
           <ReactQuill
+            key={`quill-${mode}`}
             theme="snow"
             value={value}
             onChange={handleVisualChange}
             modules={modules}
+            formats={formats}
             placeholder={placeholder}
           />
         </div>
