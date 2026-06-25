@@ -20,7 +20,7 @@ const ProductDetailPage: React.FC = () => {
   const giftItemId = searchParams.get('gift');
   const giftListId = searchParams.get('listId');
   const isGiftMode = !!(giftItemId && giftListId);
-  const { addStandardItem, addListItem } = useCart();
+  const { addStandardItem, addListItem, requestUpsell } = useCart();
   const { data: product, isLoading, error } = useProductBySlug(slug);
   const { data: relatedProducts = [] } = useRelatedProducts(product?.id);
 
