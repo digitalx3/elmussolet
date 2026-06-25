@@ -415,6 +415,12 @@ const MyBirthListPage: React.FC = () => {
       toast.info(t('list.productAlreadyAdded'));
       return;
     }
+    if (getEffectiveStock(product) <= 0) {
+      toast.error(lang === 'es'
+        ? 'Este producto no tiene stock. Busca uno similar.'
+        : 'Aquest producte no té estoc. Busca\'n un de similar.');
+      return;
+    }
     const tr = product.product_translations?.find((t: any) => t.language === lang)
       || product.product_translations?.[0];
     setForm(prev => ({
