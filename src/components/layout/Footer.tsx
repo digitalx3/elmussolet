@@ -6,6 +6,7 @@ import { Mail, Phone, MapPin, Instagram, Facebook, Youtube } from 'lucide-react'
 import logoSquare from '@/assets/mussolet-logo-square.png.asset.json';
 import { supabase } from '@/integrations/supabase/client';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useCookieConsent } from '@/contexts/CookieConsentContext';
 
 // Inline TikTok (lucide-react has no TikTok icon)
 const TikTokIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -151,19 +152,16 @@ const Footer: React.FC = () => {
 
 const CookiePrefsLink: React.FC = () => {
   const { t } = useTranslation();
-  // Lazy import to avoid context coupling in case Footer is rendered outside the provider in tests.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-  const { useCookieConsent } = require('@/contexts/CookieConsentContext') as typeof import('@/contexts/CookieConsentContext');
-  try {
-    const { openPreferences } = useCookieConsent();
-    return (
-      <button type="button" onClick={openPreferences} className="text-muted-foreground hover:text-primary transition-colors text-left">
-        {t('cookies.footer.configure', 'Configurar cookies')}
-      </button>
-    );
-  } catch {
-    return null;
-  }
+  const { openPreferences } = useCookieConsent();
+  return (
+    <button
+      type="button"
+      onClick={openPreferences}
+      className="text-muted-foreground hover:text-primary transition-colors text-left"
+    >
+      {t('cookies.footer.configure', 'Configurar cookies')}
+    </button>
+  );
 };
 
 export default Footer;
