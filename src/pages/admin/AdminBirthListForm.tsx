@@ -109,9 +109,105 @@ const AdminBirthListForm: React.FC = () => {
   const [browseSearch, setBrowseSearch] = useState('');
   const [defaultsLoaded, setDefaultsLoaded] = useState(false);
   const [translatingTempId, setTranslatingTempId] = useState<string | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
   const { data: enabledLanguages = [] } = useLanguages({ onlyEnabled: true });
 
   const { data: defaultSectionsData = [] } = useDefaultListSections({ onlyActive: true });
+
+  // Available templates (admin can preload a list configuration from one)
+  const { data: templates = [] } = useQuery({
+    queryKey: ['admin-birthlist-templates'],
+    enabled: isNew,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('list_templates')
+        .select('id, slug, is_active, list_template_translations(language, name)')
+        .eq('is_active', true)
+        .order('slug');
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const templateLabel = (tpl: any): string => {
+    const tr = (tpl.list_template_translations || []).find((x: any) => x.language === lang)
+      || (tpl.list_template_translations || [])[0];
+    return tr?.name || tpl.slug;
+  };
+
+  const applyTemplate = async (templateId: string) => {
+    if (!templateId) return;
+    setLoadingTemplate(true);
+    try {
+      const [secRes, itemRes] = await Promise.all([
+        supabase
+          .from('list_template_sections')
+          .select('id, name_ca, name_es, sort_order')
+          .eq('template_id', templateId)
+          .order('sort_order', { ascending: true }),
+        supabase
+          .from('list_template_items')
+          .select(`
+            id, product_id, section_id, quantity, sort_order,
+            product:products(
+              id, base_price, slug,
+              product_translations(language, name),
+              product_images(image_url, is_primary, sort_order)
+            )
+          `)
+          .eq('template_id', templateId)
+          .order('sort_order', { ascending: true }),
+      ]);
+      if (secRes.error) throw secRes.error;
+      if (itemRes.error) throw itemRes.error;
+
+      const secs = secRes.data || [];
+      const its = itemRes.data || [];
+
+      const nextSections: PendingSection[] = secs.map((s: any, i: number) => ({
+        temp_id: `tpl-${s.id}`,
+        name_ca: s.name_ca || '',
+        name_es: s.name_es || s.name_ca || '',
+        sort_order: i,
+        translations: {
+          ...(s.name_ca ? { ca: s.name_ca } : {}),
+          ...(s.name_es ? { es: s.name_es } : {}),
+        },
+      }));
+
+      const nextItems: ListItem[] = its.map((it: any, i: number) => {
+        const tr = it.product?.product_translations?.find((x: any) => x.language === lang)
+          || it.product?.product_translations?.[0];
+        return {
+          product_id: it.product_id,
+          variant_id: null,
+          quantity_desired: it.quantity || 1,
+          priority: 'medium',
+          sort_order: i,
+          productName: tr?.name || it.product?.slug || it.product_id,
+          price: it.product?.base_price,
+          image_url: pickProductImage(it.product),
+          section_temp_id: it.section_id ? `tpl-${it.section_id}` : null,
+        };
+      });
+
+      setSections(nextSections);
+      setActiveSectionTempId(nextSections[0]?.temp_id ?? null);
+      setForm(prev => ({ ...prev, items: nextItems }));
+      setDefaultsLoaded(true); // prevent the default-sections effect from overriding
+      toast.success(
+        lang === 'es'
+          ? `Plantilla cargada: ${nextSections.length} familias, ${nextItems.length} productos`
+          : `Plantilla carregada: ${nextSections.length} famílies, ${nextItems.length} productes`,
+      );
+    } catch (err: any) {
+      toast.error(err?.message || (lang === 'es' ? 'No se pudo cargar la plantilla' : 'No s\'ha pogut carregar la plantilla'));
+    } finally {
+      setLoadingTemplate(false);
+    }
+  };
+
 
   // Pre-load default sections when creating a new list
   useEffect(() => {
@@ -762,6 +858,60 @@ const AdminBirthListForm: React.FC = () => {
       </div>
 
       <div className="space-y-6">
+        {/* Template loader — only when creating */}
+        {isNew && templates.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                {lang === 'es' ? 'Cargar desde plantilla' : 'Carregar des de plantilla'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs">
+                    {lang === 'es' ? 'Plantilla predefinida' : 'Plantilla predefinida'}
+                  </Label>
+                  <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={lang === 'es' ? 'Seleccionar plantilla…' : 'Seleccionar plantilla…'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.map((tpl: any) => (
+                        <SelectItem key={tpl.id} value={tpl.id}>
+                          {templateLabel(tpl)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (!selectedTemplateId) return;
+                    if (sections.length > 0 || form.items.length > 0) {
+                      if (!confirm(lang === 'es'
+                        ? 'Esto reemplazará las familias y productos actuales. ¿Continuar?'
+                        : 'Això substituirà les famílies i productes actuals. Continuar?')) return;
+                    }
+                    applyTemplate(selectedTemplateId);
+                  }}
+                  disabled={!selectedTemplateId || loadingTemplate}
+                >
+                  {loadingTemplate
+                    ? (lang === 'es' ? 'Cargando…' : 'Carregant…')
+                    : (lang === 'es' ? 'Cargar plantilla' : 'Carregar plantilla')}
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-2">
+                {lang === 'es'
+                  ? 'Sustituye las familias y productos del formulario por los definidos en la plantilla.'
+                  : 'Substitueix les famílies i productes del formulari pels definits a la plantilla.'}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Basic info */}
         <Card>
           <CardHeader><CardTitle>{t('admin.listInfo')}</CardTitle></CardHeader>

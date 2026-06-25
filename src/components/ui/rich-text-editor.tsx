@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,29 @@ const modules = {
 
 export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, className }) => {
   const [mode, setMode] = useState<'visual' | 'code'>('visual');
+  // Tracks whether the user has actually interacted with the visual editor.
+  // Quill emits onChange on mount/value-update with a normalized HTML
+  // (e.g. injecting &nbsp; into empty paragraphs). We must ignore those
+  // synthetic events so the source HTML is preserved until the user types.
+  const userEditedRef = useRef(false);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+
+  // Reset the "user edited" flag whenever we (re)enter visual mode so the
+  // first normalization wave coming from Quill is discarded.
+  useEffect(() => {
+    if (mode === 'visual') {
+      userEditedRef.current = false;
+    }
+  }, [mode]);
+
+  const handleVisualChange = (html: string) => {
+    if (!userEditedRef.current) return; // ignore Quill's internal normalization
+    onChange(html);
+  };
+
+  const markUserEdit = () => {
+    userEditedRef.current = true;
+  };
 
   return (
     <div className={`bg-background rounded-md border border-input ${className ?? ''}`}>
@@ -68,13 +91,26 @@ export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, 
       </div>
 
       {mode === 'visual' ? (
-        <ReactQuill
-          theme="snow"
-          value={value}
-          onChange={onChange}
-          modules={modules}
-          placeholder={placeholder}
-        />
+        <div
+          ref={wrapperRef}
+          onKeyDown={markUserEdit}
+          onPaste={markUserEdit}
+          onCut={markUserEdit}
+          onDrop={markUserEdit}
+          onMouseDownCapture={(e) => {
+            // Toolbar interactions (bold, lists…) should also count as edits.
+            const target = e.target as HTMLElement;
+            if (target.closest('.ql-toolbar')) markUserEdit();
+          }}
+        >
+          <ReactQuill
+            theme="snow"
+            value={value}
+            onChange={handleVisualChange}
+            modules={modules}
+            placeholder={placeholder}
+          />
+        </div>
       ) : (
         <textarea
           value={value}
