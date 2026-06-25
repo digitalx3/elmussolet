@@ -348,6 +348,18 @@ const AdminProductForm: React.FC = () => {
           </h1>
         </div>
         <div className="flex gap-2">
+          {!isNew && form.slug && (
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-1"
+              onClick={() => window.open(`/producte/${form.slug}`, '_blank', 'noopener,noreferrer')}
+              title="Veure al catàleg"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Preview
+            </Button>
+          )}
           <Button type="button" variant="outline" onClick={() => navigate('/admin/productes')}>
             {t('common.cancel')}
           </Button>
