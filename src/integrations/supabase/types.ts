@@ -1847,6 +1847,56 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_depletion_notifications: {
+        Row: {
+          admin_emails: Json
+          affected_lists: Json
+          created_at: string
+          depleted_products: Json
+          emails_failed: number
+          emails_sent: number
+          error: string | null
+          id: string
+          order_id: string | null
+          owner_emails: Json
+          status: string
+        }
+        Insert: {
+          admin_emails?: Json
+          affected_lists?: Json
+          created_at?: string
+          depleted_products?: Json
+          emails_failed?: number
+          emails_sent?: number
+          error?: string | null
+          id?: string
+          order_id?: string | null
+          owner_emails?: Json
+          status?: string
+        }
+        Update: {
+          admin_emails?: Json
+          affected_lists?: Json
+          created_at?: string
+          depleted_products?: Json
+          emails_failed?: number
+          emails_sent?: number
+          error?: string | null
+          id?: string
+          order_id?: string | null
+          owner_emails?: Json
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_depletion_notifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_movements: {
         Row: {
           actor: string | null
