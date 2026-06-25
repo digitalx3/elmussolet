@@ -151,9 +151,10 @@ const AdminBirthListForm: React.FC = () => {
           .select(`
             id, product_id, section_id, quantity, sort_order,
             product:products(
-              id, base_price, slug,
+              id, base_price, slug, stock_quantity, has_variants,
               product_translations(language, name),
-              product_images(image_url, is_primary, sort_order)
+              product_images(image_url, is_primary, sort_order),
+              product_variants(stock_quantity, is_active)
             )
           `)
           .eq('template_id', templateId)
@@ -176,20 +177,32 @@ const AdminBirthListForm: React.FC = () => {
         },
       }));
 
-      const nextItems: ListItem[] = its.map((it: any, i: number) => {
+      const getStock = (p: any): number => {
+        const vs = (p?.product_variants || []).filter((v: any) => v.is_active !== false);
+        if (vs.length > 0) return vs.reduce((s: number, v: any) => s + (v.stock_quantity || 0), 0);
+        return p?.stock_quantity || 0;
+      };
+      const skipped: string[] = [];
+      const nextItems: ListItem[] = [];
+      its.forEach((it: any, i: number) => {
         const tr = it.product?.product_translations?.find((x: any) => x.language === lang)
           || it.product?.product_translations?.[0];
-        return {
+        const name = tr?.name || it.product?.slug || it.product_id;
+        if (getStock(it.product) <= 0) {
+          skipped.push(name);
+          return;
+        }
+        nextItems.push({
           product_id: it.product_id,
           variant_id: null,
           quantity_desired: it.quantity || 1,
           priority: 'medium',
           sort_order: i,
-          productName: tr?.name || it.product?.slug || it.product_id,
+          productName: name,
           price: it.product?.base_price,
           image_url: pickProductImage(it.product),
           section_temp_id: it.section_id ? `tpl-${it.section_id}` : null,
-        };
+        });
       });
 
       setSections(nextSections);
@@ -201,6 +214,14 @@ const AdminBirthListForm: React.FC = () => {
           ? `Plantilla cargada: ${nextSections.length} familias, ${nextItems.length} productos`
           : `Plantilla carregada: ${nextSections.length} famílies, ${nextItems.length} productes`,
       );
+      if (skipped.length > 0) {
+        toast.warning(
+          (lang === 'es'
+            ? `${skipped.length} producto(s) sin stock no se añadieron: `
+            : `${skipped.length} producte(s) sense estoc no s'han afegit: `) + skipped.join(', '),
+          { duration: 8000 },
+        );
+      }
     } catch (err: any) {
       toast.error(err?.message || (lang === 'es' ? 'No se pudo cargar la plantilla' : 'No s\'ha pogut carregar la plantilla'));
     } finally {
