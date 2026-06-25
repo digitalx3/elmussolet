@@ -1485,6 +1485,42 @@ export type Database = {
           },
         ]
       }
+      product_relations: {
+        Row: {
+          created_at: string
+          position: number
+          product_id: string
+          related_product_id: string
+        }
+        Insert: {
+          created_at?: string
+          position?: number
+          product_id: string
+          related_product_id: string
+        }
+        Update: {
+          created_at?: string
+          position?: number
+          product_id?: string
+          related_product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_relations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_relations_related_product_id_fkey"
+            columns: ["related_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_translations: {
         Row: {
           description: string
@@ -1524,6 +1560,7 @@ export type Database = {
         Row: {
           id: string
           is_active: boolean | null
+          price_modifier: number
           price_override: number | null
           product_id: string
           sku_suffix: string | null
@@ -1534,6 +1571,7 @@ export type Database = {
         Insert: {
           id?: string
           is_active?: boolean | null
+          price_modifier?: number
           price_override?: number | null
           product_id: string
           sku_suffix?: string | null
@@ -1544,6 +1582,7 @@ export type Database = {
         Update: {
           id?: string
           is_active?: boolean | null
+          price_modifier?: number
           price_override?: number | null
           product_id?: string
           sku_suffix?: string | null
@@ -1574,9 +1613,15 @@ export type Database = {
           brand_id: string | null
           category_id: string | null
           created_at: string
+          featured_order: number | null
           has_variants: boolean | null
           id: string
           is_active: boolean | null
+          is_featured: boolean
+          sale_ends_at: string | null
+          sale_price_type: string | null
+          sale_starts_at: string | null
+          sale_value: number | null
           sku: string
           slug: string
           stock_quantity: number | null
@@ -1590,9 +1635,15 @@ export type Database = {
           brand_id?: string | null
           category_id?: string | null
           created_at?: string
+          featured_order?: number | null
           has_variants?: boolean | null
           id?: string
           is_active?: boolean | null
+          is_featured?: boolean
+          sale_ends_at?: string | null
+          sale_price_type?: string | null
+          sale_starts_at?: string | null
+          sale_value?: number | null
           sku: string
           slug: string
           stock_quantity?: number | null
@@ -1606,9 +1657,15 @@ export type Database = {
           brand_id?: string | null
           category_id?: string | null
           created_at?: string
+          featured_order?: number | null
           has_variants?: boolean | null
           id?: string
           is_active?: boolean | null
+          is_featured?: boolean
+          sale_ends_at?: string | null
+          sale_price_type?: string | null
+          sale_starts_at?: string | null
+          sale_value?: number | null
           sku?: string
           slug?: string
           stock_quantity?: number | null
