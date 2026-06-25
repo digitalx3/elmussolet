@@ -63,6 +63,7 @@ const groups: NavGroup[] = [
     label: 'Comunicació',
     items: [
       { key: 'messages', path: '/admin/missatges', icon: Inbox },
+      { key: 'stockNotifications', path: '/admin/notificacions-stock', icon: PackageX, label: 'Avisos sense estoc' },
     ],
   },
   {
