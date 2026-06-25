@@ -1196,20 +1196,27 @@ const AdminBirthListForm: React.FC = () => {
                       || p.product_translations?.[0];
                     const img = pickProductImage(p);
                     const inList = form.items.some(it => it.product_id === p.id);
+                    const oos = getEffectiveStock(p) <= 0;
                     return (
                       <button
                         key={p.id}
                         type="button"
+                        disabled={oos}
                         onClick={() => addProduct(p)}
-                        className={`group text-left flex flex-col rounded-md border bg-background overflow-hidden hover:border-primary hover:shadow-sm transition-all ${
+                        className={`group text-left flex flex-col rounded-md border bg-background overflow-hidden transition-all ${oos ? 'opacity-60 cursor-not-allowed' : 'hover:border-primary hover:shadow-sm'} ${
                           inList ? 'border-primary/60 ring-1 ring-primary/30' : 'border-border'
                         }`}
                       >
-                        <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
+                        <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden relative">
                           {img ? (
                             <img src={img} alt={tr?.name || p.slug} loading="lazy" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
                           ) : (
                             <Package className="h-8 w-8 text-muted-foreground" />
+                          )}
+                          {oos && (
+                            <span className="absolute bottom-1 left-1 right-1 text-center text-[10px] font-semibold bg-destructive text-destructive-foreground rounded px-1 py-0.5">
+                              {lang === 'es' ? 'Sin stock' : 'Sense estoc'}
+                            </span>
                           )}
                         </div>
                         <div className="p-2 space-y-0.5">
