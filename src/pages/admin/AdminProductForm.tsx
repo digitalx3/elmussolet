@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, GripVertical, Upload, Star, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, GripVertical, Upload, Star, AlertCircle, Sparkles, Loader2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
