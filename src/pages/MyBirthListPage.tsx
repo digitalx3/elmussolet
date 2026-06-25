@@ -178,7 +178,7 @@ const MyBirthListPage: React.FC = () => {
     queryFn: async () => {
       let q = supabase
         .from('products')
-        .select(`id, base_price, slug, category_id, product_translations(language, name), product_images(image_url, is_primary, sort_order)`)
+        .select(`id, base_price, slug, category_id, stock_quantity, has_variants, product_translations(language, name), product_images(image_url, is_primary, sort_order), product_variants(stock_quantity, is_active)`)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(60);
