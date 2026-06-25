@@ -281,8 +281,12 @@ const BirthListViewPage: React.FC = () => {
                       )}
                       <p className="text-primary font-semibold text-sm mt-1">{getPrice(item).toFixed(2)} €</p>
                       {(() => {
+                        const hasVariants = (item.product as any).has_variants;
                         const stockQty = item.variant ? item.variant.stock_quantity : item.product.stock_quantity;
                         const stockStatus = item.product.stock_status;
+                        // When the product has selectable variants and none is locked,
+                        // the product-level stock badge isn't reliable — hide it.
+                        if (hasVariants && !item.variant) return null;
                         if (stockStatus === 'in_stock' && stockQty === 1) {
                           return <Badge variant="secondary" className="mt-1 bg-last-unit text-last-unit-foreground">{t('products.lastUnit')}</Badge>;
                         }
