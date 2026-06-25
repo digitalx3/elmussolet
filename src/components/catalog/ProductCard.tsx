@@ -166,7 +166,6 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
           </Button>
         </div>
       </div>
-      </div>
     </Link>
   );
 };
