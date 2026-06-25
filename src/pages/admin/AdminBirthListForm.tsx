@@ -858,6 +858,60 @@ const AdminBirthListForm: React.FC = () => {
       </div>
 
       <div className="space-y-6">
+        {/* Template loader — only when creating */}
+        {isNew && templates.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                {lang === 'es' ? 'Cargar desde plantilla' : 'Carregar des de plantilla'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs">
+                    {lang === 'es' ? 'Plantilla predefinida' : 'Plantilla predefinida'}
+                  </Label>
+                  <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={lang === 'es' ? 'Seleccionar plantilla…' : 'Seleccionar plantilla…'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.map((tpl: any) => (
+                        <SelectItem key={tpl.id} value={tpl.id}>
+                          {templateLabel(tpl)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (!selectedTemplateId) return;
+                    if (sections.length > 0 || form.items.length > 0) {
+                      if (!confirm(lang === 'es'
+                        ? 'Esto reemplazará las familias y productos actuales. ¿Continuar?'
+                        : 'Això substituirà les famílies i productes actuals. Continuar?')) return;
+                    }
+                    applyTemplate(selectedTemplateId);
+                  }}
+                  disabled={!selectedTemplateId || loadingTemplate}
+                >
+                  {loadingTemplate
+                    ? (lang === 'es' ? 'Cargando…' : 'Carregant…')
+                    : (lang === 'es' ? 'Cargar plantilla' : 'Carregar plantilla')}
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-2">
+                {lang === 'es'
+                  ? 'Sustituye las familias y productos del formulario por los definidos en la plantilla.'
+                  : 'Substitueix les famílies i productes del formulari pels definits a la plantilla.'}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Basic info */}
         <Card>
           <CardHeader><CardTitle>{t('admin.listInfo')}</CardTitle></CardHeader>
