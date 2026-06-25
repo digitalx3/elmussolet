@@ -2,17 +2,15 @@ import React, { useState, useMemo } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, ShoppingBag, Heart, Share2, Minus, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ShoppingBag, Share2, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { useProductBySlug } from '@/hooks/useTranslatedProducts';
+import { useProductBySlug, useRelatedProducts } from '@/hooks/useTranslatedProducts';
 import { useCart } from '@/contexts/CartContext';
-
-const formatPrice = (price: number) =>
-  new Intl.NumberFormat('ca-ES', { style: 'currency', currency: 'EUR' }).format(price);
+import { computePrice, formatPriceEUR } from '@/lib/pricing';
 
 const ProductDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -24,12 +22,12 @@ const ProductDetailPage: React.FC = () => {
   const isGiftMode = !!(giftItemId && giftListId);
   const { addStandardItem, addListItem } = useCart();
   const { data: product, isLoading, error } = useProductBySlug(slug);
+  const { data: relatedProducts = [] } = useRelatedProducts(product?.id);
 
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
 
-  // Group variants by type
   const variantGroups = useMemo(() => {
     if (!product?.variants.length) return [];
     const groups: Record<string, { typeName: string; typeSlug: string; variants: typeof product.variants }> = {};
@@ -43,12 +41,24 @@ const ProductDetailPage: React.FC = () => {
   }, [product]);
 
   const selectedVariant = product?.variants.find(v => v.id === selectedVariantId);
-  const basePrice = selectedVariant?.priceOverride ?? product?.basePrice ?? 0;
   const taxPct = product?.taxPercentage ?? 0;
-  const currentPrice = basePrice * (1 + taxPct / 100);
 
-  // When the product has variants, the effective stock is the sum of variant stocks.
-  // Otherwise we trust the product-level stock.
+  const pricing = useMemo(() => {
+    if (!product) return { base: 0, final: 0, onSale: false, discountPct: 0, savings: 0 };
+    return computePrice({
+      basePrice: product.basePrice,
+      salePriceType: product.salePriceType,
+      saleValue: product.saleValue,
+      saleStartsAt: product.saleStartsAt,
+      saleEndsAt: product.saleEndsAt,
+      variantPriceOverride: selectedVariant?.priceOverride ?? null,
+      variantPriceModifier: selectedVariant?.priceModifier ?? 0,
+    });
+  }, [product, selectedVariant]);
+
+  const basePriceWithTax = pricing.base * (1 + taxPct / 100);
+  const finalPriceWithTax = pricing.final * (1 + taxPct / 100);
+
   const variantStockTotal = (product?.variants ?? []).reduce((s, v) => s + (v.stockQuantity ?? 0), 0);
   const hasUsableVariants = !!product?.hasVariants && variantGroups.length > 0;
   const effectiveOutOfStock = hasUsableVariants
@@ -69,8 +79,8 @@ const ProductDetailPage: React.FC = () => {
       variantId: selectedVariantId ?? undefined,
       name: product.name + (selectedVariant ? ` - ${selectedVariant.value}` : ''),
       image: product.images[0]?.image_url,
-      price: currentPrice,
-      basePriceNoTax: basePrice,
+      price: finalPriceWithTax,
+      basePriceNoTax: pricing.final,
       taxPercentage: taxPct,
       quantity,
       variantLabel: selectedVariant?.value,
@@ -124,9 +134,19 @@ const ProductDetailPage: React.FC = () => {
 
   const images = product.images.length > 0 ? product.images : [{ image_url: '/placeholder.svg', alt_text: product.name, id: 'placeholder' }];
 
+  // Helper to render variant price label
+  const variantPriceLabel = (v: typeof product.variants[number]) => {
+    let priceNoTax = product.basePrice;
+    if (v.priceOverride != null) priceNoTax = v.priceOverride;
+    else if (v.priceModifier) priceNoTax = product.basePrice + v.priceModifier;
+    if (priceNoTax === product.basePrice) return null;
+    const delta = priceNoTax - product.basePrice;
+    const sign = delta > 0 ? '+' : '';
+    return ` (${sign}${formatPriceEUR(delta * (1 + taxPct / 100))})`;
+  };
+
   return (
     <div className="container py-6">
-      {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link to="/cataleg" className="hover:text-primary">{t('products.catalog')}</Link>
         <span>/</span>
@@ -134,18 +154,18 @@ const ProductDetailPage: React.FC = () => {
       </nav>
 
       <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
-        {/* Image gallery */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4 }}
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
           <div className="aspect-square overflow-hidden rounded-lg bg-muted mb-3 relative">
             <img
               src={images[selectedImageIdx].image_url}
               alt={images[selectedImageIdx].alt_text || product.name}
               className="h-full w-full object-cover"
             />
+            {pricing.onSale && (
+              <Badge variant="destructive" className="absolute top-3 left-3 text-sm">
+                -{pricing.discountPct}%
+              </Badge>
+            )}
             {images.length > 1 && (
               <>
                 <button
@@ -163,7 +183,6 @@ const ProductDetailPage: React.FC = () => {
               </>
             )}
           </div>
-          {/* Thumbnails */}
           {images.length > 1 && (
             <div className="flex gap-2 overflow-x-auto">
               {images.map((img, idx) => (
@@ -179,7 +198,6 @@ const ProductDetailPage: React.FC = () => {
           )}
         </motion.div>
 
-        {/* Product info */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -193,10 +211,22 @@ const ProductDetailPage: React.FC = () => {
             {product.name}
           </h1>
 
-          <div className="flex items-center gap-3">
-            <span className="font-display text-2xl font-bold text-primary">
-              {formatPrice(currentPrice)}
-            </span>
+          <div className="flex items-baseline gap-3 flex-wrap">
+            {pricing.onSale ? (
+              <>
+                <span className="font-display text-2xl font-bold text-primary">
+                  {formatPriceEUR(finalPriceWithTax)}
+                </span>
+                <span className="text-lg text-muted-foreground line-through">
+                  {formatPriceEUR(basePriceWithTax)}
+                </span>
+                <Badge variant="destructive">-{pricing.discountPct}%</Badge>
+              </>
+            ) : (
+              <span className="font-display text-2xl font-bold text-primary">
+                {formatPriceEUR(finalPriceWithTax)}
+              </span>
+            )}
             {product.taxName && (
               <span className="text-xs text-muted-foreground">({product.taxName} {product.taxPercentage}% inclòs)</span>
             )}
@@ -225,7 +255,6 @@ const ProductDetailPage: React.FC = () => {
 
           <Separator />
 
-          {/* Variant selectors */}
           {variantGroups.map(group => (
             <div key={group.typeSlug}>
               <p className="text-sm font-semibold mb-2">{group.typeName}</p>
@@ -242,29 +271,20 @@ const ProductDetailPage: React.FC = () => {
                     disabled={v.stockQuantity === 0}
                   >
                     {v.value}
-                    {v.priceOverride && v.priceOverride !== product.basePrice && (
-                      <span className="ml-1 text-xs">({formatPrice(v.priceOverride * (1 + taxPct / 100))})</span>
-                    )}
+                    {variantPriceLabel(v) && <span className="ml-1 text-xs">{variantPriceLabel(v)}</span>}
                   </button>
                 ))}
               </div>
             </div>
           ))}
 
-          {/* Quantity + add to cart */}
           <div className="flex items-center gap-3 pt-2">
             <div className="flex items-center border border-border rounded-md">
-              <button
-                onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                className="p-2 hover:bg-muted transition-colors"
-              >
+              <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="p-2 hover:bg-muted transition-colors">
                 <Minus className="h-4 w-4" />
               </button>
               <span className="px-4 text-sm font-medium min-w-[2rem] text-center">{quantity}</span>
-              <button
-                onClick={() => setQuantity(q => q + 1)}
-                className="p-2 hover:bg-muted transition-colors"
-              >
+              <button onClick={() => setQuantity(q => q + 1)} className="p-2 hover:bg-muted transition-colors">
                 <Plus className="h-4 w-4" />
               </button>
             </div>
@@ -286,12 +306,10 @@ const ProductDetailPage: React.FC = () => {
             </Button>
           </div>
 
-          {/* SKU */}
           <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
         </motion.div>
       </div>
 
-      {/* Full description — full width below the columns */}
       {product.description && (
         <motion.section
           initial={{ opacity: 0, y: 12 }}
@@ -306,6 +324,45 @@ const ProductDetailPage: React.FC = () => {
             dangerouslySetInnerHTML={{ __html: product.description }}
           />
         </motion.section>
+      )}
+
+      {relatedProducts.length > 0 && (
+        <section className="mt-12 lg:mt-16">
+          <Separator className="mb-6" />
+          <h2 className="font-display text-xl md:text-2xl font-semibold mb-4">També et podria interessar</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {relatedProducts.map(rp => (
+              <Link
+                key={rp.id}
+                to={`/producte/${rp.slug}`}
+                className="group flex flex-col rounded-lg border border-border bg-card overflow-hidden transition-shadow hover:shadow-card"
+              >
+                <div className="aspect-square overflow-hidden bg-muted relative">
+                  {rp.primaryImage ? (
+                    <img src={rp.primaryImage} alt={rp.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-muted-foreground"><ShoppingBag className="h-8 w-8" /></div>
+                  )}
+                  {rp.onSale && <Badge variant="destructive" className="absolute top-2 left-2">-{rp.discountPct}%</Badge>}
+                </div>
+                <div className="p-3 flex-1 flex flex-col">
+                  {rp.brandName && <p className="text-xs text-muted-foreground">{rp.brandName}</p>}
+                  <h3 className="font-display text-sm font-semibold line-clamp-2 group-hover:text-primary transition-colors">{rp.name}</h3>
+                  <div className="mt-auto pt-2 flex items-baseline gap-2">
+                    {rp.onSale ? (
+                      <>
+                        <span className="text-xs text-muted-foreground line-through">{formatPriceEUR(rp.priceWithTax)}</span>
+                        <span className="font-display text-base font-bold text-primary">{formatPriceEUR(rp.finalPriceWithTax)}</span>
+                      </>
+                    ) : (
+                      <span className="font-display text-base font-bold text-foreground">{formatPriceEUR(rp.finalPriceWithTax)}</span>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );

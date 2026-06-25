@@ -15,16 +15,23 @@ export interface AdminProduct {
   category_id: string | null;
   brand_id: string | null;
   created_at: string;
+  sale_price_type: 'fixed' | 'percent' | null;
+  sale_value: number | null;
+  sale_starts_at: string | null;
+  sale_ends_at: string | null;
+  is_featured: boolean;
+  featured_order: number | null;
   product_translations: { language: string; name: string; short_description: string | null; description: string }[];
   product_images: { id: string; image_url: string; alt_text: string | null; is_primary: boolean; sort_order: number }[];
   brands: { name: string } | null;
   categories: { slug: string } | null;
   product_variants: {
-    id: string; value: string; price_override: number | null;
+    id: string; value: string; price_override: number | null; price_modifier: number | null;
     stock_quantity: number; sku_suffix: string | null; is_active: boolean;
     variant_type_id: string;
     variant_types: { slug: string } | null;
   }[];
+  product_relations?: { related_product_id: string; position: number }[];
 }
 
 export function useAdminProducts() {
@@ -39,7 +46,7 @@ export function useAdminProducts() {
           product_images(id, image_url, alt_text, is_primary, sort_order),
           brands(name),
           categories(slug),
-          product_variants(id, value, price_override, stock_quantity, sku_suffix, is_active, variant_type_id, variant_types(slug))
+          product_variants(id, value, price_override, price_modifier, stock_quantity, sku_suffix, is_active, variant_type_id, variant_types(slug))
         `)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -59,7 +66,8 @@ export function useAdminProduct(id: string | undefined) {
           *,
           product_translations(id, language, name, short_description, description),
           product_images(id, image_url, alt_text, is_primary, sort_order),
-          product_variants(id, value, price_override, stock_quantity, sku_suffix, is_active, variant_type_id, variant_types(id, slug))
+          product_variants(id, value, price_override, price_modifier, stock_quantity, sku_suffix, is_active, variant_type_id, variant_types(id, slug)),
+          product_relations!product_relations_product_id_fkey(related_product_id, position)
         `)
         .eq('id', id!)
         .single();
@@ -81,13 +89,20 @@ export interface ProductFormData {
   category_id: string | null;
   brand_id: string | null;
   tax_rate_id: string | null;
+  sale_price_type: 'fixed' | 'percent' | null;
+  sale_value: number | null;
+  sale_starts_at: string | null;
+  sale_ends_at: string | null;
+  is_featured: boolean;
+  featured_order: number | null;
   translations: Record<string, { name: string; short_description: string; description: string }>;
   images: { id?: string; image_url: string; alt_text: string; is_primary: boolean; sort_order: number }[];
   variants: {
-    id?: string; value: string; price_override: number | null;
+    id?: string; value: string; price_override: number | null; price_modifier: number;
     stock_quantity: number; sku_suffix: string; is_active: boolean;
     variant_type_id: string;
   }[];
+  related_product_ids: string[]; // ordered
 }
 
 export function useSaveProduct() {
@@ -95,7 +110,6 @@ export function useSaveProduct() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id?: string; data: ProductFormData }) => {
-      // Upsert product
       const productPayload = {
         slug: data.slug,
         sku: data.sku,
@@ -108,6 +122,12 @@ export function useSaveProduct() {
         category_id: data.category_id || null,
         brand_id: data.brand_id || null,
         tax_rate_id: data.tax_rate_id || null,
+        sale_price_type: data.sale_price_type || null,
+        sale_value: data.sale_value ?? null,
+        sale_starts_at: data.sale_starts_at || null,
+        sale_ends_at: data.sale_ends_at || null,
+        is_featured: !!data.is_featured,
+        featured_order: data.featured_order ?? null,
       };
 
       let productId = id;
@@ -121,12 +141,11 @@ export function useSaveProduct() {
         productId = newProduct.id;
       }
 
-      // Upsert translations (dynamic across enabled languages)
+      // Translations
       for (const lang of Object.keys(data.translations)) {
         const t = data.translations[lang];
         if (!t) continue;
         await supabase.from('product_translations').delete().eq('product_id', productId!).eq('language', lang);
-        // Skip empty rows (no name) to avoid orphans
         if (!t.name?.trim()) continue;
         const { error } = await supabase.from('product_translations').insert({
           product_id: productId!,
@@ -138,7 +157,7 @@ export function useSaveProduct() {
         if (error) throw error;
       }
 
-      // Sync images
+      // Images
       await supabase.from('product_images').delete().eq('product_id', productId!);
       if (data.images.length > 0) {
         const imgPayload = data.images.map((img, i) => ({
@@ -152,9 +171,8 @@ export function useSaveProduct() {
         if (error) throw error;
       }
 
-      // Sync variants
+      // Variants
       if (data.has_variants) {
-        // Delete old variants not in new list
         const existingIds = data.variants.filter(v => v.id).map(v => v.id!);
         if (existingIds.length > 0) {
           await supabase.from('product_variants').delete().eq('product_id', productId!).not('id', 'in', `(${existingIds.join(',')})`);
@@ -167,6 +185,7 @@ export function useSaveProduct() {
             product_id: productId!,
             value: v.value,
             price_override: v.price_override,
+            price_modifier: v.price_modifier ?? 0,
             stock_quantity: v.stock_quantity,
             sku_suffix: v.sku_suffix || null,
             is_active: v.is_active,
@@ -182,12 +201,30 @@ export function useSaveProduct() {
         await supabase.from('product_variants').delete().eq('product_id', productId!);
       }
 
+      // Related products — replace
+      await supabase.from('product_relations').delete().eq('product_id', productId!);
+      if (data.related_product_ids.length > 0) {
+        const relPayload = data.related_product_ids
+          .filter(rid => rid && rid !== productId)
+          .map((rid, i) => ({
+            product_id: productId!,
+            related_product_id: rid,
+            position: i,
+          }));
+        if (relPayload.length > 0) {
+          const { error } = await supabase.from('product_relations').insert(relPayload);
+          if (error) throw error;
+        }
+      }
+
       return productId;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-products'] });
       qc.invalidateQueries({ queryKey: ['admin-product'] });
       qc.invalidateQueries({ queryKey: ['products'] });
+      qc.invalidateQueries({ queryKey: ['featured-products'] });
+      qc.invalidateQueries({ queryKey: ['related-products'] });
     },
   });
 }
@@ -197,10 +234,10 @@ export function useDeleteProduct() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // Delete related data first
       await supabase.from('product_images').delete().eq('product_id', id);
       await supabase.from('product_translations').delete().eq('product_id', id);
       await supabase.from('product_variants').delete().eq('product_id', id);
+      await supabase.from('product_relations').delete().eq('product_id', id);
       const { error } = await supabase.from('products').delete().eq('id', id);
       if (error) throw error;
     },

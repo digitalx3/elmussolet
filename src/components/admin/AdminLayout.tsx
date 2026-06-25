@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   Package, LayoutDashboard, Tags, Bookmark, ListChecks,
   FileText, ShoppingCart, Users, Truck, Settings, ArrowLeft, SlidersHorizontal, Image as ImageIcon,
-  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database, Power, Languages as LanguagesIcon, Globe, Sparkles, PackageX,
+  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database, Power, Languages as LanguagesIcon, Globe, Sparkles, PackageX, Star,
 } from 'lucide-react';
 import AdminLanguageSwitcher from '@/components/admin/AdminLanguageSwitcher';
 import {
@@ -32,6 +32,7 @@ const groups: NavGroup[] = [
     label: 'Catàleg',
     items: [
       { key: 'products', path: '/admin/productes', icon: Package },
+      { key: 'featured', path: '/admin/productes-destacats', icon: Star, label: 'Productes destacats' },
       { key: 'attributes', path: '/admin/atributs', icon: SlidersHorizontal },
       { key: 'categories', path: '/admin/categories', icon: Tags },
       { key: 'brands', path: '/admin/marques', icon: Bookmark },

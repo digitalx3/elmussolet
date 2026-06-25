@@ -31,7 +31,25 @@ const stockBadge = (status: string, quantity: number, t: (k: string) => string) 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('ca-ES', { style: 'currency', currency: 'EUR' }).format(price);
 
-const formatPriceWithTax = (product: TranslatedProduct) => formatPrice(product.priceWithTax);
+const PriceBlock: React.FC<{ product: TranslatedProduct; size?: 'sm' | 'md' }> = ({ product, size = 'md' }) => {
+  if (product.onSale) {
+    return (
+      <div className="flex items-baseline gap-1.5 flex-wrap">
+        <span className={size === 'sm' ? 'text-xs text-muted-foreground line-through' : 'text-sm text-muted-foreground line-through'}>
+          {formatPrice(product.priceWithTax)}
+        </span>
+        <span className={size === 'sm' ? 'font-display text-base font-bold text-primary' : 'font-display text-lg font-bold text-primary'}>
+          {formatPrice(product.finalPriceWithTax)}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <span className={size === 'sm' ? 'font-display text-base font-bold text-foreground' : 'font-display text-lg font-bold text-foreground'}>
+      {formatPrice(product.finalPriceWithTax)}
+    </span>
+  );
+};
 
 const ProductCard: React.FC<Props> = ({ product, view }) => {
   const { t } = useTranslation();
@@ -45,7 +63,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
       productId: product.id,
       name: product.name,
       image: product.primaryImage ?? undefined,
-      price: product.priceWithTax,
+      price: product.finalPriceWithTax,
       basePriceNoTax: product.basePrice,
       taxPercentage: product.taxPercentage ?? 0,
       quantity: 1,
@@ -81,7 +99,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
           </div>
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-2">
-              <span className="font-display text-lg font-bold text-foreground">{formatPriceWithTax(product)}</span>
+              <PriceBlock product={product} />
               {stockBadge(product.stockStatus, product.stockQuantity, t)}
             </div>
             <Button
@@ -122,6 +140,11 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
         <div className="absolute top-2 right-2">
           {stockBadge(product.stockStatus, product.stockQuantity, t)}
         </div>
+        {product.onSale && product.discountPct > 0 && (
+          <div className="absolute top-2 left-2">
+            <Badge variant="destructive">-{product.discountPct}%</Badge>
+          </div>
+        )}
       </div>
       <div className="flex flex-1 flex-col p-3">
         {product.brandName && (
@@ -130,12 +153,12 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
         <h3 className="font-display text-sm font-semibold text-card-foreground mt-0.5 line-clamp-2 group-hover:text-primary transition-colors">
           {product.name}
         </h3>
-        <div className="mt-auto pt-2 flex items-center justify-between">
-          <span className="font-display text-base font-bold text-foreground">{formatPriceWithTax(product)}</span>
+        <div className="mt-auto pt-2 flex items-center justify-between gap-2">
+          <PriceBlock product={product} size="sm" />
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8"
+            className="h-8 w-8 flex-shrink-0"
             onClick={handleAddToCart}
             disabled={product.stockStatus === 'out_of_stock'}
           >

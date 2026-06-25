@@ -23,6 +23,7 @@ import { useLanguages, useDefaultLanguage } from '@/hooks/useLanguages';
 import LanguageTabs from '@/components/admin/LanguageTabs';
 import { useAiProvider, isAiReady } from '@/hooks/useAiProvider';
 import RichTextEditor from '@/components/ui/rich-text-editor';
+import RelatedProductsEditor from '@/components/admin/RelatedProductsEditor';
 
 const emptyTranslation = { name: '', short_description: '', description: '' };
 
@@ -74,9 +75,12 @@ const AdminProductForm: React.FC = () => {
     slug: '', sku: '', base_price: 0, stock_quantity: 0, stock_status: 'in_stock',
     is_active: true, has_variants: false, weight_grams: 0,
     category_id: null, brand_id: null, tax_rate_id: null,
+    sale_price_type: null, sale_value: null, sale_starts_at: null, sale_ends_at: null,
+    is_featured: false, featured_order: null,
     translations: {},
     images: [],
     variants: [],
+    related_product_ids: [],
   });
 
   const [translationErrors, setTranslationErrors] = useState<TranslationErrors>({});
@@ -175,6 +179,10 @@ const AdminProductForm: React.FC = () => {
           description: tr.description || '',
         };
       }
+      const relatedSorted = ((product as any).product_relations || [])
+        .slice()
+        .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+        .map((r: any) => r.related_product_id as string);
       setForm({
         slug: product.slug,
         sku: product.sku,
@@ -187,15 +195,23 @@ const AdminProductForm: React.FC = () => {
         category_id: product.category_id,
         brand_id: product.brand_id,
         tax_rate_id: (product as any).tax_rate_id ?? null,
+        sale_price_type: (product as any).sale_price_type ?? null,
+        sale_value: (product as any).sale_value != null ? Number((product as any).sale_value) : null,
+        sale_starts_at: (product as any).sale_starts_at ?? null,
+        sale_ends_at: (product as any).sale_ends_at ?? null,
+        is_featured: !!(product as any).is_featured,
+        featured_order: (product as any).featured_order ?? null,
         translations,
         images: (product.product_images || []).sort((a, b) => a.sort_order - b.sort_order).map(img => ({
           id: img.id, image_url: img.image_url, alt_text: img.alt_text || '', is_primary: img.is_primary, sort_order: img.sort_order,
         })),
         variants: (product.product_variants || []).map(v => ({
           id: v.id, value: v.value, price_override: v.price_override,
+          price_modifier: (v as any).price_modifier != null ? Number((v as any).price_modifier) : 0,
           stock_quantity: v.stock_quantity, sku_suffix: v.sku_suffix || '',
           is_active: v.is_active, variant_type_id: v.variant_type_id,
         })),
+        related_product_ids: relatedSorted,
       });
     }
   }, [product, isNew, languages]);
@@ -277,12 +293,13 @@ const AdminProductForm: React.FC = () => {
     setForm(prev => ({
       ...prev,
       variants: [...prev.variants, {
-        value: '', price_override: null, stock_quantity: 0,
+        value: '', price_override: null, price_modifier: 0, stock_quantity: 0,
         sku_suffix: '', is_active: true,
         variant_type_id: variantTypes[0]?.id || '',
       }],
     }));
   };
+
 
   const updateVariant = (index: number, field: string, value: any) => {
     setForm(prev => ({
@@ -571,6 +588,80 @@ const AdminProductForm: React.FC = () => {
             <Switch checked={form.is_active} onCheckedChange={v => updateField('is_active', v)} />
             <Label>Producte actiu</Label>
           </div>
+          <div className="flex items-center gap-3 sm:col-span-2">
+            <Switch checked={form.is_featured} onCheckedChange={v => updateField('is_featured', v)} />
+            <Label className="flex items-center gap-1">
+              <Star className={cn('h-4 w-4', form.is_featured && 'fill-yellow-400 text-yellow-500')} />
+              Producte destacat (apareix a portada)
+            </Label>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sale price */}
+      <Card>
+        <CardHeader><CardTitle>Preu en oferta</CardTitle></CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label>Tipus d'oferta</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={form.sale_price_type ?? ''}
+              onChange={e => updateField('sale_price_type', (e.target.value || null) as any)}
+            >
+              <option value="">— Sense oferta —</option>
+              <option value="fixed">Preu fix (€)</option>
+              <option value="percent">Percentatge (%)</option>
+            </select>
+          </div>
+          <div>
+            <Label>Valor {form.sale_price_type === 'percent' ? '(%)' : '(€)'}</Label>
+            <Input
+              type="number" step="0.01" min="0"
+              max={form.sale_price_type === 'percent' ? 100 : undefined}
+              disabled={!form.sale_price_type}
+              value={form.sale_value ?? ''}
+              onChange={e => updateField('sale_value', e.target.value ? parseFloat(e.target.value) : null)}
+              placeholder={form.sale_price_type === 'percent' ? 'ex: 15' : 'ex: 19.99'}
+            />
+          </div>
+          <div>
+            <Label>Inici (opcional)</Label>
+            <Input
+              type="datetime-local"
+              disabled={!form.sale_price_type}
+              value={form.sale_starts_at ? form.sale_starts_at.slice(0, 16) : ''}
+              onChange={e => updateField('sale_starts_at', e.target.value ? new Date(e.target.value).toISOString() : null)}
+            />
+          </div>
+          <div>
+            <Label>Fi (opcional)</Label>
+            <Input
+              type="datetime-local"
+              disabled={!form.sale_price_type}
+              value={form.sale_ends_at ? form.sale_ends_at.slice(0, 16) : ''}
+              onChange={e => updateField('sale_ends_at', e.target.value ? new Date(e.target.value).toISOString() : null)}
+            />
+          </div>
+          {form.sale_price_type && form.sale_value != null && form.base_price > 0 && (() => {
+            const base = form.base_price;
+            const final = form.sale_price_type === 'percent'
+              ? base * (1 - Math.max(0, Math.min(100, form.sale_value)) / 100)
+              : Math.max(0, form.sale_value);
+            const pct = base > 0 ? Math.round((1 - final / base) * 100) : 0;
+            const invalid = final >= base;
+            return (
+              <div className={cn(
+                "sm:col-span-2 p-3 rounded-lg text-sm",
+                invalid ? "bg-destructive/10 text-destructive" : "bg-muted/50"
+              )}>
+                <span className="text-muted-foreground">Preu resultant (sense IVA): </span>
+                <span className="font-bold">{final.toFixed(2)} €</span>
+                {!invalid && <span className="ml-2 text-muted-foreground">(estalvi {pct}% sobre {base.toFixed(2)} €)</span>}
+                {invalid && <span className="ml-2">⚠ El preu oferta ha de ser inferior al preu base</span>}
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
@@ -649,6 +740,18 @@ const AdminProductForm: React.FC = () => {
                       onChange={e => updateVariant(i, 'price_override', e.target.value ? parseFloat(e.target.value) : null)} />
                   </div>
                   <div>
+                    <Label className="text-xs" title="Si la variant no té preu fix, aquest valor (positiu o negatiu) se suma al preu base">
+                      Modificador (±€)
+                    </Label>
+                    <Input
+                      type="number" step="0.01"
+                      value={v.price_modifier ?? 0}
+                      onChange={e => updateVariant(i, 'price_modifier', e.target.value ? parseFloat(e.target.value) : 0)}
+                      placeholder="0"
+                      disabled={v.price_override != null}
+                    />
+                  </div>
+                  <div>
                     <Label className="text-xs">Estoc</Label>
                     <Input type="number" min="0" value={v.stock_quantity}
                       onChange={e => updateVariant(i, 'stock_quantity', parseInt(e.target.value) || 0)} />
@@ -670,6 +773,13 @@ const AdminProductForm: React.FC = () => {
           </CardContent>
         )}
       </Card>
+
+      {/* Related products */}
+      <RelatedProductsEditor
+        productId={isNew ? undefined : id}
+        value={form.related_product_ids}
+        onChange={(ids) => updateField('related_product_ids', ids)}
+      />
 
       {/* Bottom actions */}
       <div className="flex justify-end gap-2 pb-8">
