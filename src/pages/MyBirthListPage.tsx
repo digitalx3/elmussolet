@@ -230,16 +230,26 @@ const MyBirthListPage: React.FC = () => {
       });
       const rows = Array.from(rowsById.values())
         .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
-      // Item counts
+      // Item counts and purchase progress
       if (rows.length > 0) {
         const ids = rows.map((r: any) => r.id);
         const { data: items } = await supabase
           .from('list_items')
-          .select('list_id')
+          .select('list_id, quantity_desired, quantity_purchased')
           .in('list_id', ids);
         const counts: Record<string, number> = {};
-        (items || []).forEach((i: any) => { counts[i.list_id] = (counts[i.list_id] || 0) + 1; });
-        rows.forEach((r: any) => { r.item_count = counts[r.id] || 0; });
+        const desired: Record<string, number> = {};
+        const purchased: Record<string, number> = {};
+        (items || []).forEach((i: any) => {
+          counts[i.list_id] = (counts[i.list_id] || 0) + 1;
+          desired[i.list_id] = (desired[i.list_id] || 0) + (i.quantity_desired || 0);
+          purchased[i.list_id] = (purchased[i.list_id] || 0) + Math.min(i.quantity_purchased || 0, i.quantity_desired || 0);
+        });
+        rows.forEach((r: any) => {
+          r.item_count = counts[r.id] || 0;
+          r.total_desired = desired[r.id] || 0;
+          r.total_purchased = purchased[r.id] || 0;
+        });
       }
       return rows;
     },
