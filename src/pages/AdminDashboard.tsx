@@ -32,6 +32,7 @@ import AdminTranslations from '@/pages/admin/AdminTranslations';
 import AdminAiSettings from '@/pages/admin/AdminAiSettings';
 import AdminLanguageTranslations from '@/pages/admin/AdminLanguageTranslations';
 import AdminAiHistory from '@/pages/admin/AdminAiHistory';
+import AdminStockNotifications from '@/pages/admin/AdminStockNotifications';
 
 const AdminPlaceholder: React.FC<{ titleKey: string }> = ({ titleKey }) => {
   const { t } = useTranslation();
