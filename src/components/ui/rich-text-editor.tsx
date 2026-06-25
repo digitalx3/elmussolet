@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { Button } from '@/components/ui/button';
-import { Code2, Eye } from 'lucide-react';
+import { Code2, Eye, Pencil, Check, X } from 'lucide-react';
 
 interface Props {
   value: string;
@@ -26,47 +26,75 @@ const modules = {
     ['clean'],
   ],
   clipboard: {
-    // Avoid Quill inserting &nbsp; and extra <p><br></p> to mimic visual spacing
     matchVisual: false,
   },
 };
 
-// Whitelist of formats Quill is allowed to render. Without this, Quill drops
-// unknown tags and may merge/flatten structures (e.g. lists wrapped in <p>).
 const formats = [
   'header', 'font', 'size',
   'bold', 'italic', 'underline', 'strike',
   'color', 'background',
-  'align',
+  'align', 'direction',
   'list', 'indent',
   'blockquote', 'code-block', 'code',
-  'link', 'image',
+  'link', 'image', 'script',
 ];
 
-export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, className }) => {
-  const [mode, setMode] = useState<'visual' | 'code'>('visual');
-  // Tracks whether the user has actually interacted with the visual editor.
-  // Quill emits onChange on mount/value-update with a normalized HTML
-  // (e.g. injecting &nbsp; into empty paragraphs). We must ignore those
-  // synthetic events so the source HTML is preserved until the user types.
-  const userEditedRef = useRef(false);
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
+type Mode = 'visual' | 'code';
 
-  // Reset the "user edited" flag whenever we (re)enter visual mode so the
-  // first normalization wave coming from Quill is discarded.
+export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, className }) => {
+  const [mode, setMode] = useState<Mode>('visual');
+  // In visual mode: when false we show a read-only iframe preview; when true we mount Quill.
+  const [editingVisual, setEditingVisual] = useState(false);
+  // Buffer used by Quill while editing visually. Only committed on "Apply".
+  const [draft, setDraft] = useState<string>(value);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  // Reset edit-visual state when leaving visual mode or when external value changes.
   useEffect(() => {
-    if (mode === 'visual') {
-      userEditedRef.current = false;
+    if (mode !== 'visual') {
+      setEditingVisual(false);
     }
   }, [mode]);
 
-  const handleVisualChange = (html: string) => {
-    if (!userEditedRef.current) return; // ignore Quill's internal normalization
-    onChange(html);
+  useEffect(() => {
+    if (!editingVisual) setDraft(value);
+  }, [value, editingVisual]);
+
+  // Render preview HTML into the sandboxed iframe.
+  useEffect(() => {
+    if (mode !== 'visual' || editingVisual) return;
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    const doc = iframe.contentDocument;
+    if (!doc) return;
+    doc.open();
+    doc.write(`<!doctype html><html><head><meta charset="utf-8"><base target="_blank">
+<style>
+  :root{color-scheme:light}
+  html,body{margin:0;padding:12px;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#222;background:transparent;line-height:1.5}
+  img,video,iframe{max-width:100%;height:auto}
+  table{border-collapse:collapse}
+  pre{white-space:pre-wrap}
+  a{color:#7a5430}
+</style>
+</head><body>${value ?? ''}</body></html>`);
+    doc.close();
+  }, [mode, editingVisual, value]);
+
+  const startVisualEdit = () => {
+    setDraft(value);
+    setEditingVisual(true);
   };
 
-  const markUserEdit = () => {
-    userEditedRef.current = true;
+  const applyVisualEdit = () => {
+    onChange(draft);
+    setEditingVisual(false);
+  };
+
+  const cancelVisualEdit = () => {
+    setDraft(value);
+    setEditingVisual(false);
   };
 
   return (
@@ -75,16 +103,52 @@ export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, 
         <span className="text-[11px] text-muted-foreground pl-1">
           {mode === 'code'
             ? 'Mode HTML: el codi es desa tal qual, sense modificar.'
-            : 'Mode visual: en editar, el codi HTML pot ser reformatat.'}
+            : editingVisual
+              ? 'Edició visual activa: els canvis poden reformatar el HTML. Aplica o cancel·la.'
+              : 'Vista prèvia visual (només lectura). El HTML no es modifica.'}
         </span>
         <div className="flex items-center gap-1">
+          {mode === 'visual' && !editingVisual && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-7 gap-1 text-xs"
+              onClick={startVisualEdit}
+            >
+              <Pencil className="h-3.5 w-3.5" /> Editar visualment
+            </Button>
+          )}
+          {mode === 'visual' && editingVisual && (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 text-xs"
+                onClick={cancelVisualEdit}
+              >
+                <X className="h-3.5 w-3.5" /> Cancel·lar
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="h-7 gap-1 text-xs"
+                onClick={applyVisualEdit}
+              >
+                <Check className="h-3.5 w-3.5" /> Aplicar canvis
+              </Button>
+            </>
+          )}
           <Button
             type="button"
             size="sm"
             variant={mode === 'visual' ? 'secondary' : 'ghost'}
             className="h-7 gap-1 text-xs"
             onClick={() => {
-              if (mode === 'code' && !confirm('Canviar a visual pot reformatar el codi HTML. Continuar?')) return;
+              if (editingVisual && !confirm('Hi ha canvis visuals sense aplicar. Es perdran. Continuar?')) return;
+              setEditingVisual(false);
               setMode('visual');
             }}
           >
@@ -95,7 +159,11 @@ export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, 
             size="sm"
             variant={mode === 'code' ? 'secondary' : 'ghost'}
             className="h-7 gap-1 text-xs"
-            onClick={() => setMode('code')}
+            onClick={() => {
+              if (editingVisual && !confirm('Hi ha canvis visuals sense aplicar. Es perdran. Continuar?')) return;
+              setEditingVisual(false);
+              setMode('code');
+            }}
           >
             <Code2 className="h-3.5 w-3.5" /> HTML
           </Button>
@@ -103,28 +171,24 @@ export const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder, 
       </div>
 
       {mode === 'visual' ? (
-        <div
-          ref={wrapperRef}
-          onKeyDown={markUserEdit}
-          onPaste={markUserEdit}
-          onCut={markUserEdit}
-          onDrop={markUserEdit}
-          onMouseDownCapture={(e) => {
-            // Toolbar interactions (bold, lists…) should also count as edits.
-            const target = e.target as HTMLElement;
-            if (target.closest('.ql-toolbar')) markUserEdit();
-          }}
-        >
+        editingVisual ? (
           <ReactQuill
-            key={`quill-${mode}`}
+            key="quill-edit"
             theme="snow"
-            value={value}
-            onChange={handleVisualChange}
+            value={draft}
+            onChange={(html) => setDraft(html)}
             modules={modules}
             formats={formats}
             placeholder={placeholder}
           />
-        </div>
+        ) : (
+          <iframe
+            ref={iframeRef}
+            title="HTML preview"
+            sandbox="allow-same-origin"
+            className="w-full min-h-[320px] rounded-b-md bg-background"
+          />
+        )
       ) : (
         <textarea
           value={value}

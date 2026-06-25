@@ -1,73 +1,77 @@
-# Auditoría y cierre del bloque "Ofertas + Destacados + Relacionados + Upsell"
 
-## Estado actual (verificado en código y BBDD)
+## Problema
 
-| # | Requisito | Estado |
-|---|-----------|--------|
-| 1 | Campos `sale_price_type`, `sale_value`, `sale_starts_at`, `sale_ends_at` en `products` | OK (BBDD + form admin) |
-| 2 | UI admin de oferta (tipo, valor, fechas) en ficha de producto | OK |
-| 3 | Cálculo de precio efectivo (`src/lib/pricing.ts`: `computePrice`, `isSaleActive`) | OK |
-| 4 | Ficha de producto muestra precio original tachado + final + % descuento | OK |
-| 5 | `ProductCard` muestra tachado + final + badge `-X%` | OK |
-| 6 | `price_modifier` en `product_variants` + UI admin | OK |
-| 7 | Recalculo de precio al elegir variante (en `ProductDetailPage`) | OK |
-| 8 | Campo `is_featured` + `featured_order` + toggle en ficha | OK |
-| 9 | Página admin `/admin/productes-destacats` con drag&drop (`@dnd-kit`) y entrada de menú | OK |
-| 10 | Módulo `FeaturedProducts` en home, entre `DefaultHero` y `HomeBlocks`, oculto si vacío | OK |
-| 11 | Tabla `product_relations` + editor de relacionados en ficha admin | OK |
-| 12 | Sección "Productes relacionats" al final de la ficha pública | OK |
-| 13 | `UpsellDialog` montado globalmente en `App.tsx` y `upsellTrigger` en `CartContext` | OK (montado) |
-| 14 | **Disparo real del pop-up al añadir al carrito** | **FALTA** — `requestUpsell` no se llama desde `ProductCard.handleAddToCart` ni desde `ProductDetailPage.handleAddToCart`, así que el diálogo no se abre nunca |
-| 15 | Validaciones de oferta (fechas, % 0–100, precio fijo < base) | **FALTA** |
-| 16 | Evitar precio final negativo si `price_modifier` resta más que el base | **FALTA** (clamp a 0) |
-| 17 | No mostrar como destacado/relacionado productos con `is_active = false` | **FALTA** (hay que filtrar en `useFeaturedProducts` y `useRelatedProducts`) |
-| 18 | Evitar auto-relación (producto consigo mismo) | Por confirmar en `RelatedProductsEditor` (se reforzará) |
+`src/components/ui/rich-text-editor.tsx` utilitza ReactQuill, que internament converteix HTML → Delta → HTML. Aquesta conversió:
 
-Todo lo marcado **OK** se queda como está; sólo se tocan los huecos.
+- Descarta tags i atributs no whitelistejats (`div`, `section`, `class`, `id`, `style`, `data-*`…).
+- Reinterpreta llistes, paràgrafs buits i espais (afegeix `&nbsp;`, embolcalla en `<p>`, fusiona blocs).
+- S'executa cada vegada que Quill es munta amb un `value`, encara que l'usuari no editi.
 
-## Cambios a aplicar
+L'`userEditedRef` actual mitiga el cas "munto i no edito", però en el moment que l'usuari fa un sol clic a la barra d'eines o prem una tecla, Quill emet la versió normalitzada i sobreescriu el HTML original. Per això, en desar i tornar a entrar, el codi apareix alterat (llistes inventades, espais, estructura modificada).
 
-### 1. Disparar el upsell tras añadir al carrito
-- `src/components/catalog/ProductCard.tsx`: tras `addStandardItem(...)`, llamar `requestUpsell(product.id)`.
-- `src/pages/ProductDetailPage.tsx`: tras `addStandardItem(payload)` (rama no-regalo), llamar `requestUpsell(product.id)`. No disparar en modo lista de regalo para no interrumpir ese flujo.
-- `UpsellDialog` ya se auto-cierra si no hay relacionados con stock, así que no aparece ruido cuando el producto no tiene relacionados.
+## Objectiu
 
-### 2. Validaciones de oferta en `AdminProductForm.tsx`
-Antes de `handleSubmit`:
-- Si `sale_price_type` está activo y falta `sale_value` → error inline.
-- Si `sale_starts_at` y `sale_ends_at` y `start > end` → error.
-- Si `sale_price_type = 'percent'` y `sale_value <= 0 || >= 100` → error.
-- Si `sale_price_type = 'fixed'` y `sale_value >= base_price` → error ("el preu d'oferta ha de ser inferior al preu base").
-- Si `sale_price_type = 'fixed'` y `sale_value <= 0` → error.
-Mostrar mensajes en el bloque "Preu en oferta" y bloquear `saveProduct`.
+El **mode HTML és la font de la veritat**. El mode visual només pot modificar el HTML quan l'usuari ho confirma explícitament; en cap altre cas el codi original pot ser reformatat.
 
-### 3. Clamp del precio final a 0
-- `src/lib/pricing.ts`: al final de `computePrice` aplicar `final = Math.max(0, final)` y `base = Math.max(0, base)` para que un `price_modifier` negativo excesivo no genere importes negativos en carrito/pedido.
+## Canvis proposats
 
-### 4. Filtrar productos inactivos en destacados y relacionados
-- `src/hooks/useTranslatedProducts.ts`:
-  - `useFeaturedProducts`: añadir `.eq('is_active', true)` y ordenar por `featured_order` (ya existente; sólo añadir el filtro si falta).
-  - `useRelatedProducts`: filtrar relaciones cuyo `related_product.is_active = false` (descarte en cliente tras el join, o `.eq` en el join filter).
+Tots dins de `src/components/ui/rich-text-editor.tsx` (cap canvi a `AdminPages.tsx` ni a la base de dades; cap impacte al frontend públic que ja renderitza el HTML cru).
 
-### 5. Reforzar "no auto-relación" en `RelatedProductsEditor.tsx`
-- Excluir el propio `productId` de los resultados del buscador y del estado guardado (defensivo, por si quedara alguno antiguo).
+### 1. Vista visual segura per defecte = preview (iframe sandbox)
 
-## Detalles técnicos
+En entrar a `mode === 'visual'`, mostrar per defecte un **preview** del HTML dins un `<iframe sandbox>` amb els estils bàsics del lloc. Aquest preview:
 
-- No se tocan tablas ni RLS: schema ya cubre todo (`product_relations` con `product_id`+`related_product_id`+`position`; `products` con campos de oferta/destacado; `product_variants` con `price_modifier`).
-- Carrito/pedidos: el precio que se guarda ya es `finalPriceWithTax` calculado con `computePrice`, así que aplicar el clamp en `pricing.ts` se propaga automáticamente sin tocar `CartContext` ni checkout.
-- El pop-up sigue siendo no bloqueante: `UpsellDialog` no se abre si no hay relacionados con stock, y permite cerrar sin añadir nada.
-- Sin cambios en i18n; los textos nuevos de validación van en catalán siguiendo el patrón existente del formulario.
+- No pot modificar el `value` (és només lectura).
+- Mostra el HTML idènticament a com es desa, sense passar per Quill.
+- Inclou un botó **"Editar visualment"** que activa explícitament Quill.
 
-## Archivos afectados
+### 2. Edició visual com a acció explícita
 
-- `src/components/catalog/ProductCard.tsx` — disparo de upsell.
-- `src/pages/ProductDetailPage.tsx` — disparo de upsell (rama estándar).
-- `src/pages/admin/AdminProductForm.tsx` — bloque de validaciones de oferta.
-- `src/lib/pricing.ts` — clamp a 0.
-- `src/hooks/useTranslatedProducts.ts` — filtrar `is_active` en destacados y relacionados.
-- `src/components/admin/RelatedProductsEditor.tsx` — excluir auto-relación.
+Quan l'usuari prem "Editar visualment":
 
-## Riesgos
+- Es munta ReactQuill amb el HTML actual.
+- Apareix un avís: "Els canvis visuals poden reformatar el HTML. Confirma per aplicar-los."
+- Mentre s'edita, el `value` extern NO es modifica.
+- Dos botons: **"Aplicar canvis"** (commiteja el HTML normalitzat per Quill via `onChange`) i **"Cancel·lar"** (descarta i torna al preview amb el HTML original intacte).
 
-- Mínimos: cambios localizados, sin migraciones, sin tocar checkout. El único cambio de comportamiento visible nuevo es la apertura del pop-up cuando un producto tiene relacionados con stock.
+Això elimina completament les normalitzacions accidentals: només es desa HTML reformatat si l'usuari ho demana explícitament.
+
+### 3. Mode HTML sense canvis funcionals
+
+El `<textarea>` ja desa el contingut tal qual. Es manté.
+
+### 4. Ampliar la whitelist de Quill (per minimitzar pèrdues quan l'usuari sí edita visualment)
+
+Afegir al `formats` de Quill els formats inline addicionals que ja suporta natiu: `script`, `direction`. Mantenir `matchVisual: false` al clipboard. No registrem blots custom per a `div`/`section`/`class` perquè és invasiu i fora de l'abast d'aquest fix; la regla "edició visual = pot reformatar" cobreix aquest cas amb un avís clar.
+
+### 5. Eliminar la heurística `userEditedRef`
+
+Ja no cal: en mode preview no es pot editar; en mode "edició visual explícita" els canvis només es propaguen amb "Aplicar canvis".
+
+## Flux UX resultant
+
+```text
+[HTML mode]  <-->  [Visual preview (iframe, read-only)]
+                          |
+                          | "Editar visualment"
+                          v
+                   [Visual edit (Quill)]
+                    |              |
+              "Aplicar"        "Cancel·lar"
+                    |              |
+                    v              v
+              commit onChange   descarta
+```
+
+## Verificació
+
+1. Enganxar HTML amb `<div class="grid">…</div>` al mode HTML, canviar a visual → veure el preview correcte, tornar a HTML → codi idèntic.
+2. Enganxar text pla al mode HTML → no apareixen llistes ni `&nbsp;` en cap moment.
+3. Editar a "Editar visualment", prémer "Cancel·lar" → el HTML original no canvia.
+4. Editar a "Editar visualment", prémer "Aplicar canvis" → el HTML resultant es desa (es pot acceptar la reformatació de Quill perquè és explícita).
+5. Desar la pàgina, recarregar `/admin/pagines/:id`, comprovar que el HTML és estable.
+6. Validar al front-end que `CmsPagePage.tsx` segueix renderitzant correctament.
+
+## Fitxers afectats
+
+- `src/components/ui/rich-text-editor.tsx` — única modificació.
