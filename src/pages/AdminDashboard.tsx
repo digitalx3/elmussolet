@@ -33,6 +33,7 @@ import AdminAiSettings from '@/pages/admin/AdminAiSettings';
 import AdminLanguageTranslations from '@/pages/admin/AdminLanguageTranslations';
 import AdminAiHistory from '@/pages/admin/AdminAiHistory';
 import AdminStockNotifications from '@/pages/admin/AdminStockNotifications';
+import AdminFeaturedProducts from '@/pages/admin/AdminFeaturedProducts';
 
 const AdminPlaceholder: React.FC<{ titleKey: string }> = ({ titleKey }) => {
   const { t } = useTranslation();
@@ -50,6 +51,7 @@ const AdminDashboard: React.FC = () => {
       <Routes>
         <Route index element={<AdminOverview />} />
         <Route path="productes" element={<AdminProductList />} />
+        <Route path="productes-destacats" element={<AdminFeaturedProducts />} />
         <Route path="productes/nou" element={<AdminProductForm />} />
         <Route path="productes/:id" element={<AdminProductForm />} />
         <Route path="atributs" element={<AdminVariantTypes />} />

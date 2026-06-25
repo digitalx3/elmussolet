@@ -29,6 +29,7 @@ import AppearanceInjector from "@/components/AppearanceInjector";
 import MediaConfigLoader from "@/components/MediaConfigLoader";
 import MaintenanceGate from "@/components/MaintenanceGate";
 import LanguageReconciler from "@/components/LanguageReconciler";
+import UpsellDialog from "@/components/UpsellDialog";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
               <MediaConfigLoader />
               <LanguageReconciler />
               <BrowserRouter>
+                <UpsellDialog />
                 <MaintenanceGate>
                 <Routes>
                   {/* Public routes */}
