@@ -30,6 +30,11 @@ import MediaConfigLoader from "@/components/MediaConfigLoader";
 import MaintenanceGate from "@/components/MaintenanceGate";
 import LanguageReconciler from "@/components/LanguageReconciler";
 import UpsellDialog from "@/components/UpsellDialog";
+import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
+import CookieBanner from "@/components/cookies/CookieBanner";
+import CookiePreferencesDialog from "@/components/cookies/CookiePreferencesDialog";
+import GoogleAnalyticsLoader from "@/components/cookies/GoogleAnalyticsLoader";
+import CookiePolicyPage from "@/pages/CookiePolicyPage";
 
 const queryClient = new QueryClient();
 
@@ -39,13 +44,17 @@ const App = () => (
       <AuthProvider>
         <CartProvider>
           <ListAccessProvider>
+            <CookieConsentProvider>
             <TooltipProvider>
               <Sonner />
               <AppearanceInjector />
               <MediaConfigLoader />
               <LanguageReconciler />
+              <GoogleAnalyticsLoader />
               <BrowserRouter>
                 <UpsellDialog />
+                <CookieBanner />
+                <CookiePreferencesDialog />
                 <MaintenanceGate>
                 <Routes>
                   {/* Public routes */}
@@ -64,6 +73,8 @@ const App = () => (
                   <Route path="/pagina/:slug" element={<PublicLayout><CmsPagePage /></PublicLayout>} />
                   <Route path="/contacte" element={<PublicLayout><ContactPage /></PublicLayout>} />
                   <Route path="/contacto" element={<PublicLayout><ContactPage /></PublicLayout>} />
+                  <Route path="/politica-cookies" element={<PublicLayout><CookiePolicyPage /></PublicLayout>} />
+                  <Route path="/politica-de-cookies" element={<PublicLayout><CookiePolicyPage /></PublicLayout>} />
 
                   {/* Protected routes */}
                   <Route path="/la-meva-llista" element={<PublicLayout><ProtectedRoute><CreateBirthListPage /></ProtectedRoute></PublicLayout>} />
@@ -79,6 +90,7 @@ const App = () => (
                 </MaintenanceGate>
               </BrowserRouter>
             </TooltipProvider>
+            </CookieConsentProvider>
           </ListAccessProvider>
         </CartProvider>
       </AuthProvider>
