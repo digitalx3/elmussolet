@@ -151,9 +151,10 @@ const AdminBirthListForm: React.FC = () => {
           .select(`
             id, product_id, section_id, quantity, sort_order,
             product:products(
-              id, base_price, slug,
+              id, base_price, slug, stock_quantity, has_variants,
               product_translations(language, name),
-              product_images(image_url, is_primary, sort_order)
+              product_images(image_url, is_primary, sort_order),
+              product_variants(stock_quantity, is_active)
             )
           `)
           .eq('template_id', templateId)
@@ -176,20 +177,32 @@ const AdminBirthListForm: React.FC = () => {
         },
       }));
 
-      const nextItems: ListItem[] = its.map((it: any, i: number) => {
+      const getStock = (p: any): number => {
+        const vs = (p?.product_variants || []).filter((v: any) => v.is_active !== false);
+        if (vs.length > 0) return vs.reduce((s: number, v: any) => s + (v.stock_quantity || 0), 0);
+        return p?.stock_quantity || 0;
+      };
+      const skipped: string[] = [];
+      const nextItems: ListItem[] = [];
+      its.forEach((it: any, i: number) => {
         const tr = it.product?.product_translations?.find((x: any) => x.language === lang)
           || it.product?.product_translations?.[0];
-        return {
+        const name = tr?.name || it.product?.slug || it.product_id;
+        if (getStock(it.product) <= 0) {
+          skipped.push(name);
+          return;
+        }
+        nextItems.push({
           product_id: it.product_id,
           variant_id: null,
           quantity_desired: it.quantity || 1,
           priority: 'medium',
           sort_order: i,
-          productName: tr?.name || it.product?.slug || it.product_id,
+          productName: name,
           price: it.product?.base_price,
           image_url: pickProductImage(it.product),
           section_temp_id: it.section_id ? `tpl-${it.section_id}` : null,
-        };
+        });
       });
 
       setSections(nextSections);
@@ -201,6 +214,14 @@ const AdminBirthListForm: React.FC = () => {
           ? `Plantilla cargada: ${nextSections.length} familias, ${nextItems.length} productos`
           : `Plantilla carregada: ${nextSections.length} famílies, ${nextItems.length} productes`,
       );
+      if (skipped.length > 0) {
+        toast.warning(
+          (lang === 'es'
+            ? `${skipped.length} producto(s) sin stock no se añadieron: `
+            : `${skipped.length} producte(s) sense estoc no s'han afegit: `) + skipped.join(', '),
+          { duration: 8000 },
+        );
+      }
     } catch (err: any) {
       toast.error(err?.message || (lang === 'es' ? 'No se pudo cargar la plantilla' : 'No s\'ha pogut carregar la plantilla'));
     } finally {
@@ -289,7 +310,7 @@ const AdminBirthListForm: React.FC = () => {
     queryFn: async () => {
       let q = supabase
         .from('products')
-        .select(`id, base_price, slug, category_id, product_translations(language, name), product_images(image_url, is_primary, sort_order)`)
+        .select(`id, base_price, slug, category_id, stock_quantity, has_variants, product_translations(language, name), product_images(image_url, is_primary, sort_order), product_variants(stock_quantity, is_active)`)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(60);
@@ -298,6 +319,12 @@ const AdminBirthListForm: React.FC = () => {
       return data || [];
     },
   });
+
+  const getEffectiveStock = (product: any): number => {
+    const variants = (product?.product_variants || []).filter((v: any) => v.is_active !== false);
+    if (variants.length > 0) return variants.reduce((s: number, v: any) => s + (v.stock_quantity || 0), 0);
+    return product?.stock_quantity || 0;
+  };
 
   const filteredBrowse = useMemo(() => {
     const q = browseSearch.trim().toLowerCase();
@@ -418,7 +445,7 @@ const AdminBirthListForm: React.FC = () => {
 
     const { data } = await supabase
       .from('products')
-      .select(`id, base_price, slug, product_translations(language, name)`)
+      .select(`id, base_price, slug, stock_quantity, has_variants, product_translations(language, name), product_variants(stock_quantity, is_active)`)
       .eq('is_active', true)
       .limit(10);
 
@@ -441,6 +468,13 @@ const AdminBirthListForm: React.FC = () => {
         items: prev.items.map((it, i) => i === existingIdx ? { ...it, section_temp_id: targetSection } : it),
       }));
       toast.success(lang === 'es' ? 'Producto reasignado' : 'Producte reassignat');
+      return;
+    }
+
+    if (getEffectiveStock(product) <= 0) {
+      toast.error(lang === 'es'
+        ? 'Este producto no tiene stock. Busca uno similar.'
+        : 'Aquest producte no té estoc. Busca\'n un de similar.');
       return;
     }
 
@@ -1162,20 +1196,27 @@ const AdminBirthListForm: React.FC = () => {
                       || p.product_translations?.[0];
                     const img = pickProductImage(p);
                     const inList = form.items.some(it => it.product_id === p.id);
+                    const oos = getEffectiveStock(p) <= 0;
                     return (
                       <button
                         key={p.id}
                         type="button"
+                        disabled={oos}
                         onClick={() => addProduct(p)}
-                        className={`group text-left flex flex-col rounded-md border bg-background overflow-hidden hover:border-primary hover:shadow-sm transition-all ${
+                        className={`group text-left flex flex-col rounded-md border bg-background overflow-hidden transition-all ${oos ? 'opacity-60 cursor-not-allowed' : 'hover:border-primary hover:shadow-sm'} ${
                           inList ? 'border-primary/60 ring-1 ring-primary/30' : 'border-border'
                         }`}
                       >
-                        <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
+                        <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden relative">
                           {img ? (
                             <img src={img} alt={tr?.name || p.slug} loading="lazy" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
                           ) : (
                             <Package className="h-8 w-8 text-muted-foreground" />
+                          )}
+                          {oos && (
+                            <span className="absolute bottom-1 left-1 right-1 text-center text-[10px] font-semibold bg-destructive text-destructive-foreground rounded px-1 py-0.5">
+                              {lang === 'es' ? 'Sin stock' : 'Sense estoc'}
+                            </span>
                           )}
                         </div>
                         <div className="p-2 space-y-0.5">

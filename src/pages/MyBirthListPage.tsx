@@ -178,7 +178,7 @@ const MyBirthListPage: React.FC = () => {
     queryFn: async () => {
       let q = supabase
         .from('products')
-        .select(`id, base_price, slug, category_id, product_translations(language, name), product_images(image_url, is_primary, sort_order)`)
+        .select(`id, base_price, slug, category_id, stock_quantity, has_variants, product_translations(language, name), product_images(image_url, is_primary, sort_order), product_variants(stock_quantity, is_active)`)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(60);
@@ -380,12 +380,20 @@ const MyBirthListPage: React.FC = () => {
   }, [existing, lang]);
 
 
+  const getEffectiveStock = (product: any): number => {
+    const variants = (product?.product_variants || []).filter((v: any) => v.is_active !== false);
+    if (variants.length > 0) {
+      return variants.reduce((s: number, v: any) => s + (v.stock_quantity || 0), 0);
+    }
+    return product?.stock_quantity || 0;
+  };
+
   const handleProductSearch = async (query: string) => {
     setProductSearch(query);
     if (query.trim().length < 2) { setSearchResults([]); return; }
     const { data } = await supabase
       .from('products')
-      .select(`id, base_price, slug, product_translations(language, name), product_images(image_url, is_primary, sort_order)`)
+      .select(`id, base_price, slug, stock_quantity, has_variants, product_translations(language, name), product_images(image_url, is_primary, sort_order), product_variants(stock_quantity, is_active)`)
       .eq('is_active', true)
       .limit(20);
     const filtered = (data || []).filter(p => {
@@ -405,6 +413,12 @@ const MyBirthListPage: React.FC = () => {
   const addProduct = (product: any) => {
     if (form.items.some(i => i.product_id === product.id)) {
       toast.info(t('list.productAlreadyAdded'));
+      return;
+    }
+    if (getEffectiveStock(product) <= 0) {
+      toast.error(lang === 'es'
+        ? 'Este producto no tiene stock. Busca uno similar.'
+        : 'Aquest producte no té estoc. Busca\'n un de similar.');
       return;
     }
     const tr = product.product_translations?.find((t: any) => t.language === lang)
@@ -453,7 +467,7 @@ const MyBirthListPage: React.FC = () => {
           .from('list_template_items')
           .select(`
             section_id, product_id, variant_id, quantity, sort_order,
-            product:products(id, base_price, slug, product_translations(language, name), product_images(image_url, is_primary, sort_order))
+            product:products(id, base_price, slug, stock_quantity, has_variants, product_translations(language, name), product_images(image_url, is_primary, sort_order), product_variants(stock_quantity, is_active))
           `)
           .eq('template_id', tplId)
           .order('sort_order', { ascending: true }),
@@ -466,25 +480,40 @@ const MyBirthListPage: React.FC = () => {
         sort_order: s.sort_order,
       }));
 
-      const newItems: ListItem[] = (tplItems || []).map((it: any, idx: number) => {
+      const skipped: string[] = [];
+      const newItems: ListItem[] = [];
+      (tplItems || []).forEach((it: any, idx: number) => {
         const tr = it.product?.product_translations?.find((tt: any) => tt.language === lang)
           || it.product?.product_translations?.[0];
-        return {
+        const name = tr?.name || it.product?.slug || it.product_id;
+        if (getEffectiveStock(it.product) <= 0) {
+          skipped.push(name);
+          return;
+        }
+        newItems.push({
           product_id: it.product_id,
           variant_id: it.variant_id || null,
           quantity_desired: it.quantity || 1,
           priority: 'medium',
           sort_order: idx,
-          productName: tr?.name || it.product?.slug || it.product_id,
+          productName: name,
           price: it.product?.base_price,
           image_url: pickProductImage(it.product),
           section_temp_id: it.section_id ? `tpl-${it.section_id}` : null,
-        };
+        });
       });
 
       setSections(newSections);
       setForm(prev => ({ ...prev, items: newItems }));
       toast.success(t('list.templateLoaded'));
+      if (skipped.length > 0) {
+        toast.warning(
+          (lang === 'es'
+            ? `${skipped.length} producto(s) sin stock no se han añadido: `
+            : `${skipped.length} producte(s) sense estoc no s'han afegit: `) + skipped.join(', '),
+          { duration: 8000 },
+        );
+      }
     } catch (e: any) {
       toast.error(e.message || t('errors.generic'));
     } finally {
@@ -635,6 +664,12 @@ const MyBirthListPage: React.FC = () => {
         ...prev,
         items: prev.items.map(it => it.product_id === product.id ? { ...it, section_temp_id: sectionTempId } : it),
       }));
+      return;
+    }
+    if (getEffectiveStock(product) <= 0) {
+      toast.error(lang === 'es'
+        ? 'Este producto no tiene stock. Busca uno similar.'
+        : 'Aquest producte no té estoc. Busca\'n un de similar.');
       return;
     }
     const tr = product.product_translations?.find((tt: any) => tt.language === lang)
@@ -1971,14 +2006,16 @@ const MyBirthListPage: React.FC = () => {
                       const imgs = (p.product_images || []).slice().sort((a: any, b: any) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order || 0) - (b.sort_order || 0));
                       const img = imgs[0]?.image_url;
                       const added = form.items.some(it => it.product_id === p.id);
+                      const oos = getEffectiveStock(p) <= 0;
+                      const disabled = added || oos;
                       return (
                         <div
                           key={p.id}
-                          draggable
-                          onDragStart={() => { productDragRef.current = { kind: 'add', product: p }; }}
+                          draggable={!oos}
+                          onDragStart={() => { if (!oos) productDragRef.current = { kind: 'add', product: p }; }}
                           onDragEnd={() => { productDragRef.current = null; }}
-                          onClick={() => !added && addProduct(p)}
-                          className={`group relative flex flex-col items-stretch gap-1 p-2 rounded-md border-2 bg-background transition-colors text-left cursor-grab ${added ? 'border-primary/40 opacity-70 cursor-not-allowed' : 'border-border hover:border-primary hover:bg-primary/5'}`}
+                          onClick={() => { if (oos) { toast.error(lang === 'es' ? 'Sin stock. Busca otro similar.' : 'Sense estoc. Busca\'n un de similar.'); return; } if (!added) addProduct(p); }}
+                          className={`group relative flex flex-col items-stretch gap-1 p-2 rounded-md border-2 bg-background transition-colors text-left ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-grab hover:border-primary hover:bg-primary/5'} ${added ? 'border-primary/40' : 'border-border'}`}
                         >
                           <div className="aspect-square w-full bg-muted rounded overflow-hidden flex items-center justify-center">
                             {img ? (
@@ -1989,15 +2026,20 @@ const MyBirthListPage: React.FC = () => {
                           </div>
                           <span className="text-xs font-medium line-clamp-2">{tr?.name || p.slug}</span>
                           <span className="text-[11px] text-muted-foreground">{formatPrice(p.base_price)}</span>
+                          {oos && (
+                            <span className="absolute bottom-1 left-1 right-1 text-center text-[10px] font-semibold bg-destructive text-destructive-foreground rounded px-1 py-0.5">
+                              {lang === 'es' ? 'Sin stock' : 'Sense estoc'}
+                            </span>
+                          )}
                           {added ? (
                             <span className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
                               <Check className="h-3 w-3" />
                             </span>
-                          ) : (
+                          ) : !oos ? (
                             <span className="absolute top-1 right-1 bg-background/90 border border-border rounded-full p-0.5 opacity-0 group-hover:opacity-100">
                               <Plus className="h-3 w-3" />
                             </span>
-                          )}
+                          ) : null}
                         </div>
                       );
                     })}
