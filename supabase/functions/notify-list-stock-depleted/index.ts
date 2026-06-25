@@ -96,18 +96,20 @@ Deno.serve(async (req: Request) => {
 
     // 4. Send notifications
     let emailsSent = 0;
+    let emailsFailed = 0;
     const sendEmail = async (to: string, subject: string, html: string) => {
       try {
         const res = await supabase.functions.invoke("send-smtp-email", {
           body: { to, subject, html },
         });
         if (!res.error) emailsSent++;
+        else emailsFailed++;
       } catch (e) {
+        emailsFailed++;
         console.error("email failed", to, e);
       }
     };
 
-    // Admin recipients: admins with linked customer email
     const { data: adminProfiles } = await supabase
       .from("profiles")
       .select("id")
@@ -124,7 +126,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Admin global notification (one email summarizing depleted products)
     if (adminEmails.length > 0) {
       const html = `
         <h2>Productes sense estoc</h2>
@@ -139,7 +140,8 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Per-list owner notification
+    const ownerEmailsAll: string[] = [];
+    const affectedListsLog: any[] = [];
     for (const [listId, info] of listMap.entries()) {
       const { data: owners } = await supabase
         .from("list_owners")
@@ -148,7 +150,15 @@ Deno.serve(async (req: Request) => {
       const emails = Array.from(
         new Set((owners || []).map((o: any) => o.email).filter(Boolean)),
       );
+      affectedListsLog.push({
+        list_id: listId,
+        list_code: info.listCode,
+        baby_name: info.babyName,
+        products: info.products,
+        owner_emails: emails,
+      });
       if (emails.length === 0) continue;
+      ownerEmailsAll.push(...emails);
       const html = `
         <h2>Producte sense estoc a la teva llista</h2>
         <p>Hola${info.babyName ? `, llista de ${escapeHtml(info.babyName)}` : ""},</p>
@@ -163,14 +173,35 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    await supabase.from("stock_depletion_notifications").insert({
+      order_id,
+      depleted_products: depleted,
+      affected_lists: affectedListsLog,
+      admin_emails: adminEmails,
+      owner_emails: Array.from(new Set(ownerEmailsAll)),
+      emails_sent: emailsSent,
+      emails_failed: emailsFailed,
+      status: emailsFailed > 0 ? "partial" : "ok",
+    });
+
     return json({
       ok: true,
       depleted: depleted.length,
       lists_affected: listMap.size,
       emails_sent: emailsSent,
+      emails_failed: emailsFailed,
     });
   } catch (e: any) {
     console.error("notify-list-stock-depleted error", e);
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, serviceKey);
+      await supabase.from("stock_depletion_notifications").insert({
+        status: "error",
+        error: String(e?.message || e),
+      });
+    } catch (_) { /* ignore */ }
     return json({ error: e?.message || "internal" }, 500);
   }
 });
