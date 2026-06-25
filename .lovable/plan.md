@@ -1,77 +1,80 @@
 
-## Problema
+# Módulo de gestión de cookies
 
-`src/components/ui/rich-text-editor.tsx` utilitza ReactQuill, que internament converteix HTML → Delta → HTML. Aquesta conversió:
+Implementación completa, compatible con normativa española y europea, sin romper funcionalidades actuales. El proyecto hoy no tiene Google Analytics ni scripts de marketing; Google Maps se usa vía `iframe` en `ContactPage`. Aprovecho esto para hacer una implementación limpia.
 
-- Descarta tags i atributs no whitelistejats (`div`, `section`, `class`, `id`, `style`, `data-*`…).
-- Reinterpreta llistes, paràgrafs buits i espais (afegeix `&nbsp;`, embolcalla en `<p>`, fusiona blocs).
-- S'executa cada vegada que Quill es munta amb un `value`, encara que l'usuari no editi.
+## 1. Base de datos (migración Supabase)
 
-L'`userEditedRef` actual mitiga el cas "munto i no edito", però en el moment que l'usuari fa un sol clic a la barra d'eines o prem una tecla, Quill emet la versió normalitzada i sobreescriu el HTML original. Per això, en desar i tornar a entrar, el codi apareix alterat (llistes inventades, espais, estructura modificada).
+Crear las siguientes tablas en `public` con GRANTs + RLS:
 
-## Objectiu
+- **`cookie_categories`** — `key` (`necessary|functional|analytics|marketing|third_party`), `is_required` bool, `is_enabled` bool, `sort_order`, traducciones (`name_ca/es`, `description_ca/es`). Seed inicial con las 5 categorías; `necessary` marcada como `is_required = true` y no desactivable.
+- **`cookies_registry`** — `name`, `provider`, `category_id`, `purpose_ca/es`, `duration`, `type` (`first_party|third_party`), `requires_consent` bool, `service` (free text: ga, maps, session, cart…), `sort_order`.
+- **`cookie_consent_log`** — registro auditable: `id`, `anon_id` (uuid del visitante, guardado en localStorage), `user_id` nullable, `consent` jsonb (por categoría), `policy_version`, `user_agent`, `ip_hash`, `created_at`. Append-only.
+- **`cookie_settings`** (singleton) — `policy_version` int, `ga_measurement_id` text nullable, `ga_enabled` bool, `maps_requires_consent` bool, `banner_text_ca/es`, `banner_text_short_ca/es`.
 
-El **mode HTML és la font de la veritat**. El mode visual només pot modificar el HTML quan l'usuari ho confirma explícitament; en cap altre cas el codi original pot ser reformatat.
+RLS: lectura pública (`anon` + `authenticated`) en `cookie_categories`, `cookies_registry`, `cookie_settings`. Escritura solo admins (`is_admin(auth.uid())`). `cookie_consent_log`: insert público (anon+auth), select solo admin.
 
-## Canvis proposats
+Seed de cookies actuales detectadas: `sb-*-auth-token` (necessary, Supabase), `cart` localStorage (necessary), `lang` preferencia (functional), `cookie_consent` (necessary).
 
-Tots dins de `src/components/ui/rich-text-editor.tsx` (cap canvi a `AdminPages.tsx` ni a la base de dades; cap impacte al frontend públic que ja renderitza el HTML cru).
+## 2. Backend / lógica de consentimiento
 
-### 1. Vista visual segura per defecte = preview (iframe sandbox)
+- `src/lib/cookieConsent.ts`: API central
+  - `getConsent()` → lee `localStorage.cookie_consent` (`{ version, categories: {necessary:true, functional:bool, analytics:bool, marketing:bool, third_party:bool}, ts }`)
+  - `setConsent(categories)`: guarda local + `POST` a Supabase `cookie_consent_log` (vía `supabase-js`, sin edge function), genera `anon_id` persistente.
+  - `hasConsent(category)`, `revoke()`, `acceptAll()`, `rejectAll()`, listener `onConsentChange(cb)` (eventBus simple).
+  - Borra cookies de categorías rechazadas vía `document.cookie = name + '=; expires=...'` (best-effort para 1st-party).
+- `CookieConsentProvider` en `src/contexts/CookieConsentContext.tsx`, montado en `App.tsx` (antes de `MaintenanceGate`).
 
-En entrar a `mode === 'visual'`, mostrar per defecte un **preview** del HTML dins un `<iframe sandbox>` amb els estils bàsics del lloc. Aquest preview:
+## 3. UI usuario
 
-- No pot modificar el `value` (és només lectura).
-- Mostra el HTML idènticament a com es desa, sense passar per Quill.
-- Inclou un botó **"Editar visualment"** que activa explícitament Quill.
+- `CookieBanner.tsx` — banner inferior responsive con 3 botones de igual peso visual: **Aceptar todo / Rechazar todo / Configurar**. Aparece solo si no hay consentimiento o si `policy_version` cambió.
+- `CookiePreferencesDialog.tsx` — modal con accordion por categoría, switches (necessary bloqueado), tabla desplegable con cookies registradas (lectura de `cookies_registry`). Botones: Guardar selección / Aceptar todo / Rechazar opcionales.
+- Enlace permanente en `Footer.tsx`: "Configurar cookies" que abre el dialog (vía contexto).
+- Estética coherente con tokens existentes (sage/terracotta/sand, Playfair/DM Sans).
 
-### 2. Edició visual com a acció explícita
+## 4. Bloqueo real de scripts
 
-Quan l'usuari prem "Editar visualment":
+- `GoogleAnalyticsLoader.tsx` (montado en App): si `ga_enabled && ga_measurement_id && hasConsent('analytics')`, inyecta `gtag.js` dinámicamente. Si se retira el consentimiento → `window['ga-disable-<ID>'] = true` y se eliminan cookies `_ga*`.
+- `ContactPage.tsx` — sustituir iframe directo de Google Maps por componente `ConsentedMap`:
+  - Si `maps_requires_consent && !hasConsent('third_party')` → placeholder con explicación + botón "Configurar cookies".
+  - Si hay consentimiento → renderiza el iframe.
+- Reaccionan a `onConsentChange` para cargar/descargar al vuelo.
 
-- Es munta ReactQuill amb el HTML actual.
-- Apareix un avís: "Els canvis visuals poden reformatar el HTML. Confirma per aplicar-los."
-- Mentre s'edita, el `value` extern NO es modifica.
-- Dos botons: **"Aplicar canvis"** (commiteja el HTML normalitzat per Quill via `onChange`) i **"Cancel·lar"** (descarta i torna al preview amb el HTML original intacte).
+## 5. Administración
 
-Això elimina completament les normalitzacions accidentals: només es desa HTML reformatat si l'usuari ho demana explícitament.
+Nuevas rutas en `AdminDashboard.tsx`, grupo Configuración:
 
-### 3. Mode HTML sense canvis funcionals
+- `/admin/cookies` → `AdminCookieSettings.tsx`: ajustes globales (versión política, GA ID + toggle, Maps requiere consentimiento, textos del banner CA/ES con `LanguageTabs`).
+- `/admin/cookies/categories` → `AdminCookieCategories.tsx`: CRUD categorías, activar/desactivar opcionales, traducciones.
+- `/admin/cookies/registry` → `AdminCookieRegistry.tsx`: CRUD cookies (todos los campos del requisito), filtro/agrupación por categoría.
+- `/admin/cookies/consent-log` → `AdminCookieConsentLog.tsx`: visor de auditoría (fecha, anon_id, user, categorías aceptadas, versión).
 
-El `<textarea>` ja desa el contingut tal qual. Es manté.
+Añadir entradas en `AdminLayout.tsx` bajo el grupo Configuración: "Cookies", "Categories cookies", "Registre cookies", "Historial consentiments".
 
-### 4. Ampliar la whitelist de Quill (per minimitzar pèrdues quan l'usuari sí edita visualment)
+## 6. Política de cookies
 
-Afegir al `formats` de Quill els formats inline addicionals que ja suporta natiu: `script`, `direction`. Mantenir `matchVisual: false` al clipboard. No registrem blots custom per a `div`/`section`/`class` perquè és invasiu i fora de l'abast d'aquest fix; la regla "edició visual = pot reformatar" cobreix aquest cas amb un avís clar.
+- Página pública `/politica-cookies` (`CookiePolicyPage.tsx`): renderiza dinámicamente desde `cookie_categories` + `cookies_registry` agrupadas por categoría, en el idioma activo. Incluye botón "Canviar preferències" que abre el dialog. Bumping de `policy_version` invalida consentimientos previos y reaparece el banner.
+- Si existe la página CMS actual de "Política de cookies", se reemplaza el contenido con un placeholder que enlaza a la nueva ruta dinámica (o se renderiza embebida).
 
-### 5. Eliminar la heurística `userEditedRef`
+## 7. i18n
 
-Ja no cal: en mode preview no es pot editar; en mode "edició visual explícita" els canvis només es propaguen amb "Aplicar canvis".
+Añadir claves nuevas a `src/locales/ca.json` y `es.json` bajo `cookies.*` (banner, dialog, categorías por defecto, política, placeholders).
 
-## Flux UX resultant
+## 8. Verificación
 
-```text
-[HTML mode]  <-->  [Visual preview (iframe, read-only)]
-                          |
-                          | "Editar visualment"
-                          v
-                   [Visual edit (Quill)]
-                    |              |
-              "Aplicar"        "Cancel·lar"
-                    |              |
-                    v              v
-              commit onChange   descarta
-```
+1. Primera visita → aparece banner; no se carga GA ni Maps.
+2. Aceptar todo → GA carga, Maps renderiza, log insertado.
+3. Rechazar opcionales → ningún script opcional carga; Maps muestra placeholder; cart/login siguen funcionando.
+4. Configurar por categorías y guardar → solo cargan las aceptadas.
+5. Cambiar preferencias desde footer/política → estado se actualiza en caliente sin recargar.
+6. Bump de `policy_version` en admin → banner reaparece a todos.
+7. Admin puede CRUD cookies, categorías, ajustes; ver historial.
+8. Tests responsive móvil/tablet/desktop del banner y dialog.
 
-## Verificació
+## Archivos afectados / nuevos
 
-1. Enganxar HTML amb `<div class="grid">…</div>` al mode HTML, canviar a visual → veure el preview correcte, tornar a HTML → codi idèntic.
-2. Enganxar text pla al mode HTML → no apareixen llistes ni `&nbsp;` en cap moment.
-3. Editar a "Editar visualment", prémer "Cancel·lar" → el HTML original no canvia.
-4. Editar a "Editar visualment", prémer "Aplicar canvis" → el HTML resultant es desa (es pot acceptar la reformatació de Quill perquè és explícita).
-5. Desar la pàgina, recarregar `/admin/pagines/:id`, comprovar que el HTML és estable.
-6. Validar al front-end que `CmsPagePage.tsx` segueix renderitzant correctament.
+**Nuevos**: `src/lib/cookieConsent.ts`, `src/contexts/CookieConsentContext.tsx`, `src/components/cookies/{CookieBanner,CookiePreferencesDialog,ConsentedMap,GoogleAnalyticsLoader}.tsx`, `src/pages/CookiePolicyPage.tsx`, `src/pages/admin/{AdminCookieSettings,AdminCookieCategories,AdminCookieRegistry,AdminCookieConsentLog}.tsx`, migración Supabase.
 
-## Fitxers afectats
+**Editados**: `src/App.tsx` (providers + ruta política), `src/components/layout/Footer.tsx` (link configurar), `src/pages/ContactPage.tsx` (ConsentedMap), `src/pages/AdminDashboard.tsx` (rutas), `src/components/admin/AdminLayout.tsx` (menú), `src/locales/ca.json` + `es.json`.
 
-- `src/components/ui/rich-text-editor.tsx` — única modificació.
+No se modifica `index.html`, `client.ts`, `types.ts` ni configuración Supabase global.

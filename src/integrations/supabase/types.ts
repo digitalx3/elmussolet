@@ -477,6 +477,188 @@ export type Database = {
         }
         Relationships: []
       }
+      cookie_categories: {
+        Row: {
+          created_at: string
+          description_ca: string
+          description_es: string
+          id: string
+          is_enabled: boolean
+          is_required: boolean
+          key: string
+          name_ca: string
+          name_es: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description_ca?: string
+          description_es?: string
+          id?: string
+          is_enabled?: boolean
+          is_required?: boolean
+          key: string
+          name_ca: string
+          name_es: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description_ca?: string
+          description_es?: string
+          id?: string
+          is_enabled?: boolean
+          is_required?: boolean
+          key?: string
+          name_ca?: string
+          name_es?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cookie_consent_log: {
+        Row: {
+          anon_id: string
+          consent: Json
+          created_at: string
+          id: string
+          ip_hash: string
+          policy_version: number
+          source: string
+          user_agent: string
+          user_id: string | null
+        }
+        Insert: {
+          anon_id: string
+          consent: Json
+          created_at?: string
+          id?: string
+          ip_hash?: string
+          policy_version?: number
+          source?: string
+          user_agent?: string
+          user_id?: string | null
+        }
+        Update: {
+          anon_id?: string
+          consent?: Json
+          created_at?: string
+          id?: string
+          ip_hash?: string
+          policy_version?: number
+          source?: string
+          user_agent?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      cookie_settings: {
+        Row: {
+          banner_text_ca: string
+          banner_text_es: string
+          banner_text_short_ca: string
+          banner_text_short_es: string
+          created_at: string
+          ga_enabled: boolean
+          ga_measurement_id: string
+          id: string
+          maps_requires_consent: boolean
+          policy_url: string
+          policy_version: number
+          singleton: boolean
+          updated_at: string
+        }
+        Insert: {
+          banner_text_ca?: string
+          banner_text_es?: string
+          banner_text_short_ca?: string
+          banner_text_short_es?: string
+          created_at?: string
+          ga_enabled?: boolean
+          ga_measurement_id?: string
+          id?: string
+          maps_requires_consent?: boolean
+          policy_url?: string
+          policy_version?: number
+          singleton?: boolean
+          updated_at?: string
+        }
+        Update: {
+          banner_text_ca?: string
+          banner_text_es?: string
+          banner_text_short_ca?: string
+          banner_text_short_es?: string
+          created_at?: string
+          ga_enabled?: boolean
+          ga_measurement_id?: string
+          id?: string
+          maps_requires_consent?: boolean
+          policy_url?: string
+          policy_version?: number
+          singleton?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cookies_registry: {
+        Row: {
+          category_id: string
+          created_at: string
+          duration: string
+          id: string
+          name: string
+          provider: string
+          purpose_ca: string
+          purpose_es: string
+          requires_consent: boolean
+          service: string
+          sort_order: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          duration?: string
+          id?: string
+          name: string
+          provider?: string
+          purpose_ca?: string
+          purpose_es?: string
+          requires_consent?: boolean
+          service?: string
+          sort_order?: number
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          duration?: string
+          id?: string
+          name?: string
+          provider?: string
+          purpose_ca?: string
+          purpose_es?: string
+          requires_consent?: boolean
+          service?: string
+          sort_order?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cookies_registry_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "cookie_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address_line1: string | null

@@ -6,6 +6,7 @@ import { Mail, Phone, MapPin, Instagram, Facebook, Youtube } from 'lucide-react'
 import logoSquare from '@/assets/mussolet-logo-square.png.asset.json';
 import { supabase } from '@/integrations/supabase/client';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useCookieConsent } from '@/contexts/CookieConsentContext';
 
 // Inline TikTok (lucide-react has no TikTok icon)
 const TikTokIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -100,6 +101,8 @@ const Footer: React.FC = () => {
                   </Link>
                 </li>
               ))}
+              <li><Link to="/politica-cookies" className="text-muted-foreground hover:text-primary transition-colors">{t('cookies.footer.policy', 'Política de cookies')}</Link></li>
+              <li><CookiePrefsLink /></li>
             </ul>
           </div>
 
@@ -144,6 +147,20 @@ const Footer: React.FC = () => {
         />
       </div>
     </footer>
+  );
+};
+
+const CookiePrefsLink: React.FC = () => {
+  const { t } = useTranslation();
+  const { openPreferences } = useCookieConsent();
+  return (
+    <button
+      type="button"
+      onClick={openPreferences}
+      className="text-muted-foreground hover:text-primary transition-colors text-left"
+    >
+      {t('cookies.footer.configure', 'Configurar cookies')}
+    </button>
   );
 };
 
