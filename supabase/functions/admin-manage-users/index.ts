@@ -185,6 +185,9 @@ Deno.serve(async (req: Request) => {
       if (body.user_id === userData.user.id) {
         return json({ error: "Cannot delete yourself" }, 400);
       }
+      if (!callerIsSuper && (await isTargetSuper(body.user_id))) {
+        return json({ error: "Forbidden: cannot delete Super Admin" }, 403);
+      }
       const mode = body.delete_mode || "soft";
 
       // Get the user's email (for blocking re-registration in soft mode)
