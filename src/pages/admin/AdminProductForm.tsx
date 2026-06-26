@@ -352,10 +352,27 @@ const AdminProductForm: React.FC = () => {
       return;
     }
 
+    // Slug validation (base + per-language). Empty allowed (auto-generated).
+    const baseSlugErr = validateSlugValue(form.slug || '', true);
+    if (baseSlugErr) {
+      notify.error(`Slug base no vàlid: ${baseSlugErr}`);
+      return;
+    }
+    for (const lng of languages) {
+      const trSlug = (form.translations[lng.code] as any)?.slug || '';
+      const err = validateSlugValue(trSlug, true);
+      if (err) {
+        setActiveLang(lng.code);
+        notify.error(`Slug (${lng.code.toUpperCase()}) no vàlid: ${err}`);
+        return;
+      }
+    }
+
     if (!form.sku) {
       notify.error('Omple els camps obligatoris: SKU');
       return;
     }
+
 
 
     // Sale price validation
