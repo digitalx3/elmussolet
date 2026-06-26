@@ -17,8 +17,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { NavLink } from '@/components/NavLink';
 import { Button } from '@/components/ui/button';
 
-type NavItem = { key: string; path: string; icon: any; label?: string };
-type NavGroup = { id: string; label: string; items: NavItem[] };
+type NavItem = { key: string; path: string; icon: any; label?: string; perm?: string };
+type NavGroup = { id: string; label: string; items: NavItem[]; superOnly?: boolean };
 
 const groups: NavGroup[] = [
   {
