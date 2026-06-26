@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { ShoppingBag, Menu, X, User, Globe, ChevronDown } from 'lucide-react';
+import { ShoppingBag, Menu, X, User, Globe, ChevronDown, Heart, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
+import { useListAccess } from '@/contexts/ListAccessContext';
 import { Button } from '@/components/ui/button';
 import logoHorizontal from '@/assets/mussolet-logo-horizontal.png.asset.json';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+
 import {
   DropdownMenu,
   DropdownMenuContent,
