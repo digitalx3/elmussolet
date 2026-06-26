@@ -35,6 +35,14 @@ const Header: React.FC = () => {
     i18n.changeLanguage(lng);
   };
 
+  const handleExitList = () => {
+    if (typeof window !== 'undefined' && !window.confirm(t('nav.exitListConfirm'))) return;
+    clearAccess();
+    toast({ title: t('nav.exitListSuccess') });
+    navigate('/');
+    setMobileOpen(false);
+  };
+
   const lang = i18n.language === 'es' ? 'es' : 'ca';
 
   const { data: cmsPages = [] } = useQuery({
