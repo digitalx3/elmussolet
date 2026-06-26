@@ -110,8 +110,16 @@ export function useSaveProduct() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id?: string; data: ProductFormData }) => {
+      const { slugify } = await import('@/lib/slug');
+      // Determine a fallback base slug from any translation name if user left it blank.
+      const fallbackSlug = (() => {
+        if (data.slug?.trim()) return slugify(data.slug);
+        const firstName = Object.values(data.translations).find((t) => t?.name?.trim())?.name;
+        return slugify(firstName ?? '') || `product-${Date.now()}`;
+      })();
+
       const productPayload = {
-        slug: data.slug,
+        slug: fallbackSlug,
         sku: data.sku,
         base_price: data.base_price,
         stock_quantity: data.stock_quantity,
@@ -129,6 +137,7 @@ export function useSaveProduct() {
         is_featured: !!data.is_featured,
         featured_order: data.featured_order ?? null,
       };
+
 
       let productId = id;
 
