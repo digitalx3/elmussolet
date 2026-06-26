@@ -62,6 +62,20 @@ const AdminBrands: React.FC = () => {
 
   const { data: languages = [] } = useLanguages({ onlyEnabled: true });
 
+  // Live duplicate-slug detection per language (debounced).
+  const slugDupErrors = useDuplicateSlugErrors(
+    () => languages.map((lng) => ({
+      key: lng.code,
+      run: () => checkTranslationSlugDuplicate(
+        { table: 'brand_translations', fk: 'brand_id', langCol: 'language_code' },
+        lng.code,
+        form.translations[lng.code]?.slug || '',
+        editId,
+      ),
+    })),
+    [languages.map(l => l.code).join(','), JSON.stringify(Object.fromEntries(languages.map(l => [l.code, form.translations[l.code]?.slug || '']))), editId],
+  );
+
   const { data: brands = [], isLoading } = useQuery({
     queryKey: ['admin-brands'],
     queryFn: async () => {
