@@ -169,6 +169,10 @@ const AdminVariantTypes: React.FC = () => {
       const err = validateSlugValue(val || '', true);
       if (err) { notify.error(`Slug ${label} no vàlid: ${err}`); return; }
     }
+    if (hasAnySlugError(slugDupErrors)) {
+      notify.error('Hi ha slugs duplicats. Revisa els camps marcats.');
+      return;
+    }
     saveMutation.mutate({
       id: editingId || undefined,
       slug: formSlug,
