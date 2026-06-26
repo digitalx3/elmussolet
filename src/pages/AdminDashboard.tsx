@@ -35,6 +35,8 @@ import AdminAiHistory from '@/pages/admin/AdminAiHistory';
 import AdminStockNotifications from '@/pages/admin/AdminStockNotifications';
 import AdminFeaturedProducts from '@/pages/admin/AdminFeaturedProducts';
 import AdminCookies from '@/pages/admin/AdminCookies';
+import AdminSuperPermissions from '@/pages/admin/AdminSuperPermissions';
+import { PermissionRoute, SuperAdminRoute } from '@/components/auth/ProtectedRoute';
 
 const AdminPlaceholder: React.FC<{ titleKey: string }> = ({ titleKey }) => {
   const { t } = useTranslation();
