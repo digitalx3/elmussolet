@@ -63,6 +63,19 @@ Deno.serve(async (req: Request) => {
       .single();
     if (profile?.role !== "admin") return json({ error: "Forbidden" }, 200);
 
+    // Check if caller is super_admin
+    const { data: callerRoles } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userData.user.id);
+    const callerIsSuper = (callerRoles || []).some((r: any) => r.role === "super_admin");
+
+    const isTargetSuper = async (uid: string) => {
+      const { data } = await admin
+        .from("user_roles").select("role").eq("user_id", uid).eq("role", "super_admin").maybeSingle();
+      return !!data;
+    };
+
     const body = (await req.json()) as Body;
 
     if (body.action === "create") {
