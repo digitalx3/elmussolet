@@ -301,12 +301,14 @@ const AdminCategories: React.FC = () => {
                 value={form.slug_ca}
                 onChange={(next) => setForm(f => ({ ...f, slug_ca: next }))}
                 placeholder="auto des del nom"
+                externalError={slugDupErrors.ca ?? null}
               />
               <SlugInput
                 label="Slug (ES)"
                 value={form.slug_es}
                 onChange={(next) => setForm(f => ({ ...f, slug_es: next }))}
                 placeholder="auto desde el nombre"
+                externalError={slugDupErrors.es ?? null}
               />
             </div>
 
