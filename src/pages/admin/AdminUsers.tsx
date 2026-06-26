@@ -790,6 +790,11 @@ const AdminUsers: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <UserPermissionsDialog
+        user={permsUser}
+        onClose={() => setPermsUser(null)}
+      />
     </div>
   );
 };
