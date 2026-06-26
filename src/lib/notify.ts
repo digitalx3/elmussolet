@@ -63,9 +63,20 @@ export const TOASTER_CONFIG: Partial<ToasterProps> = {
 
 // ---------- Imperative API ----------
 
-type NotifyOptions = Omit<ExternalToast, "closeButton">;
+/** Message accepted by every notify.* method (string or JSX). */
+export type NotifyMessage = React.ReactNode;
 
-function withDefaults(opts?: NotifyOptions, duration: number = TOAST_DEFAULTS.duration): ExternalToast {
+/** Options accepted by notify.* — mirrors sonner's `ExternalToast` minus
+ *  fields we own globally (closeButton). */
+export type NotifyOptions = Omit<ExternalToast, "closeButton">;
+
+/** Return type of every imperative toast call (sonner toast id). */
+export type NotifyId = string | number;
+
+function withDefaults(
+  opts?: NotifyOptions,
+  duration: number = TOAST_DEFAULTS.duration,
+): ExternalToast {
   return {
     duration,
     closeButton: TOAST_DEFAULTS.closeButton,
@@ -73,28 +84,31 @@ function withDefaults(opts?: NotifyOptions, duration: number = TOAST_DEFAULTS.du
   };
 }
 
-export const notify = {
-  success: (message: string, opts?: NotifyOptions) =>
-    sonnerToast.success(message, withDefaults(opts)),
+export interface Notify {
+  success: (message: NotifyMessage, opts?: NotifyOptions) => NotifyId;
+  info: (message: NotifyMessage, opts?: NotifyOptions) => NotifyId;
+  warning: (message: NotifyMessage, opts?: NotifyOptions) => NotifyId;
+  error: (message: NotifyMessage, opts?: NotifyOptions) => NotifyId;
+  message: (message: NotifyMessage, opts?: NotifyOptions) => NotifyId;
+  loading: (message: NotifyMessage, opts?: NotifyOptions) => NotifyId;
+  promise: typeof sonnerToast.promise;
+  dismiss: typeof sonnerToast.dismiss;
+}
 
-  info: (message: string, opts?: NotifyOptions) =>
-    sonnerToast.info(message, withDefaults(opts)),
-
-  warning: (message: string, opts?: NotifyOptions) =>
-    sonnerToast.warning(message, withDefaults(opts)),
-
-  error: (message: string, opts?: NotifyOptions) =>
+export const notify: Notify = {
+  success: (message, opts) => sonnerToast.success(message, withDefaults(opts)),
+  info: (message, opts) => sonnerToast.info(message, withDefaults(opts)),
+  warning: (message, opts) => sonnerToast.warning(message, withDefaults(opts)),
+  error: (message, opts) =>
     sonnerToast.error(message, withDefaults(opts, TOAST_DEFAULTS.errorDuration)),
-
-  message: (message: string, opts?: NotifyOptions) =>
-    sonnerToast(message, withDefaults(opts)),
-
-  loading: (message: string, opts?: NotifyOptions) =>
+  message: (message, opts) => sonnerToast(message, withDefaults(opts)),
+  loading: (message, opts) =>
     sonnerToast.loading(message, { ...opts, duration: TOAST_DEFAULTS.loadingDuration }),
-
   promise: sonnerToast.promise.bind(sonnerToast),
   dismiss: sonnerToast.dismiss.bind(sonnerToast),
 };
 
-// Re-export the raw toast for edge cases that need the full sonner API.
+// Re-export the raw toast and sonner option types for edge cases.
 export { sonnerToast as toast };
+export type { ExternalToast };
+
