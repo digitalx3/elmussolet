@@ -223,7 +223,7 @@ function AdminSidebar() {
         </SidebarGroup>
 
         {collapsed
-          ? groups.map((group, idx) => (
+          ? visibleGroups.map((group, idx) => (
               <SidebarGroup key={group.id} className="py-1">
                 {idx > 0 && (
                   <div className="mx-2 mb-1 h-px bg-border/60" aria-hidden="true" />
@@ -237,7 +237,7 @@ function AdminSidebar() {
                 </SidebarGroupContent>
               </SidebarGroup>
             ))
-          : groups.map(group => {
+          : visibleGroups.map(group => {
               const isOpen = openGroups[group.id] ?? false;
               return (
                 <Collapsible
