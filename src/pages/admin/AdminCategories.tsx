@@ -344,7 +344,14 @@ const AdminCategories: React.FC = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('admin.cancel')}</Button>
             <Button
-              onClick={() => saveMutation.mutate()}
+              onClick={() => {
+                for (const [label, val] of [['base', form.slug], ['CA', form.slug_ca], ['ES', form.slug_es]] as const) {
+                  const err = validateSlugValue(val || '', true);
+                  if (err) { notify.error(`Slug ${label} no vàlid: ${err}`); return; }
+                }
+                saveMutation.mutate();
+              }}
+
               disabled={!form.name_ca || !form.name_es || saveMutation.isPending}
             >
               {saveMutation.isPending ? '...' : (editId ? t('admin.save') : t('admin.create'))}
