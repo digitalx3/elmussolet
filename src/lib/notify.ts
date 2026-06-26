@@ -197,20 +197,21 @@ export interface Notify {
 
 export const notify: Notify = {
   success: (message, opts) =>
-    emit("success", sonnerToast.success, message, opts, TOAST_DEFAULTS.duration),
+    emit("success", sonnerToast.success, message, opts, TOAST_DURATIONS.success),
   info: (message, opts) =>
-    emit("info", sonnerToast.info, message, opts, TOAST_DEFAULTS.duration),
+    emit("info", sonnerToast.info, message, opts, TOAST_DURATIONS.info),
   warning: (message, opts) =>
-    emit("warning", sonnerToast.warning, message, opts, TOAST_DEFAULTS.duration),
+    emit("warning", sonnerToast.warning, message, opts, TOAST_DURATIONS.warning),
   error: (message, opts) =>
-    emit("error", sonnerToast.error, message, opts, TOAST_DEFAULTS.errorDuration),
+    emit("error", sonnerToast.error, message, opts, TOAST_DURATIONS.error),
   message: (message, opts) =>
-    emit("message", (m, o) => sonnerToast(m, o), message, opts, TOAST_DEFAULTS.duration),
+    emit("message", (m, o) => sonnerToast(m, o), message, opts, TOAST_DURATIONS.message),
   loading: (message, opts) =>
-    emit("loading", sonnerToast.loading, message, opts, TOAST_DEFAULTS.loadingDuration),
+    emit("loading", sonnerToast.loading, message, opts, TOAST_DURATIONS.loading),
   promise: sonnerToast.promise.bind(sonnerToast),
   dismiss: sonnerToast.dismiss.bind(sonnerToast),
 };
+
 
 
 // Re-export the raw toast and sonner option types for edge cases.
