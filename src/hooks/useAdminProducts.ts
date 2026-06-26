@@ -21,7 +21,7 @@ export interface AdminProduct {
   sale_ends_at: string | null;
   is_featured: boolean;
   featured_order: number | null;
-  product_translations: { language: string; name: string; short_description: string | null; description: string }[];
+  product_translations: { language: string; name: string; short_description: string | null; description: string; slug: string | null }[];
   product_images: { id: string; image_url: string; alt_text: string | null; is_primary: boolean; sort_order: number }[];
   brands: { name: string } | null;
   categories: { slug: string } | null;
@@ -42,7 +42,7 @@ export function useAdminProducts() {
         .from('products')
         .select(`
           *,
-          product_translations(language, name, short_description, description),
+          product_translations(language, name, short_description, description, slug),
           product_images(id, image_url, alt_text, is_primary, sort_order),
           brands(name),
           categories(slug),
@@ -64,7 +64,7 @@ export function useAdminProduct(id: string | undefined) {
         .from('products')
         .select(`
           *,
-          product_translations(id, language, name, short_description, description),
+          product_translations(id, language, name, short_description, description, slug),
           product_images(id, image_url, alt_text, is_primary, sort_order),
           product_variants(id, value, price_override, price_modifier, stock_quantity, sku_suffix, is_active, variant_type_id, variant_types(id, slug)),
           product_relations!product_relations_product_id_fkey(related_product_id, position)
@@ -95,7 +95,7 @@ export interface ProductFormData {
   sale_ends_at: string | null;
   is_featured: boolean;
   featured_order: number | null;
-  translations: Record<string, { name: string; short_description: string; description: string }>;
+  translations: Record<string, { name: string; short_description: string; description: string; slug?: string }>;
   images: { id?: string; image_url: string; alt_text: string; is_primary: boolean; sort_order: number }[];
   variants: {
     id?: string; value: string; price_override: number | null; price_modifier: number;
@@ -142,20 +142,25 @@ export function useSaveProduct() {
       }
 
       // Translations
+      const { slugify } = await import('@/lib/slug');
       for (const lang of Object.keys(data.translations)) {
-        const t = data.translations[lang];
-        if (!t) continue;
+        const tr = data.translations[lang];
+        if (!tr) continue;
         await supabase.from('product_translations').delete().eq('product_id', productId!).eq('language', lang);
-        if (!t.name?.trim()) continue;
+        if (!tr.name?.trim()) continue;
+        // Per-language slug: keep manual value or auto-generate from name
+        const trSlug = (tr.slug && tr.slug.trim()) ? slugify(tr.slug) : slugify(tr.name);
         const { error } = await supabase.from('product_translations').insert({
           product_id: productId!,
           language: lang,
-          name: t.name,
-          short_description: t.short_description || null,
-          description: t.description || '',
+          name: tr.name,
+          short_description: tr.short_description || null,
+          description: tr.description || '',
+          slug: trSlug || null,
         });
         if (error) throw error;
       }
+
 
       // Images
       await supabase.from('product_images').delete().eq('product_id', productId!);
