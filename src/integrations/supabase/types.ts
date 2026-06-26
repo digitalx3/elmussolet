@@ -1792,6 +1792,7 @@ export type Database = {
       products: {
         Row: {
           base_price: number
+          base_price_with_tax: number | null
           brand_id: string | null
           category_id: string | null
           created_at: string
@@ -1804,6 +1805,7 @@ export type Database = {
           sale_price_type: string | null
           sale_starts_at: string | null
           sale_value: number | null
+          sale_value_with_tax: number | null
           sku: string
           slug: string
           stock_quantity: number | null
@@ -1814,6 +1816,7 @@ export type Database = {
         }
         Insert: {
           base_price: number
+          base_price_with_tax?: number | null
           brand_id?: string | null
           category_id?: string | null
           created_at?: string
@@ -1826,6 +1829,7 @@ export type Database = {
           sale_price_type?: string | null
           sale_starts_at?: string | null
           sale_value?: number | null
+          sale_value_with_tax?: number | null
           sku: string
           slug: string
           stock_quantity?: number | null
@@ -1836,6 +1840,7 @@ export type Database = {
         }
         Update: {
           base_price?: number
+          base_price_with_tax?: number | null
           brand_id?: string | null
           category_id?: string | null
           created_at?: string
@@ -1848,6 +1853,7 @@ export type Database = {
           sale_price_type?: string | null
           sale_starts_at?: string | null
           sale_value?: number | null
+          sale_value_with_tax?: number | null
           sku?: string
           slug?: string
           stock_quantity?: number | null
@@ -2246,6 +2252,51 @@ export type Database = {
           },
         ]
       }
+      user_permissions: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          permission: Database["public"]["Enums"]["app_permission"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          permission: Database["public"]["Enums"]["app_permission"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          permission?: Database["public"]["Enums"]["app_permission"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       variant_type_translations: {
         Row: {
           id: string
@@ -2352,14 +2403,46 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_top_products: {
+        Args: { _from: string; _limit?: number; _to: string }
+        Returns: {
+          product_id: string
+          revenue: number
+          slug: string
+          units: number
+        }[]
+      }
+      has_permission: {
+        Args: {
+          _perm: Database["public"]["Enums"]["app_permission"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_permissions_enforced: { Args: never; Returns: boolean }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       user_owns_list: {
         Args: { _list_id: string; _user_id: string }
         Returns: boolean
       }
     }
     Enums: {
-      [_ in never]: never
+      app_permission:
+        | "ai_features"
+        | "manage_backups"
+        | "manage_users"
+        | "manage_cookies"
+        | "manage_smtp"
+        | "manage_translations"
+      app_role: "super_admin" | "admin" | "customer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2486,6 +2569,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_permission: [
+        "ai_features",
+        "manage_backups",
+        "manage_users",
+        "manage_cookies",
+        "manage_smtp",
+        "manage_translations",
+      ],
+      app_role: ["super_admin", "admin", "customer"],
+    },
   },
 } as const
