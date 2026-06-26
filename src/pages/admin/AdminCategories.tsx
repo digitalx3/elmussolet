@@ -20,6 +20,8 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
+import { checkBaseSlugDuplicate, checkTranslationSlugDuplicate } from '@/lib/checkSlugDuplicate';
+import { useDuplicateSlugErrors, hasAnySlugError } from '@/hooks/useDuplicateSlugErrors';
 
 
 interface CategoryRow {
