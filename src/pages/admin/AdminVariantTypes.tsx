@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { notify } from '@/lib/notify';
 import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
+import { checkBaseSlugDuplicate, checkTranslationSlugDuplicate } from '@/lib/checkSlugDuplicate';
+import { useDuplicateSlugErrors, hasAnySlugError } from '@/hooks/useDuplicateSlugErrors';
 
 
 interface VariantTypeRow {
