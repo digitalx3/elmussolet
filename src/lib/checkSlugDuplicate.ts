@@ -41,8 +41,7 @@ export async function checkTranslationSlugDuplicate(
 ): Promise<boolean> {
   const v = (slug ?? '').trim();
   if (!v) return false;
-  let q: any = supabase
-    .from(cfg.table)
+  let q: any = (supabase.from(cfg.table) as any)
     .select(cfg.fk, { count: 'exact', head: true })
     .eq(cfg.langCol, language)
     .eq('slug', v);
