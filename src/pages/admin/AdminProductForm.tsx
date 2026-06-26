@@ -24,6 +24,8 @@ import LanguageTabs from '@/components/admin/LanguageTabs';
 import { useAiProvider, isAiReady } from '@/hooks/useAiProvider';
 import RichTextEditor from '@/components/ui/rich-text-editor';
 import RelatedProductsEditor from '@/components/admin/RelatedProductsEditor';
+import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
+
 
 const emptyTranslation = { name: '', short_description: '', description: '', slug: '' };
 
@@ -496,22 +498,14 @@ const AdminProductForm: React.FC = () => {
                       <span className="text-[11px] text-muted-foreground">{tr.name.length}/{MAX_NAME}</span>
                     </div>
                   </div>
-                  <div>
-                    <Label>Slug ({lang.toUpperCase()})</Label>
-                    <Input
-                      value={(tr as any).slug || ''}
-                      onChange={e => updateTranslation(lang, 'slug', e.target.value
-                        .toLowerCase()
-                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                        .replace(/[^a-z0-9-]/g, '-')
-                        .replace(/-+/g, '-')
-                      )}
-                      placeholder="es-generara-automaticament-des-del-nom"
-                    />
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      S'omple automàticament des del nom. Edita per personalitzar l'URL SEO en aquest idioma.
-                    </p>
-                  </div>
+                  <SlugInput
+                    label={`Slug (${lang.toUpperCase()})`}
+                    value={(tr as any).slug || ''}
+                    onChange={(next) => updateTranslation(lang, 'slug', next)}
+                    placeholder="es-generara-automaticament-des-del-nom"
+                    hint="S'omple automàticament des del nom. Edita per personalitzar l'URL SEO en aquest idioma."
+                  />
+
                   <div>
                     <div className="flex items-center justify-between">
                       <Label>Descripció curta</Label>
