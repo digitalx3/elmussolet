@@ -4,9 +4,10 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   Package, LayoutDashboard, Tags, Bookmark, ListChecks,
   FileText, ShoppingCart, Users, Truck, Settings, ArrowLeft, SlidersHorizontal, Image as ImageIcon,
-  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database, Power, Languages as LanguagesIcon, Globe, Sparkles, PackageX, Star, Cookie,
+  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database, Power, Languages as LanguagesIcon, Globe, Sparkles, PackageX, Star, Cookie, ShieldCheck,
 } from 'lucide-react';
 import AdminLanguageSwitcher from '@/components/admin/AdminLanguageSwitcher';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel,
   SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
