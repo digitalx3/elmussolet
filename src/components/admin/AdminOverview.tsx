@@ -83,14 +83,15 @@ const chartConfig = {
   total: { label: 'Vendes (€)', color: 'hsl(var(--primary))' },
 };
 
-const topChartConfig = {
-  units: { label: 'Unitats venudes', color: 'hsl(var(--primary))' },
-};
-
 const TopProductsChart: React.FC = () => {
+  const { t } = useTranslation();
   const now = new Date();
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const [month, setMonth] = React.useState<string>(defaultMonth);
+
+  const topChartConfig = {
+    units: { label: t('admin.overview.unitsSold'), color: 'hsl(var(--primary))' },
+  };
 
   const { data: top = [], isLoading } = useQuery({
     queryKey: ['admin-top-products', month],
@@ -124,7 +125,7 @@ const TopProductsChart: React.FC = () => {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-4 flex-wrap">
-        <CardTitle className="font-display text-lg">Productes més venuts</CardTitle>
+        <CardTitle className="font-display text-lg">{t('admin.overview.topProducts')}</CardTitle>
         <input
           type="month"
           value={month}
@@ -134,10 +135,10 @@ const TopProductsChart: React.FC = () => {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <p className="text-muted-foreground text-sm">Carregant…</p>
+          <p className="text-muted-foreground text-sm">{t('admin.common.loading')}</p>
         ) : top.length === 0 ? (
           <p className="text-muted-foreground text-sm py-8 text-center">
-            Cap venda registrada en el mes seleccionat.
+            {t('admin.overview.noSalesMonth')}
           </p>
         ) : (
           <ChartContainer config={topChartConfig} className="h-[300px] w-full">
