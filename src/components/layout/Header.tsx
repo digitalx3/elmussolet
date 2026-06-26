@@ -59,7 +59,18 @@ const Header: React.FC = () => {
       label: (lang === 'es' ? p.title_es : p.title_ca) || p.slug,
     })),
     ...(user ? [{ to: '/la-meva-llista', label: t('home.createList') }] : []),
+    ...(hasAccess && listCode
+      ? [{
+          to: `/llista-naixement/${listCode}`,
+          label: babyName
+            ? `${t('nav.viewCurrentList')}: ${babyName}`
+            : t('nav.viewCurrentList'),
+          highlight: true,
+          onExit: clearAccess,
+        }]
+      : []),
   ];
+
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
