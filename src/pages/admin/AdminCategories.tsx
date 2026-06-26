@@ -85,19 +85,6 @@ const AdminCategories: React.FC = () => {
     [form.slug, form.slug_ca, form.slug_es, editId],
   );
 
-  // placeholder so the next line stays a no-op; original `});` block was here.
-  const __noop_categories = (() => {
-    // no-op
-    return null;
-  });
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*, category_translations(*)')
-        .order('sort_order', { ascending: true });
-      if (error) throw error;
-      return data as CategoryRow[];
-    },
-  });
 
   const getName = (c: CategoryRow, lang: string) =>
     c.category_translations.find(t => t.language === lang)?.name ?? c.slug;
