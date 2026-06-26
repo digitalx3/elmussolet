@@ -25,7 +25,7 @@ import { useAiProvider, isAiReady } from '@/hooks/useAiProvider';
 import RichTextEditor from '@/components/ui/rich-text-editor';
 import RelatedProductsEditor from '@/components/admin/RelatedProductsEditor';
 
-const emptyTranslation = { name: '', short_description: '', description: '' };
+const emptyTranslation = { name: '', short_description: '', description: '', slug: '' };
 
 const MAX_NAME = 200;
 const MAX_SHORT = 500;
@@ -177,8 +177,10 @@ const AdminProductForm: React.FC = () => {
           name: tr.name || '',
           short_description: tr.short_description || '',
           description: tr.description || '',
+          slug: (tr as any).slug || '',
         };
       }
+
       const relatedSorted = ((product as any).product_relations || [])
         .slice()
         .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
@@ -220,14 +222,25 @@ const AdminProductForm: React.FC = () => {
     setForm(prev => ({ ...prev, [key]: value }));
 
   const updateTranslation = (lang: string, field: string, value: string) => {
-    setForm(prev => ({
-      ...prev,
-      translations: {
-        ...prev.translations,
-        [lang]: { ...(prev.translations[lang] ?? emptyTranslation), [field]: value },
-      },
-    }));
-    // Clear the specific field error as the user edits it
+    setForm(prev => {
+      const prevTr = prev.translations[lang] ?? emptyTranslation;
+      const nextTr: any = { ...prevTr, [field]: value };
+      // Auto-fill per-language slug from name when slug is empty/untouched
+      if (field === 'name') {
+        const slugify = (s: string) => s
+          .toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase().replace(/['"`´]/g, '').replace(/&/g, '-and-')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+        const prevAuto = slugify(prevTr.name || '');
+        if (!prevTr.slug || prevTr.slug === prevAuto) {
+          nextTr.slug = slugify(value);
+        }
+      }
+      return {
+        ...prev,
+        translations: { ...prev.translations, [lang]: nextTr },
+      };
+    });
     setTranslationErrors(prev => {
       if (!prev[lang]?.[field as keyof TranslationFieldErrors]) return prev;
       const langErrs = { ...prev[lang] };
@@ -236,13 +249,15 @@ const AdminProductForm: React.FC = () => {
     });
   };
 
-  // Auto-generate slug from the default language name
+  // Auto-generate base slug from the default language name (only if still empty)
   const autoSlug = () => {
     const name = form.translations[defaultCode]?.name ?? '';
     if (name && !form.slug) {
-      updateField('slug', name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
+      updateField('slug', name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
     }
   };
+
 
   // Image upload (with automatic resize + WebP optimization)
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
