@@ -445,6 +445,10 @@ const AdminBrands: React.FC = () => {
                   const err = validateSlugValue(s, true);
                   if (err) { notify.error(`Slug (${lng.code.toUpperCase()}) no vàlid: ${err}`); return; }
                 }
+                if (hasAnySlugError(slugDupErrors)) {
+                  notify.error('Hi ha slugs duplicats en algun idioma. Revisa els camps marcats.');
+                  return;
+                }
                 saveMutation.mutate();
               }}
               disabled={!form.name || saveMutation.isPending || uploading}
