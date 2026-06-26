@@ -202,8 +202,8 @@ const AdminSuperPermissions: React.FC = () => {
                         className="flex items-start justify-between gap-3 rounded-md border border-border p-3 hover:bg-muted/40"
                       >
                         <div>
-                          <div className="font-medium">{p.fallback}</div>
-                          <div className="text-xs text-muted-foreground">{p.description}</div>
+                          <div className="font-medium">{t(`admin.permissions.${p.key}`, p.fallback)}</div>
+                          <div className="text-xs text-muted-foreground">{t(`admin.permissions.${p.key}_desc`, p.description)}</div>
                         </div>
                         <div className="flex items-center gap-2">
                           {saving === key && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
