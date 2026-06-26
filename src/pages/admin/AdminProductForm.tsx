@@ -392,6 +392,14 @@ const AdminProductForm: React.FC = () => {
       }
     }
 
+    // Duplicate slug check (server-side validated, surfaced inline already)
+    if (hasAnySlugError(slugDupErrors)) {
+      const dupLang = languages.find(l => slugDupErrors[l.code]);
+      if (dupLang) setActiveLang(dupLang.code);
+      notify.error('Hi ha slugs duplicats. Revisa els camps marcats en vermell.');
+      return;
+    }
+
     if (!form.sku) {
       notify.error('Omple els camps obligatoris: SKU');
       return;
