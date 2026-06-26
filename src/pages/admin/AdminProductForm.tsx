@@ -661,15 +661,37 @@ const AdminProductForm: React.FC = () => {
             </select>
           </div>
           <div>
-            <Label>Valor {form.sale_price_type === 'percent' ? '(%)' : '(€)'}</Label>
-            <Input
-              type="number" step="0.01" min="0"
-              max={form.sale_price_type === 'percent' ? 100 : undefined}
-              disabled={!form.sale_price_type}
-              value={form.sale_value ?? ''}
-              onChange={e => updateField('sale_value', e.target.value ? parseFloat(e.target.value) : null)}
-              placeholder={form.sale_price_type === 'percent' ? 'ex: 15' : 'ex: 19.99'}
-            />
+            <Label>
+              Valor {form.sale_price_type === 'percent' ? '(%)' : '(€, IVA inclòs)'}
+            </Label>
+            {(() => {
+              const selectedTax = taxRates.find(tr => tr.id === form.tax_rate_id);
+              const taxPct = selectedTax?.percentage ?? 0;
+              const isFixed = form.sale_price_type === 'fixed';
+              const displayed = isFixed && form.sale_value != null
+                ? Math.round(form.sale_value * (1 + taxPct / 100) * 100) / 100
+                : (form.sale_value ?? '');
+              return (
+                <Input
+                  type="number" step="0.01" min="0"
+                  max={form.sale_price_type === 'percent' ? 100 : undefined}
+                  disabled={!form.sale_price_type}
+                  value={displayed}
+                  onChange={e => {
+                    const raw = e.target.value ? parseFloat(e.target.value) : null;
+                    if (raw == null) { updateField('sale_value', null); return; }
+                    if (isFixed) {
+                      // Stored as net (sale_value); the trigger will sync sale_value_with_tax = raw.
+                      const net = taxPct > 0 ? raw / (1 + taxPct / 100) : raw;
+                      updateField('sale_value', Math.round(net * 10000) / 10000);
+                    } else {
+                      updateField('sale_value', raw);
+                    }
+                  }}
+                  placeholder={form.sale_price_type === 'percent' ? 'ex: 15' : 'ex: 19.99'}
+                />
+              );
+            })()}
           </div>
           <div>
             <Label>Inici (opcional)</Label>
