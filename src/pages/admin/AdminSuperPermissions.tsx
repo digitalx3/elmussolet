@@ -95,7 +95,7 @@ const AdminSuperPermissions: React.FC = () => {
       setPerms(map);
     } catch (e: any) {
       console.error('Failed to load admins:', e);
-      toast({ title: 'Error', description: e?.message ?? 'No s\'han pogut carregar els admins', variant: 'destructive' });
+      toast({ title: t('admin.common.error'), description: e?.message ?? t('admin.super.loadError'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
