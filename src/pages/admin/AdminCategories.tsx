@@ -123,53 +123,55 @@ const AdminCategories: React.FC = () => {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const baseSlug = form.slug?.trim() ? slugifyStr(form.slug) : (slugifyStr(form.name_ca) || slugifyStr(form.name_es));
+      const slugCa = form.slug_ca?.trim() ? slugifyStr(form.slug_ca) : (form.name_ca ? slugifyStr(form.name_ca) : null);
+      const slugEs = form.slug_es?.trim() ? slugifyStr(form.slug_es) : (form.name_es ? slugifyStr(form.name_es) : null);
+
       if (editId) {
-        // Update category
         const { error } = await supabase.from('categories').update({
-          slug: form.slug,
+          slug: baseSlug,
           parent_id: form.parent_id || null,
           is_active: form.is_active,
           sort_order: form.sort_order,
         }).eq('id', editId);
         if (error) throw error;
 
-        // Upsert translations
         for (const lang of ['ca', 'es'] as const) {
           const name = lang === 'ca' ? form.name_ca : form.name_es;
           const description = lang === 'ca' ? form.description_ca : form.description_es;
+          const slug = lang === 'ca' ? slugCa : slugEs;
           const existing = categories.find(c => c.id === editId)
             ?.category_translations.find(t => t.language === lang);
 
           if (existing) {
             const { error: tErr } = await supabase.from('category_translations')
-              .update({ name, description: description || null })
+              .update({ name, description: description || null, slug })
               .eq('id', existing.id);
             if (tErr) throw tErr;
           } else {
             const { error: tErr } = await supabase.from('category_translations')
-              .insert({ category_id: editId, language: lang, name, description: description || null });
+              .insert({ category_id: editId, language: lang, name, description: description || null, slug });
             if (tErr) throw tErr;
           }
         }
       } else {
-        // Create category
         const { data: newCat, error } = await supabase.from('categories').insert({
-          slug: form.slug,
+          slug: baseSlug,
           parent_id: form.parent_id || null,
           is_active: form.is_active,
           sort_order: form.sort_order,
         }).select().single();
         if (error) throw error;
 
-        // Insert translations
         const translations = [
-          { category_id: newCat.id, language: 'ca', name: form.name_ca, description: form.description_ca || null },
-          { category_id: newCat.id, language: 'es', name: form.name_es, description: form.description_es || null },
+          { category_id: newCat.id, language: 'ca', name: form.name_ca, description: form.description_ca || null, slug: slugCa },
+          { category_id: newCat.id, language: 'es', name: form.name_es, description: form.description_es || null, slug: slugEs },
         ];
         const { error: tErr } = await supabase.from('category_translations').insert(translations);
         if (tErr) throw tErr;
       }
     },
+
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-categories'] });
       qc.invalidateQueries({ queryKey: ['categories'] });
