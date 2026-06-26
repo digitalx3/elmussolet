@@ -141,7 +141,7 @@ const CartPage: React.FC = () => {
 
           <div className="mt-6 flex flex-col sm:flex-row gap-3">
             <Button variant="outline" className="flex-1 gap-2" asChild>
-              <Link to="/cataleg">
+              <Link to={continueShoppingTo}>
                 <ArrowLeft className="h-4 w-4" />
                 {t('cart.continueShopping')}
               </Link>
