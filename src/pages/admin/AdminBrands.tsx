@@ -115,7 +115,7 @@ const AdminBrands: React.FC = () => {
 
   const openEdit = async (b: BrandRow) => {
     setEditId(b.id);
-    const translations: Record<string, { name: string; description: string }> = {};
+    const translations: Record<string, { name: string; description: string; slug: string }> = {};
     try {
       const trs = await loadTranslations(b.id);
       trs.forEach((tr) => {
