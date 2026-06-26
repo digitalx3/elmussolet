@@ -160,6 +160,7 @@ const TopProductsChart: React.FC = () => {
 
 const AdminOverview: React.FC = () => {
   const { t } = useTranslation();
+  const chartConfig = useChartConfig();
   const { data, isLoading } = useAdminStats();
 
   if (isLoading) {
