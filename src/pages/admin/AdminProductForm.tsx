@@ -24,6 +24,8 @@ import LanguageTabs from '@/components/admin/LanguageTabs';
 import { useAiProvider, isAiReady } from '@/hooks/useAiProvider';
 import RichTextEditor from '@/components/ui/rich-text-editor';
 import RelatedProductsEditor from '@/components/admin/RelatedProductsEditor';
+import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
+
 
 const emptyTranslation = { name: '', short_description: '', description: '', slug: '' };
 
@@ -350,10 +352,27 @@ const AdminProductForm: React.FC = () => {
       return;
     }
 
+    // Slug validation (base + per-language). Empty allowed (auto-generated).
+    const baseSlugErr = validateSlugValue(form.slug || '', true);
+    if (baseSlugErr) {
+      notify.error(`Slug base no vàlid: ${baseSlugErr}`);
+      return;
+    }
+    for (const lng of languages) {
+      const trSlug = (form.translations[lng.code] as any)?.slug || '';
+      const err = validateSlugValue(trSlug, true);
+      if (err) {
+        setActiveLang(lng.code);
+        notify.error(`Slug (${lng.code.toUpperCase()}) no vàlid: ${err}`);
+        return;
+      }
+    }
+
     if (!form.sku) {
       notify.error('Omple els camps obligatoris: SKU');
       return;
     }
+
 
 
     // Sale price validation
@@ -496,22 +515,14 @@ const AdminProductForm: React.FC = () => {
                       <span className="text-[11px] text-muted-foreground">{tr.name.length}/{MAX_NAME}</span>
                     </div>
                   </div>
-                  <div>
-                    <Label>Slug ({lang.toUpperCase()})</Label>
-                    <Input
-                      value={(tr as any).slug || ''}
-                      onChange={e => updateTranslation(lang, 'slug', e.target.value
-                        .toLowerCase()
-                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                        .replace(/[^a-z0-9-]/g, '-')
-                        .replace(/-+/g, '-')
-                      )}
-                      placeholder="es-generara-automaticament-des-del-nom"
-                    />
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      S'omple automàticament des del nom. Edita per personalitzar l'URL SEO en aquest idioma.
-                    </p>
-                  </div>
+                  <SlugInput
+                    label={`Slug (${lang.toUpperCase()})`}
+                    value={(tr as any).slug || ''}
+                    onChange={(next) => updateTranslation(lang, 'slug', next)}
+                    placeholder="es-generara-automaticament-des-del-nom"
+                    hint="S'omple automàticament des del nom. Edita per personalitzar l'URL SEO en aquest idioma."
+                  />
+
                   <div>
                     <div className="flex items-center justify-between">
                       <Label>Descripció curta</Label>
@@ -583,19 +594,14 @@ const AdminProductForm: React.FC = () => {
       <Card>
         <CardHeader><CardTitle>Informació bàsica</CardTitle></CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label>Slug base</Label>
-            <Input
-              value={form.slug}
-              onChange={e => updateField('slug', e.target.value
-                .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                .replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'))}
-              placeholder="Es generarà automàticament en desar"
-            />
-            <p className="text-[11px] text-muted-foreground mt-1">
-              S'omple sol des del nom de l'idioma per defecte si el deixes buit.
-            </p>
-          </div>
+          <SlugInput
+            label="Slug base"
+            value={form.slug}
+            onChange={(next) => updateField('slug', next)}
+            placeholder="Es generarà automàticament en desar"
+            hint="S'omple sol des del nom de l'idioma per defecte si el deixes buit."
+          />
+
 
           <div>
             <Label>SKU *</Label>

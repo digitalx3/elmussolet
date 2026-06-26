@@ -19,6 +19,8 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
 import { notify } from '@/lib/notify';
+import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
+
 
 interface CategoryRow {
   id: string;
@@ -282,23 +284,20 @@ const AdminCategories: React.FC = () => {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Slug (CA)</Label>
-                <Input
-                  value={form.slug_ca}
-                  onChange={e => setForm(f => ({ ...f, slug_ca: slugifyStr(e.target.value) }))}
-                  placeholder="auto des del nom"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Slug (ES)</Label>
-                <Input
-                  value={form.slug_es}
-                  onChange={e => setForm(f => ({ ...f, slug_es: slugifyStr(e.target.value) }))}
-                  placeholder="auto desde el nombre"
-                />
-              </div>
+              <SlugInput
+                label="Slug (CA)"
+                value={form.slug_ca}
+                onChange={(next) => setForm(f => ({ ...f, slug_ca: next }))}
+                placeholder="auto des del nom"
+              />
+              <SlugInput
+                label="Slug (ES)"
+                value={form.slug_es}
+                onChange={(next) => setForm(f => ({ ...f, slug_es: next }))}
+                placeholder="auto desde el nombre"
+              />
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('admin.description')} (CA)</Label>
@@ -310,15 +309,18 @@ const AdminCategories: React.FC = () => {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Slug base</Label>
-                <Input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: slugifyStr(e.target.value) }))} placeholder="auto en desar" />
-              </div>
+              <SlugInput
+                label="Slug base"
+                value={form.slug}
+                onChange={(next) => setForm(f => ({ ...f, slug: next }))}
+                placeholder="auto en desar"
+              />
               <div className="space-y-2">
                 <Label>{t('admin.sortOrder')}</Label>
                 <Input type="number" value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: parseInt(e.target.value) || 0 }))} />
               </div>
             </div>
+
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -342,7 +344,14 @@ const AdminCategories: React.FC = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('admin.cancel')}</Button>
             <Button
-              onClick={() => saveMutation.mutate()}
+              onClick={() => {
+                for (const [label, val] of [['base', form.slug], ['CA', form.slug_ca], ['ES', form.slug_es]] as const) {
+                  const err = validateSlugValue(val || '', true);
+                  if (err) { notify.error(`Slug ${label} no vàlid: ${err}`); return; }
+                }
+                saveMutation.mutate();
+              }}
+
               disabled={!form.name_ca || !form.name_es || saveMutation.isPending}
             >
               {saveMutation.isPending ? '...' : (editId ? t('admin.save') : t('admin.create'))}

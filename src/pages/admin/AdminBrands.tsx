@@ -18,7 +18,9 @@ import { Plus, Pencil, Trash2, Upload, X } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { optimizeImage } from '@/lib/optimizeImage';
 import LanguageTabs from '@/components/admin/LanguageTabs';
+import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
 import { useLanguages } from '@/hooks/useLanguages';
+
 
 interface BrandRow {
   id: string;
@@ -353,16 +355,14 @@ const AdminBrands: React.FC = () => {
                         placeholder={form.name}
                       />
                     </div>
-                    <div>
-                      <Label className="text-xs">Slug ({code.toUpperCase()})</Label>
-                      <Input
-                        value={form.translations[code]?.slug ?? ''}
-                        onChange={(e) => setTranslation(code, 'slug', e.target.value
-                          .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                          .replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'))}
-                        placeholder="es-generara-automaticament"
-                      />
-                    </div>
+                    <SlugInput
+                      label={`Slug (${code.toUpperCase()})`}
+                      value={form.translations[code]?.slug ?? ''}
+                      onChange={(next) => setTranslation(code, 'slug', next)}
+                      placeholder="es-generara-automaticament"
+                      className="text-xs"
+                    />
+
                     <div>
 
                       <Label className="text-xs">Descripció ({code.toUpperCase()})</Label>
@@ -422,9 +422,17 @@ const AdminBrands: React.FC = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('admin.cancel')}</Button>
             <Button
-              onClick={() => saveMutation.mutate()}
+              onClick={() => {
+                for (const lng of languages) {
+                  const s = form.translations[lng.code]?.slug || '';
+                  const err = validateSlugValue(s, true);
+                  if (err) { notify.error(`Slug (${lng.code.toUpperCase()}) no vàlid: ${err}`); return; }
+                }
+                saveMutation.mutate();
+              }}
               disabled={!form.name || saveMutation.isPending || uploading}
             >
+
               {saveMutation.isPending || uploading ? '...' : (editId ? t('admin.save') : t('admin.create'))}
             </Button>
           </DialogFooter>

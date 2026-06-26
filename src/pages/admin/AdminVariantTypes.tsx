@@ -12,6 +12,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { notify } from '@/lib/notify';
+import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
+
 
 interface VariantTypeRow {
   id: string;
@@ -150,6 +152,10 @@ const AdminVariantTypes: React.FC = () => {
   };
 
   const handleSave = () => {
+    for (const [label, val] of [['base', formSlug], ['CA', formSlugCa], ['ES', formSlugEs]] as const) {
+      const err = validateSlugValue(val || '', true);
+      if (err) { notify.error(`Slug ${label} no vàlid: ${err}`); return; }
+    }
     saveMutation.mutate({
       id: editingId || undefined,
       slug: formSlug,
@@ -159,6 +165,7 @@ const AdminVariantTypes: React.FC = () => {
       slugEs: formSlugEs,
     });
   };
+
 
 
   const getName = (vt: VariantTypeRow) => {
@@ -199,25 +206,18 @@ const AdminVariantTypes: React.FC = () => {
                 <Label>Nom (ES)</Label>
                 <Input value={formNameEs} onChange={e => onNameEsChange(e.target.value)} placeholder="Color" />
               </div>
-              <div>
-                <Label>Slug base</Label>
-                <Input
-                  value={formSlug}
-                  onChange={e => setFormSlug(slugifyStr(e.target.value))}
-                  placeholder="auto des del nom"
-                />
-              </div>
+              <SlugInput
+                label="Slug base"
+                value={formSlug}
+                onChange={setFormSlug}
+                placeholder="auto des del nom"
+              />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label>Slug (CA)</Label>
-                <Input value={formSlugCa} onChange={e => setFormSlugCa(slugifyStr(e.target.value))} placeholder="auto" />
-              </div>
-              <div>
-                <Label>Slug (ES)</Label>
-                <Input value={formSlugEs} onChange={e => setFormSlugEs(slugifyStr(e.target.value))} placeholder="auto" />
-              </div>
+              <SlugInput label="Slug (CA)" value={formSlugCa} onChange={setFormSlugCa} placeholder="auto" />
+              <SlugInput label="Slug (ES)" value={formSlugEs} onChange={setFormSlugEs} placeholder="auto" />
             </div>
+
 
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={saveMutation.isPending} className="gap-1">
