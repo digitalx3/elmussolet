@@ -558,7 +558,7 @@ const AdminProductForm: React.FC = () => {
             <Input value={form.sku} onChange={e => updateField('sku', e.target.value)} />
           </div>
           <div>
-            <Label>Preu base sense IVA (€) *</Label>
+            <Label>Preu sense IVA (€) *</Label>
             <Input type="number" step="0.01" min="0" value={form.base_price}
               onChange={e => updateField('base_price', parseFloat(e.target.value) || 0)} />
           </div>
@@ -572,13 +572,30 @@ const AdminProductForm: React.FC = () => {
           {(() => {
             const selectedTax = taxRates.find(tr => tr.id === form.tax_rate_id);
             const taxPct = selectedTax?.percentage ?? 0;
-            const pvp = priceWithTax(form.base_price, taxPct);
+            const pvp = Math.round(priceWithTax(form.base_price, taxPct) * 100) / 100;
             return (
-              <div className="sm:col-span-2 p-3 rounded-lg bg-muted/50 text-sm">
-                <span className="text-muted-foreground">PVP (IVA inclòs): </span>
-                <span className="font-bold text-foreground">{pvp.toFixed(2)} €</span>
-                {selectedTax && <span className="text-muted-foreground ml-2">({selectedTax.name} {selectedTax.percentage}%)</span>}
-              </div>
+              <>
+                <div>
+                  <Label>Preu amb IVA (€) *</Label>
+                  <Input
+                    type="number" step="0.01" min="0"
+                    value={pvp}
+                    onChange={e => {
+                      const gross = parseFloat(e.target.value) || 0;
+                      const net = taxPct > 0 ? gross / (1 + taxPct / 100) : gross;
+                      updateField('base_price', Math.round(net * 10000) / 10000);
+                    }}
+                  />
+                </div>
+                <div className="sm:col-span-2 p-3 rounded-lg bg-muted/50 text-sm">
+                  <span className="text-muted-foreground">Preus sincronitzats — </span>
+                  <span className="font-semibold">{form.base_price.toFixed(4)} €</span>
+                  <span className="text-muted-foreground"> sense IVA · </span>
+                  <span className="font-semibold">{pvp.toFixed(2)} €</span>
+                  <span className="text-muted-foreground"> amb IVA</span>
+                  {selectedTax && <span className="text-muted-foreground ml-2">({selectedTax.name} {selectedTax.percentage}%)</span>}
+                </div>
+              </>
             );
           })()}
           <div>
