@@ -6,8 +6,10 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/CartContext';
+import { useListAccess } from '@/contexts/ListAccessContext';
 import CartItemRow from '@/components/cart/CartItemRow';
 import PublicListSteps from '@/components/list/PublicListSteps';
+
 
 const CartPage: React.FC = () => {
   const { t } = useTranslation();
