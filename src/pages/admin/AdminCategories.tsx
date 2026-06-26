@@ -328,6 +328,7 @@ const AdminCategories: React.FC = () => {
                 value={form.slug}
                 onChange={(next) => setForm(f => ({ ...f, slug: next }))}
                 placeholder="auto en desar"
+                externalError={slugDupErrors.base ?? null}
               />
               <div className="space-y-2">
                 <Label>{t('admin.sortOrder')}</Label>
