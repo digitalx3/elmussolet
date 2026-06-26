@@ -23,6 +23,9 @@ interface AuthContextType {
   profile: Profile | null;
   isLoading: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
+  permissions: string[];
+  can: (perm: string) => boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -35,19 +38,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [roles, setRoles] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [enforced, setEnforced] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      setProfile(data as unknown as Profile | null);
+      const [{ data: prof }, { data: roleRows }, { data: permRows }, { data: setting }] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', userId).single(),
+        supabase.from('user_roles').select('role').eq('user_id', userId),
+        supabase.from('user_permissions').select('permission').eq('user_id', userId),
+        supabase.from('site_settings').select('value').eq('key', 'permissions_enforced').maybeSingle(),
+      ]);
+      setProfile(prof as unknown as Profile | null);
+      setRoles(((roleRows ?? []) as any[]).map(r => r.role));
+      setPermissions(((permRows ?? []) as any[]).map(r => r.permission));
+      const v = setting?.value as any;
+      setEnforced(v === true || v === 'true');
     } catch (e) {
       console.error('Failed to fetch profile:', e);
       setProfile(null);
+      setRoles([]);
+      setPermissions([]);
     }
   };
 
@@ -60,6 +73,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           fetchProfile(session.user.id).finally(() => setIsLoading(false));
         } else {
           setProfile(null);
+          setRoles([]);
+          setPermissions([]);
           setIsLoading(false);
         }
       }
@@ -101,10 +116,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) await fetchProfile(user.id);
   };
 
+  const isSuperAdmin = roles.includes('super_admin');
+  const isAdmin = isSuperAdmin || roles.includes('admin') || profile?.role === 'admin';
+
+  const can = (perm: string) => {
+    if (isSuperAdmin) return true;
+    if (!isAdmin) return false;
+    if (!enforced) return true; // grace period
+    return permissions.includes(perm);
+  };
+
   return (
     <AuthContext.Provider value={{
       user, session, profile, isLoading,
-      isAdmin: profile?.role === 'admin',
+      isAdmin, isSuperAdmin, permissions, can,
       signIn, signUp, signOut, refreshProfile,
     }}>
       {children}

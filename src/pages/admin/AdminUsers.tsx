@@ -22,6 +22,7 @@ import { Search, Eye, ShieldCheck, User, ShoppingBag, Baby, Plus, Pencil, Trash2
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
+import { UserPermissionsDialog } from '@/components/admin/UserPermissionsDialog';
 
 interface Profile {
   id: string;
@@ -74,7 +75,7 @@ const emptyForm: UserFormState = {
 const AdminUsers: React.FC = () => {
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, isSuperAdmin } = useAuth();
   const [search, setSearch] = useState('');
   const [detailUser, setDetailUser] = useState<Profile | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -83,6 +84,7 @@ const AdminUsers: React.FC = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteMode, setDeleteMode] = useState<'soft' | 'hard' | null>(null);
   const [restoreId, setRestoreId] = useState<string | null>(null);
+  const [permsUser, setPermsUser] = useState<Profile | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-users'],
@@ -270,7 +272,17 @@ const AdminUsers: React.FC = () => {
     }
   };
 
+  const { data: superAdminIds = [] } = useQuery({
+    queryKey: ['super-admin-ids'],
+    queryFn: async () => {
+      const { data } = await supabase.from('user_roles').select('user_id').eq('role', 'super_admin');
+      return ((data ?? []) as any[]).map(r => r.user_id as string);
+    },
+  });
+  const superSet = new Set(superAdminIds);
+
   const filtered = users.filter(u => {
+    if (!isSuperAdmin && superSet.has(u.id)) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -359,6 +371,11 @@ const AdminUsers: React.FC = () => {
                     <Button variant="ghost" size="icon" onClick={() => openEdit(user)} disabled={!!user.deleted_at}>
                       <Pencil className="h-4 w-4" />
                     </Button>
+                    {isSuperAdmin && user.role === 'admin' && !user.deleted_at && (
+                      <Button variant="ghost" size="sm" onClick={() => setPermsUser(user)}>
+                        Permisos
+                      </Button>
+                    )}
                     {user.deleted_at ? (
                       <Button
                         variant="outline"
@@ -774,6 +791,11 @@ const AdminUsers: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <UserPermissionsDialog
+        user={permsUser}
+        onClose={() => setPermsUser(null)}
+      />
     </div>
   );
 };

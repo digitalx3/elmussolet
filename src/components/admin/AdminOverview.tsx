@@ -83,6 +83,78 @@ const chartConfig = {
   total: { label: 'Vendes (€)', color: 'hsl(var(--primary))' },
 };
 
+const topChartConfig = {
+  units: { label: 'Unitats venudes', color: 'hsl(var(--primary))' },
+};
+
+const TopProductsChart: React.FC = () => {
+  const now = new Date();
+  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const [month, setMonth] = React.useState<string>(defaultMonth);
+
+  const { data: top = [], isLoading } = useQuery({
+    queryKey: ['admin-top-products', month],
+    queryFn: async () => {
+      const [y, m] = month.split('-').map(Number);
+      const from = new Date(Date.UTC(y, m - 1, 1)).toISOString();
+      const to = new Date(Date.UTC(y, m, 1)).toISOString();
+      const { data, error } = await supabase.rpc('get_top_products', {
+        _from: from, _to: to, _limit: 10,
+      });
+      if (error) throw error;
+      const rows = (data || []) as Array<{ product_id: string; slug: string; units: number; revenue: number }>;
+      if (rows.length === 0) return [] as Array<{ product_id: string; name: string; units: number }>;
+      const ids = rows.map(r => r.product_id);
+      const { data: tr } = await supabase
+        .from('product_translations')
+        .select('product_id, name, language')
+        .in('product_id', ids);
+      const nameByProduct: Record<string, string> = {};
+      (tr || []).forEach((t: any) => {
+        if (!nameByProduct[t.product_id] || t.language === 'ca') nameByProduct[t.product_id] = t.name;
+      });
+      return rows.map(r => ({
+        product_id: r.product_id,
+        name: nameByProduct[r.product_id] || r.slug,
+        units: Number(r.units) || 0,
+      }));
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-4 flex-wrap">
+        <CardTitle className="font-display text-lg">Productes més venuts</CardTitle>
+        <input
+          type="month"
+          value={month}
+          onChange={e => setMonth(e.target.value)}
+          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+        />
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <p className="text-muted-foreground text-sm">Carregant…</p>
+        ) : top.length === 0 ? (
+          <p className="text-muted-foreground text-sm py-8 text-center">
+            Cap venda registrada en el mes seleccionat.
+          </p>
+        ) : (
+          <ChartContainer config={topChartConfig} className="h-[300px] w-full">
+            <BarChart data={top} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis type="number" tick={{ fontSize: 11 }} />
+              <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={160} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="units" fill="var(--color-units)" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ChartContainer>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 const AdminOverview: React.FC = () => {
   const { t } = useTranslation();
   const { data, isLoading } = useAdminStats();
@@ -141,6 +213,9 @@ const AdminOverview: React.FC = () => {
           </ChartContainer>
         </CardContent>
       </Card>
+
+      <TopProductsChart />
+
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent orders */}

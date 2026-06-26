@@ -63,6 +63,19 @@ Deno.serve(async (req: Request) => {
       .single();
     if (profile?.role !== "admin") return json({ error: "Forbidden" }, 200);
 
+    // Check if caller is super_admin
+    const { data: callerRoles } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userData.user.id);
+    const callerIsSuper = (callerRoles || []).some((r: any) => r.role === "super_admin");
+
+    const isTargetSuper = async (uid: string) => {
+      const { data } = await admin
+        .from("user_roles").select("role").eq("user_id", uid).eq("role", "super_admin").maybeSingle();
+      return !!data;
+    };
+
     const body = (await req.json()) as Body;
 
     if (body.action === "create") {
@@ -123,6 +136,9 @@ Deno.serve(async (req: Request) => {
 
     if (body.action === "update") {
       if (!body.user_id) return json({ error: "user_id required" }, 400);
+      if (!callerIsSuper && (await isTargetSuper(body.user_id))) {
+        return json({ error: "Forbidden: cannot modify Super Admin" }, 403);
+      }
       const updates: any = {};
       if (body.email) updates.email = body.email;
       if (body.password) updates.password = body.password;
@@ -168,6 +184,9 @@ Deno.serve(async (req: Request) => {
       if (!body.user_id) return json({ error: "user_id required" }, 400);
       if (body.user_id === userData.user.id) {
         return json({ error: "Cannot delete yourself" }, 400);
+      }
+      if (!callerIsSuper && (await isTargetSuper(body.user_id))) {
+        return json({ error: "Forbidden: cannot delete Super Admin" }, 403);
       }
       const mode = body.delete_mode || "soft";
 

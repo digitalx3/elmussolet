@@ -558,7 +558,7 @@ const AdminProductForm: React.FC = () => {
             <Input value={form.sku} onChange={e => updateField('sku', e.target.value)} />
           </div>
           <div>
-            <Label>Preu base sense IVA (€) *</Label>
+            <Label>Preu sense IVA (€) *</Label>
             <Input type="number" step="0.01" min="0" value={form.base_price}
               onChange={e => updateField('base_price', parseFloat(e.target.value) || 0)} />
           </div>
@@ -572,13 +572,30 @@ const AdminProductForm: React.FC = () => {
           {(() => {
             const selectedTax = taxRates.find(tr => tr.id === form.tax_rate_id);
             const taxPct = selectedTax?.percentage ?? 0;
-            const pvp = priceWithTax(form.base_price, taxPct);
+            const pvp = Math.round(priceWithTax(form.base_price, taxPct) * 100) / 100;
             return (
-              <div className="sm:col-span-2 p-3 rounded-lg bg-muted/50 text-sm">
-                <span className="text-muted-foreground">PVP (IVA inclòs): </span>
-                <span className="font-bold text-foreground">{pvp.toFixed(2)} €</span>
-                {selectedTax && <span className="text-muted-foreground ml-2">({selectedTax.name} {selectedTax.percentage}%)</span>}
-              </div>
+              <>
+                <div>
+                  <Label>Preu amb IVA (€) *</Label>
+                  <Input
+                    type="number" step="0.01" min="0"
+                    value={pvp}
+                    onChange={e => {
+                      const gross = parseFloat(e.target.value) || 0;
+                      const net = taxPct > 0 ? gross / (1 + taxPct / 100) : gross;
+                      updateField('base_price', Math.round(net * 10000) / 10000);
+                    }}
+                  />
+                </div>
+                <div className="sm:col-span-2 p-3 rounded-lg bg-muted/50 text-sm">
+                  <span className="text-muted-foreground">Preus sincronitzats — </span>
+                  <span className="font-semibold">{form.base_price.toFixed(4)} €</span>
+                  <span className="text-muted-foreground"> sense IVA · </span>
+                  <span className="font-semibold">{pvp.toFixed(2)} €</span>
+                  <span className="text-muted-foreground"> amb IVA</span>
+                  {selectedTax && <span className="text-muted-foreground ml-2">({selectedTax.name} {selectedTax.percentage}%)</span>}
+                </div>
+              </>
             );
           })()}
           <div>
@@ -644,15 +661,37 @@ const AdminProductForm: React.FC = () => {
             </select>
           </div>
           <div>
-            <Label>Valor {form.sale_price_type === 'percent' ? '(%)' : '(€)'}</Label>
-            <Input
-              type="number" step="0.01" min="0"
-              max={form.sale_price_type === 'percent' ? 100 : undefined}
-              disabled={!form.sale_price_type}
-              value={form.sale_value ?? ''}
-              onChange={e => updateField('sale_value', e.target.value ? parseFloat(e.target.value) : null)}
-              placeholder={form.sale_price_type === 'percent' ? 'ex: 15' : 'ex: 19.99'}
-            />
+            <Label>
+              Valor {form.sale_price_type === 'percent' ? '(%)' : '(€, IVA inclòs)'}
+            </Label>
+            {(() => {
+              const selectedTax = taxRates.find(tr => tr.id === form.tax_rate_id);
+              const taxPct = selectedTax?.percentage ?? 0;
+              const isFixed = form.sale_price_type === 'fixed';
+              const displayed = isFixed && form.sale_value != null
+                ? Math.round(form.sale_value * (1 + taxPct / 100) * 100) / 100
+                : (form.sale_value ?? '');
+              return (
+                <Input
+                  type="number" step="0.01" min="0"
+                  max={form.sale_price_type === 'percent' ? 100 : undefined}
+                  disabled={!form.sale_price_type}
+                  value={displayed}
+                  onChange={e => {
+                    const raw = e.target.value ? parseFloat(e.target.value) : null;
+                    if (raw == null) { updateField('sale_value', null); return; }
+                    if (isFixed) {
+                      // Stored as net (sale_value); the trigger will sync sale_value_with_tax = raw.
+                      const net = taxPct > 0 ? raw / (1 + taxPct / 100) : raw;
+                      updateField('sale_value', Math.round(net * 10000) / 10000);
+                    } else {
+                      updateField('sale_value', raw);
+                    }
+                  }}
+                  placeholder={form.sale_price_type === 'percent' ? 'ex: 15' : 'ex: 19.99'}
+                />
+              );
+            })()}
           </div>
           <div>
             <Label>Inici (opcional)</Label>
