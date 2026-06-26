@@ -270,7 +270,17 @@ const AdminUsers: React.FC = () => {
     }
   };
 
+  const { data: superAdminIds = [] } = useQuery({
+    queryKey: ['super-admin-ids'],
+    queryFn: async () => {
+      const { data } = await supabase.from('user_roles').select('user_id').eq('role', 'super_admin');
+      return ((data ?? []) as any[]).map(r => r.user_id as string);
+    },
+  });
+  const superSet = new Set(superAdminIds);
+
   const filtered = users.filter(u => {
+    if (!isSuperAdmin && superSet.has(u.id)) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
