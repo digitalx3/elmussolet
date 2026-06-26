@@ -20,6 +20,8 @@ import { optimizeImage } from '@/lib/optimizeImage';
 import LanguageTabs from '@/components/admin/LanguageTabs';
 import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
 import { useLanguages } from '@/hooks/useLanguages';
+import { checkTranslationSlugDuplicate } from '@/lib/checkSlugDuplicate';
+import { useDuplicateSlugErrors, hasAnySlugError } from '@/hooks/useDuplicateSlugErrors';
 
 
 interface BrandRow {
