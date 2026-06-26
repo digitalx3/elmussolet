@@ -68,20 +68,81 @@ export type NotifyMessage = React.ReactNode;
 
 /** Options accepted by notify.* — mirrors sonner's `ExternalToast` minus
  *  fields we own globally (closeButton). */
-export type NotifyOptions = Omit<ExternalToast, "closeButton">;
+export type NotifyOptions = Omit<ExternalToast, "closeButton"> & {
+  /**
+   * Logical key to deduplicate toasts. When provided, a new toast with the
+   * same `key` replaces the previous one in place (no stacking duplicates).
+   * Useful for messages like "Producto añadido" fired repeatedly in a row.
+   */
+  key?: string;
+  /**
+   * When true (default), toasts produced by `success/info/warning/error/message`
+   * with the same `message` text within `dedupeWindowMs` reuse the same id.
+   * Set to false to always create a fresh toast.
+   */
+  dedupe?: boolean;
+};
 
 /** Return type of every imperative toast call (sonner toast id). */
 export type NotifyId = string | number;
 
+/** Window during which an identical message is treated as a duplicate. */
+const DEDUPE_WINDOW_MS = 1500;
+
+type DedupeEntry = { id: NotifyId; ts: number };
+const dedupeRegistry = new Map<string, DedupeEntry>();
+
+function dedupeKey(variant: string, key: string | undefined, message: NotifyMessage): string {
+  if (key) return `k:${variant}:${key}`;
+  if (typeof message === "string") return `m:${variant}:${message}`;
+  return ""; // non-string messages without a key are not deduplicated
+}
+
+function resolveId(variant: string, opts: NotifyOptions | undefined, message: NotifyMessage): {
+  id: NotifyId | undefined;
+  registryKey: string;
+} {
+  if (opts?.id !== undefined) return { id: opts.id, registryKey: "" };
+  if (opts?.dedupe === false) return { id: undefined, registryKey: "" };
+  const registryKey = dedupeKey(variant, opts?.key, message);
+  if (!registryKey) return { id: undefined, registryKey: "" };
+  const existing = dedupeRegistry.get(registryKey);
+  if (existing && Date.now() - existing.ts < DEDUPE_WINDOW_MS) {
+    return { id: existing.id, registryKey };
+  }
+  return { id: undefined, registryKey };
+}
+
+function rememberId(registryKey: string, id: NotifyId) {
+  if (!registryKey) return;
+  dedupeRegistry.set(registryKey, { id, ts: Date.now() });
+}
+
 function withDefaults(
-  opts?: NotifyOptions,
-  duration: number = TOAST_DEFAULTS.duration,
+  opts: NotifyOptions | undefined,
+  duration: number,
+  id: NotifyId | undefined,
 ): ExternalToast {
+  const { key: _key, dedupe: _dedupe, ...rest } = opts ?? {};
   return {
     duration,
     closeButton: TOAST_DEFAULTS.closeButton,
-    ...opts,
+    ...rest,
+    ...(id !== undefined ? { id } : {}),
   };
+}
+
+function emit(
+  variant: "success" | "info" | "warning" | "error" | "message" | "loading",
+  fn: (m: NotifyMessage, o: ExternalToast) => NotifyId,
+  message: NotifyMessage,
+  opts: NotifyOptions | undefined,
+  duration: number,
+): NotifyId {
+  const { id, registryKey } = resolveId(variant, opts, message);
+  const finalId = fn(message, withDefaults(opts, duration, id));
+  rememberId(registryKey, finalId);
+  return finalId;
 }
 
 export interface Notify {
@@ -96,17 +157,22 @@ export interface Notify {
 }
 
 export const notify: Notify = {
-  success: (message, opts) => sonnerToast.success(message, withDefaults(opts)),
-  info: (message, opts) => sonnerToast.info(message, withDefaults(opts)),
-  warning: (message, opts) => sonnerToast.warning(message, withDefaults(opts)),
+  success: (message, opts) =>
+    emit("success", sonnerToast.success, message, opts, TOAST_DEFAULTS.duration),
+  info: (message, opts) =>
+    emit("info", sonnerToast.info, message, opts, TOAST_DEFAULTS.duration),
+  warning: (message, opts) =>
+    emit("warning", sonnerToast.warning, message, opts, TOAST_DEFAULTS.duration),
   error: (message, opts) =>
-    sonnerToast.error(message, withDefaults(opts, TOAST_DEFAULTS.errorDuration)),
-  message: (message, opts) => sonnerToast(message, withDefaults(opts)),
+    emit("error", sonnerToast.error, message, opts, TOAST_DEFAULTS.errorDuration),
+  message: (message, opts) =>
+    emit("message", (m, o) => sonnerToast(m, o), message, opts, TOAST_DEFAULTS.duration),
   loading: (message, opts) =>
-    sonnerToast.loading(message, { ...opts, duration: TOAST_DEFAULTS.loadingDuration }),
+    emit("loading", sonnerToast.loading, message, opts, TOAST_DEFAULTS.loadingDuration),
   promise: sonnerToast.promise.bind(sonnerToast),
   dismiss: sonnerToast.dismiss.bind(sonnerToast),
 };
+
 
 // Re-export the raw toast and sonner option types for edge cases.
 export { sonnerToast as toast };
