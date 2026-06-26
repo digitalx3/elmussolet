@@ -91,6 +91,7 @@
   },
   "cart": {
     "title": "Cistella",
+    "addedToCart": "Producte afegit a la cistella",
     "empty": "La teva cistella és buida",
     "emptyDesc": "Explora el catàleg i afegeix productes!",
     "subtotal": "Subtotal",
