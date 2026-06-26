@@ -93,6 +93,28 @@ const AdminProductForm: React.FC = () => {
   const { data: aiStatus } = useAiProvider();
   const aiReady = isAiReady(aiStatus);
 
+  // Live duplicate-slug detection (base + per language)
+  const slugDupErrors = useDuplicateSlugErrors(
+    () => [
+      { key: 'base', run: () => checkBaseSlugDuplicate('products', form.slug, isNew ? null : id) },
+      ...languages.map((lng) => ({
+        key: lng.code,
+        run: () => checkTranslationSlugDuplicate(
+          { table: 'product_translations', fk: 'product_id', langCol: 'language' },
+          lng.code,
+          (form.translations[lng.code] as any)?.slug || '',
+          isNew ? null : id,
+        ),
+      })),
+    ],
+    [
+      form.slug,
+      languages.map(l => l.code).join(','),
+      JSON.stringify(Object.fromEntries(languages.map(l => [l.code, (form.translations[l.code] as any)?.slug || '']))),
+      id, isNew,
+    ],
+  );
+
   type SeoField = 'short' | 'long';
 
   const generateSeoDescriptions = async (lang: string, fields: SeoField[] = ['short', 'long']) => {
