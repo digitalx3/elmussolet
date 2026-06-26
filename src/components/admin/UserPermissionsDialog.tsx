@@ -7,7 +7,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 
 interface Props {
   user: { id: string; full_name: string | null; role: string } | null;
@@ -67,10 +67,10 @@ export const UserPermissionsDialog: React.FC<Props> = ({ user, onClose }) => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['user-permissions', user?.id] });
-      toast.success('Permisos actualitzats');
+      notify.success('Permisos actualitzats');
       onClose();
     },
-    onError: (e: any) => toast.error(e.message || 'Error desant permisos'),
+    onError: (e: any) => notify.error(e.message || 'Error desant permisos'),
   });
 
   const toggle = (key: string, on: boolean) => {

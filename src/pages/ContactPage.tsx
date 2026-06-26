@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import ConsentedMap from '@/components/cookies/ConsentedMap';
 
 const schema = z.object({
@@ -57,11 +57,11 @@ const ContactPage: React.FC = () => {
         body: { ...result.data, language: lang },
       });
       if (error) throw error;
-      toast.success(lang === 'es' ? 'Mensaje enviado, gracias.' : 'Missatge enviat, gràcies.');
+      notify.success(lang === 'es' ? 'Mensaje enviado, gracias.' : 'Missatge enviat, gràcies.');
       setForm({ name: '', email: '', phone: '', subject: '', message: '' });
     } catch (err) {
       console.error(err);
-      toast.error(t('errors.generic'));
+      notify.error(t('errors.generic'));
     } finally {
       setSubmitting(false);
     }

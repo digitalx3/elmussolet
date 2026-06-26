@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Store, CreditCard, Truck, ClipboardList, Receipt, Server, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,9 +54,9 @@ const AdminSettings: React.FC = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['site-settings'] });
-      toast.success(t('admin.settingsSaved'));
+      notify.success(t('admin.settingsSaved'));
     },
-    onError: () => toast.error(t('errors.generic')),
+    onError: () => notify.error(t('errors.generic')),
   });
 
   const handleSave = () => saveMutation.mutate(form);

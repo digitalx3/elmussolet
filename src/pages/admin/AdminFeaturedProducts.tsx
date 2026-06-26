@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Star, GripVertical, Plus, Trash2, Search, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -158,9 +158,9 @@ const AdminFeaturedProducts: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-featured-products'] });
       qc.invalidateQueries({ queryKey: ['featured-products'] });
-      toast.success('Ordre desat');
+      notify.success('Ordre desat');
     },
-    onError: (e: any) => toast.error(e?.message || 'Error desant l\'ordre'),
+    onError: (e: any) => notify.error(e?.message || 'Error desant l\'ordre'),
   });
 
   const handleDragEnd = (e: DragEndEvent) => {
@@ -180,7 +180,7 @@ const AdminFeaturedProducts: React.FC = () => {
     setSearch('');
     qc.invalidateQueries({ queryKey: ['admin-featured-products'] });
     qc.invalidateQueries({ queryKey: ['featured-products'] });
-    toast.success(`${p.name} afegit a destacats`);
+    notify.success(`${p.name} afegit a destacats`);
   };
 
   const handleRemove = async (id: string) => {

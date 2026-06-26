@@ -17,7 +17,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
 import { Plus, Pencil, Trash2, Search, Package, X, GripVertical, Check } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core';
@@ -142,7 +142,7 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
       setActiveSectionId(id);
       setNewSectionName('');
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const updateSection = useMutation({
@@ -151,7 +151,7 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['template-sections', templateId] }),
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const deleteSection = useMutation({
@@ -165,7 +165,7 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
       qc.invalidateQueries({ queryKey: ['template-items', templateId] });
       setActiveSectionId(null);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   // Persist new order after drag
@@ -178,7 +178,7 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['template-sections', templateId] }),
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -209,7 +209,7 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['template-items', templateId] }),
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const addBulk = useMutation({
@@ -231,9 +231,9 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
     onSuccess: (n) => {
       qc.invalidateQueries({ queryKey: ['template-items', templateId] });
       setSelectedIds(new Set());
-      toast.success(`${n} ${t('admin.productsAdded')}`);
+      notify.success(`${n} ${t('admin.productsAdded')}`);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
 
@@ -243,7 +243,7 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['template-items', templateId] }),
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const updateQty = useMutation({
@@ -252,7 +252,7 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['template-items', templateId] }),
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   // Helpers
@@ -590,9 +590,9 @@ const AdminTemplates: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-templates'] });
       setDialogOpen(false);
-      toast.success(editId ? t('admin.templateUpdated') : t('admin.templateCreated'));
+      notify.success(editId ? t('admin.templateUpdated') : t('admin.templateCreated'));
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const deleteMutation = useMutation({
@@ -606,9 +606,9 @@ const AdminTemplates: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-templates'] });
       setDeleteId(null);
-      toast.success(t('admin.templateDeleted'));
+      notify.success(t('admin.templateDeleted'));
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const getName = (tpl: TemplateRow) =>

@@ -18,7 +18,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 
 interface CategoryRow {
   id: string;
@@ -145,9 +145,9 @@ const AdminCategories: React.FC = () => {
       qc.invalidateQueries({ queryKey: ['admin-categories'] });
       qc.invalidateQueries({ queryKey: ['categories'] });
       setDialogOpen(false);
-      toast.success(editId ? t('admin.categoryUpdated') : t('admin.categoryCreated'));
+      notify.success(editId ? t('admin.categoryUpdated') : t('admin.categoryCreated'));
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const deleteMutation = useMutation({
@@ -162,9 +162,9 @@ const AdminCategories: React.FC = () => {
       qc.invalidateQueries({ queryKey: ['admin-categories'] });
       qc.invalidateQueries({ queryKey: ['categories'] });
       setDeleteId(null);
-      toast.success(t('admin.categoryDeleted'));
+      notify.success(t('admin.categoryDeleted'));
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const parentOptions = categories.filter(c => c.id !== editId && !c.parent_id);

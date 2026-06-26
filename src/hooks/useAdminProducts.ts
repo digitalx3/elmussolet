@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 
 export interface AdminProduct {
   id: string;
@@ -243,7 +243,7 @@ export function useDeleteProduct() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-products'] });
-      toast.success('Producte eliminat');
+      notify.success('Producte eliminat');
     },
   });
 }

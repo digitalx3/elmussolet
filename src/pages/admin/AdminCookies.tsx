@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Plus, Trash2, Pencil } from 'lucide-react';
 
 const TABLE_SETTINGS = 'cookie_settings' as const;
@@ -87,11 +87,11 @@ const SettingsTab: React.FC = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success(t('common.saved', 'Desat'));
+      notify.success(t('common.saved', 'Desat'));
       qc.invalidateQueries({ queryKey: ['admin-cookie-settings'] });
       qc.invalidateQueries({ queryKey: ['cookie-settings'] });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   if (isLoading || !form) return <p className="text-sm text-muted-foreground py-6">{t('common.loading', 'Carregant...')}</p>;
@@ -171,9 +171,9 @@ const CategoriesTab: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-cookie-cats'] });
       qc.invalidateQueries({ queryKey: ['cookie-categories'] });
-      toast.success(t('common.saved', 'Desat'));
+      notify.success(t('common.saved', 'Desat'));
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   return (
@@ -268,10 +268,10 @@ const RegistryTab: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-cookies-registry'] });
       qc.invalidateQueries({ queryKey: ['cookies-registry'] });
-      toast.success(t('common.saved', 'Desat'));
+      notify.success(t('common.saved', 'Desat'));
       setEditing(null); setCreating(false); setDraft(emptyReg);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const del = useMutation({
@@ -282,9 +282,9 @@ const RegistryTab: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-cookies-registry'] });
       qc.invalidateQueries({ queryKey: ['cookies-registry'] });
-      toast.success(t('common.deleted', 'Eliminat'));
+      notify.success(t('common.deleted', 'Eliminat'));
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const startCreate = () => {

@@ -8,7 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, Plus, Trash2, MapPin, Save, KeyRound, Copy, RefreshCw, ShieldCheck, Link2 } from 'lucide-react';
 import RichTextEditor from '@/components/ui/rich-text-editor';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 
 interface MaintenanceSettings {
   enabled: boolean;
@@ -61,7 +61,7 @@ const AdminMaintenance: React.FC = () => {
     const { data, error } = await (supabase as any)
       .rpc('get_maintenance_settings_admin');
     if (error) {
-      toast.error('Error carregant la configuració');
+      notify.error('Error carregant la configuració');
     } else if (data) {
       const row = Array.isArray(data) ? data[0] : data;
       if (row) {
@@ -108,9 +108,9 @@ const AdminMaintenance: React.FC = () => {
       .eq('id', '00000000-0000-0000-0000-000000000001');
     setSaving(false);
     if (error) {
-      toast.error('Error guardant: ' + error.message);
+      notify.error('Error guardant: ' + error.message);
     } else {
-      toast.success('Configuració desada');
+      notify.success('Configuració desada');
       try { sessionStorage.removeItem('maintenance.state.v1'); } catch { /* ignore */ }
     }
   };
@@ -119,11 +119,11 @@ const AdminMaintenance: React.FC = () => {
     const v = value.trim();
     if (!v) return;
     if (!IP_OR_CIDR.test(v)) {
-      toast.error('Format no vàlid (IPv4 o CIDR, ex. 192.168.1.10 o 10.0.0.0/24)');
+      notify.error('Format no vàlid (IPv4 o CIDR, ex. 192.168.1.10 o 10.0.0.0/24)');
       return;
     }
     if (state.allowed_ips.includes(v)) {
-      toast.info('Aquesta IP ja és a la llista');
+      notify.info('Aquesta IP ja és a la llista');
       return;
     }
     setState((s) => ({ ...s, allowed_ips: [...s.allowed_ips, v] }));
@@ -146,7 +146,7 @@ const AdminMaintenance: React.FC = () => {
       emergency_token_expires_at: expires,
       emergency_token_used_at: null,
     }));
-    toast.info(`Token generat (vàlid ${hours}h). Recorda Desar canvis — el token només es mostra ara.`);
+    notify.info(`Token generat (vàlid ${hours}h). Recorda Desar canvis — el token només es mostra ara.`);
   };
 
   const [regenCopying, setRegenCopying] = React.useState(false);
@@ -179,7 +179,7 @@ const AdminMaintenance: React.FC = () => {
         .eq('id', '00000000-0000-0000-0000-000000000001');
 
       if (error) {
-        toast.error('Error generant el token: ' + error.message);
+        notify.error('Error generant el token: ' + error.message);
         return;
       }
 
@@ -192,7 +192,7 @@ const AdminMaintenance: React.FC = () => {
       }));
       try { sessionStorage.removeItem('maintenance.state.v1'); } catch { /* ignore */ }
 
-      toast.success(copied
+      notify.success(copied
         ? `Token regenerat i enllaç copiat al porta-retalls (vàlid ${hours}h).`
         : `Token regenerat (vàlid ${hours}h). Copia l'enllaç manualment.`);
     } finally {
@@ -209,7 +209,7 @@ const AdminMaintenance: React.FC = () => {
       emergency_token_expires_at: null,
       emergency_token_used_at: null,
     }));
-    toast.info('Token revocat. Recorda Desar canvis per aplicar.');
+    notify.info('Token revocat. Recorda Desar canvis per aplicar.');
   };
 
   const tokenUrl =
@@ -224,8 +224,8 @@ const AdminMaintenance: React.FC = () => {
   const tokenUsed = state.emergency_token_single_use && !!state.emergency_token_used_at;
 
   const copy = async (text: string, label = 'Copiat al porta-retalls') => {
-    try { await navigator.clipboard.writeText(text); toast.success(label); }
-    catch { toast.error('No s\'ha pogut copiar'); }
+    try { await navigator.clipboard.writeText(text); notify.success(label); }
+    catch { notify.error('No s\'ha pogut copiar'); }
   };
 
   if (loading) return <div className="p-4 text-muted-foreground">Carregant...</div>;

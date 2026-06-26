@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Mail, MapPin, Share2, Inbox } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -52,9 +52,9 @@ const AdminContactSettings: React.FC = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['site-settings'] });
-      toast.success('Configuració desada');
+      notify.success('Configuració desada');
     },
-    onError: () => toast.error('Error en desar'),
+    onError: () => notify.error('Error en desar'),
   });
 
   const update = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));

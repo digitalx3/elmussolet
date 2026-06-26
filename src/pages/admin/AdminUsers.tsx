@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Search, Eye, ShieldCheck, User, ShoppingBag, Baby, Plus, Pencil, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserPermissionsDialog } from '@/components/admin/UserPermissionsDialog';
@@ -145,9 +145,9 @@ const AdminUsers: React.FC = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('Rol actualitzat');
+      notify.success('Rol actualitzat');
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const saveUser = useMutation({
@@ -192,11 +192,11 @@ const AdminUsers: React.FC = () => {
       const parts = [editMode ? 'Usuari actualitzat' : 'Usuari creat'];
       if (info?.emailChanged) parts.push('email actualitzat');
       if (info?.passwordChanged) parts.push('contrasenya actualitzada');
-      toast.success(parts.join(' · '));
+      notify.success(parts.join(' · '));
       setFormOpen(false);
       setForm(emptyForm);
     },
-    onError: (e: any) => toast.error(e.message || 'Error desant l\'usuari'),
+    onError: (e: any) => notify.error(e.message || 'Error desant l\'usuari'),
   });
 
   const deleteUser = useMutation({
@@ -210,11 +210,11 @@ const AdminUsers: React.FC = () => {
     },
     onSuccess: (mode) => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success(mode === 'hard' ? 'Usuari eliminat permanentment' : 'Usuari marcat com eliminat');
+      notify.success(mode === 'hard' ? 'Usuari eliminat permanentment' : 'Usuari marcat com eliminat');
       setDeleteId(null);
       setDeleteMode(null);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const restoreUser = useMutation({
@@ -227,10 +227,10 @@ const AdminUsers: React.FC = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('Usuari restaurat. Ja pot iniciar sessió de nou.');
+      notify.success('Usuari restaurat. Ja pot iniciar sessió de nou.');
       setRestoreId(null);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const openCreate = () => {
@@ -268,7 +268,7 @@ const AdminUsers: React.FC = () => {
         send_welcome_email: false,
       });
     } catch (e: any) {
-      toast.error(e.message);
+      notify.error(e.message);
     }
   };
 

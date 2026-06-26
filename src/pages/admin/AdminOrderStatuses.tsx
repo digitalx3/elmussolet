@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Edit, Trash2, GripVertical, Mail } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 
 const LANGUAGES = ['ca', 'es'];
 
@@ -150,10 +150,10 @@ const AdminOrderStatuses: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-order-statuses'] });
       qc.invalidateQueries({ queryKey: ['order-statuses'] });
-      toast.success(isNew ? t('admin.statusCreated') : t('admin.statusUpdated'));
+      notify.success(isNew ? t('admin.statusCreated') : t('admin.statusUpdated'));
       setEditStatus(null);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const deleteMutation = useMutation({
@@ -164,10 +164,10 @@ const AdminOrderStatuses: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-order-statuses'] });
       qc.invalidateQueries({ queryKey: ['order-statuses'] });
-      toast.success(t('admin.statusDeleted'));
+      notify.success(t('admin.statusDeleted'));
       setDeleteId(null);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const getName = (s: StatusRow, lang: string) =>

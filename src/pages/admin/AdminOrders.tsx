@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 import { Search, Eye, X, Pencil, Trash2, Plus, Check, Ban, History } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { format } from 'date-fns';
 import { ca, es } from 'date-fns/locale';
 
@@ -162,9 +162,9 @@ const AdminOrders: React.FC = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-orders'] });
-      toast.success(t('admin.orderStatusUpdated'));
+      notify.success(t('admin.orderStatusUpdated'));
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const updatePaymentStatusMutation = useMutation({
@@ -174,9 +174,9 @@ const AdminOrders: React.FC = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-orders'] });
-      toast.success(t('admin.paymentStatusUpdated'));
+      notify.success(t('admin.paymentStatusUpdated'));
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const recomputeOrderTotals = async (orderId: string) => {
@@ -218,9 +218,9 @@ const AdminOrders: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-order-items', selectedOrder?.id] });
       qc.invalidateQueries({ queryKey: ['admin-orders'] });
-      toast.success(t('common.success'));
+      notify.success(t('common.success'));
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const deleteItemMutation = useMutation({
@@ -232,9 +232,9 @@ const AdminOrders: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-order-items', selectedOrder?.id] });
       qc.invalidateQueries({ queryKey: ['admin-orders'] });
-      toast.success(t('common.success'));
+      notify.success(t('common.success'));
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const deleteOrderMutation = useMutation({
@@ -312,9 +312,9 @@ const AdminOrders: React.FC = () => {
       qc.invalidateQueries({ queryKey: ['admin-order-deletion-audit'] });
       setSelectedOrder(null);
       setEditing(false);
-      toast.success(t('admin.orderDeleted', 'Comanda eliminada i estoc alliberat'));
+      notify.success(t('admin.orderDeleted', 'Comanda eliminada i estoc alliberat'));
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const addItemMutation = useMutation({
@@ -345,9 +345,9 @@ const AdminOrders: React.FC = () => {
       qc.invalidateQueries({ queryKey: ['admin-orders'] });
       setProductSearch('');
       setProductResults([]);
-      toast.success(t('common.success'));
+      notify.success(t('common.success'));
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const handleProductSearch = async (q: string) => {
@@ -667,7 +667,7 @@ const AdminOrders: React.FC = () => {
                                       qc.refetchQueries({ queryKey: ['admin-stock-movements', selectedOrder.id] }),
                                       qc.refetchQueries({ queryKey: ['admin-orders'] }),
                                     ]);
-                                    toast.success(t('admin.stockReleased', 'Estoc alliberat'));
+                                    notify.success(t('admin.stockReleased', 'Estoc alliberat'));
                                   },
                                 }
                               );

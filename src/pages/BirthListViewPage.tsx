@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { useListAccess } from '@/contexts/ListAccessContext';
 import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import PublicListSteps from '@/components/list/PublicListSteps';
 
 interface ListSection {
@@ -108,7 +108,7 @@ const BirthListViewPage: React.FC = () => {
       });
       setBlockSummary(map);
     } catch {
-      toast.error(t('errors.generic'));
+      notify.error(t('errors.generic'));
     } finally {
       setLoading(false);
     }
@@ -170,7 +170,7 @@ const BirthListViewPage: React.FC = () => {
       variantLabel: item.variant?.value,
     }, listId!);
 
-    toast.success(t('list.giftAdded'));
+    notify.success(t('list.giftAdded'));
   };
 
   const totalItems = items.reduce((s, i) => s + i.quantity_desired, 0);

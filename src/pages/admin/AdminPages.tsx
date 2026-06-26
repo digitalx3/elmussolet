@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Loader2, Save, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,8 +78,8 @@ const AdminPages: React.FC = () => {
         setSelectedId(data.id);
       }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-cms-pages'] }); toast.success('Desat correctament'); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-cms-pages'] }); notify.success('Desat correctament'); },
+    onError: (e: any) => notify.error(e.message),
   });
 
   const deleteMutation = useMutation({
@@ -91,7 +91,7 @@ const AdminPages: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-cms-pages'] });
       setSelectedId(null); setEditing({});
-      toast.success('Pàgina eliminada');
+      notify.success('Pàgina eliminada');
     },
   });
 

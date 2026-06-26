@@ -15,7 +15,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
 import { Plus, Pencil, Trash2, Upload, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { optimizeImage } from '@/lib/optimizeImage';
 import LanguageTabs from '@/components/admin/LanguageTabs';
 import { useLanguages } from '@/hooks/useLanguages';
@@ -123,7 +123,7 @@ const AdminBrands: React.FC = () => {
         };
       });
     } catch (e: any) {
-      toast.error(e.message);
+      notify.error(e.message);
     }
     setForm({
       name: b.name,
@@ -220,11 +220,11 @@ const AdminBrands: React.FC = () => {
       qc.invalidateQueries({ queryKey: ['brands'] });
       setDialogOpen(false);
       setUploading(false);
-      toast.success(editId ? t('admin.brandUpdated') : t('admin.brandCreated'));
+      notify.success(editId ? t('admin.brandUpdated') : t('admin.brandCreated'));
     },
     onError: (e: any) => {
       setUploading(false);
-      toast.error(e.message);
+      notify.error(e.message);
     },
   });
 
@@ -239,9 +239,9 @@ const AdminBrands: React.FC = () => {
       qc.invalidateQueries({ queryKey: ['admin-brands'] });
       qc.invalidateQueries({ queryKey: ['brands'] });
       setDeleteId(null);
-      toast.success(t('admin.brandDeleted'));
+      notify.success(t('admin.brandDeleted'));
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const logoPreviewUrl = previewFile

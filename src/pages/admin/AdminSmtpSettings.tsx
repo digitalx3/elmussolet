@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Save, Loader2, Send, Server, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,8 +82,8 @@ const AdminSmtpSettings: React.FC = () => {
         if (error) throw error;
       }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['smtp-settings'] }); toast.success('Configuració desada'); },
-    onError: (e: any) => toast.error(e.message || 'Error desant'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['smtp-settings'] }); notify.success('Configuració desada'); },
+    onError: (e: any) => notify.error(e.message || 'Error desant'),
   });
 
   const sendTest = useMutation({
@@ -104,8 +104,8 @@ const AdminSmtpSettings: React.FC = () => {
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
     },
-    onSuccess: () => toast.success('Correu de prova enviat'),
-    onError: (e: any) => toast.error('Error: ' + (e?.message || 'desconegut')),
+    onSuccess: () => notify.success('Correu de prova enviat'),
+    onError: (e: any) => notify.error('Error: ' + (e?.message || 'desconegut')),
   });
 
   const upd = (patch: Partial<SmtpRow>) => setForm(p => ({ ...p, ...patch }));
@@ -261,9 +261,9 @@ const SmtpLogPanel: React.FC = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['smtp-send-log'] });
-      toast.success(purgeMode === 'all' ? 'Registre buidat' : 'Registres antics esborrats');
+      notify.success(purgeMode === 'all' ? 'Registre buidat' : 'Registres antics esborrats');
     },
-    onError: (e: any) => toast.error(e?.message || 'Error esborrant'),
+    onError: (e: any) => notify.error(e?.message || 'Error esborrant'),
   });
 
   return (

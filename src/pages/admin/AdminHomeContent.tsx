@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import {
   Save, Loader2, Package, Store, Heart, Truck, Gift, Sparkles, ShieldCheck, Clock, Award,
   Baby, Star, ThumbsUp, Tag, MapPin, Phone, Mail, Camera, Home, Smile,
@@ -211,8 +211,8 @@ const AdminHomeContent: React.FC = () => {
         void defaultCode;
       }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-home-blocks'] }); qc.invalidateQueries({ queryKey: ['home-blocks'] }); toast.success('Contingut desat'); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-home-blocks'] }); qc.invalidateQueries({ queryKey: ['home-blocks'] }); notify.success('Contingut desat'); },
+    onError: (e: any) => notify.error(e.message),
   });
 
   if (isLoading) return <Loader2 className="h-6 w-6 animate-spin" />;

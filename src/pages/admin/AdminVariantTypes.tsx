@@ -11,7 +11,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 
 interface VariantTypeRow {
   id: string;
@@ -75,9 +75,9 @@ const AdminVariantTypes: React.FC = () => {
     onSuccess: () => {
       invalidate();
       resetForm();
-      toast.success('Atribut guardat');
+      notify.success('Atribut guardat');
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => notify.error(err.message),
   });
 
   const deleteMutation = useMutation({
@@ -88,9 +88,9 @@ const AdminVariantTypes: React.FC = () => {
     },
     onSuccess: () => {
       invalidate();
-      toast.success('Atribut eliminat');
+      notify.success('Atribut eliminat');
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => notify.error(err.message),
   });
 
   const resetForm = () => {

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Plus, Trash2, Edit2, Check, X, Star, ClipboardList, Store, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,8 +45,8 @@ const AdminTaxRates: React.FC = () => {
         if (error) throw error;
       }
     },
-    onSuccess: () => { invalidate(); toast.success('Impost guardat'); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: () => { invalidate(); notify.success('Impost guardat'); },
+    onError: (e: any) => notify.error(e.message),
   });
 
   const deleteMutation = useMutation({
@@ -54,8 +54,8 @@ const AdminTaxRates: React.FC = () => {
       const { error } = await supabase.from('tax_rates').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => { invalidate(); toast.success('Impost eliminat'); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: () => { invalidate(); notify.success('Impost eliminat'); },
+    onError: (e: any) => notify.error(e.message),
   });
 
   const startEdit = (rate: TaxRate) => {
@@ -67,7 +67,7 @@ const AdminTaxRates: React.FC = () => {
   const cancel = () => { setEditing(null); setAdding(false); };
 
   const submit = (id?: string) => {
-    if (!form.name) { toast.error("Omple el nom de l'impost"); return; }
+    if (!form.name) { notify.error("Omple el nom de l'impost"); return; }
     saveMutation.mutate({ id, data: form }, { onSuccess: cancel });
   };
 

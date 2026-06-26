@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Plus, Trash2, Edit2, Check, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -91,8 +91,8 @@ const AdminShipping: React.FC = () => {
         if (error) throw error;
       }
     },
-    onSuccess: () => { invalidate(); toast.success('Zona guardada'); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: () => { invalidate(); notify.success('Zona guardada'); },
+    onError: (e: any) => notify.error(e.message),
   });
 
   const deleteZone = useMutation({
@@ -101,8 +101,8 @@ const AdminShipping: React.FC = () => {
       const { error } = await supabase.from('shipping_zones').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => { invalidate(); toast.success('Zona eliminada'); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: () => { invalidate(); notify.success('Zona eliminada'); },
+    onError: (e: any) => notify.error(e.message),
   });
 
   // --- Rate mutations ---
@@ -116,8 +116,8 @@ const AdminShipping: React.FC = () => {
         if (error) throw error;
       }
     },
-    onSuccess: () => { invalidate(); toast.success('Tarifa guardada'); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: () => { invalidate(); notify.success('Tarifa guardada'); },
+    onError: (e: any) => notify.error(e.message),
   });
 
   const deleteRate = useMutation({
@@ -125,8 +125,8 @@ const AdminShipping: React.FC = () => {
       const { error } = await supabase.from('shipping_rates').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => { invalidate(); toast.success('Tarifa eliminada'); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: () => { invalidate(); notify.success('Tarifa eliminada'); },
+    onError: (e: any) => notify.error(e.message),
   });
 
   const startEditZone = (zone: ShippingZone) => {
@@ -143,7 +143,7 @@ const AdminShipping: React.FC = () => {
 
   const submitZone = (id?: string) => {
     if (!zoneForm.name || !zoneForm.postal_code_pattern) {
-      toast.error('Omple nom i patró de codi postal');
+      notify.error('Omple nom i patró de codi postal');
       return;
     }
     saveZone.mutate({ id, data: zoneForm }, {
@@ -165,7 +165,7 @@ const AdminShipping: React.FC = () => {
 
   const submitRate = (zoneId: string, id?: string) => {
     if (rateForm.max_weight_grams <= rateForm.min_weight_grams) {
-      toast.error('El pes màxim ha de ser major que el mínim');
+      notify.error('El pes màxim ha de ser major que el mínim');
       return;
     }
     saveRate.mutate({ id, zone_id: zoneId, data: rateForm }, {
