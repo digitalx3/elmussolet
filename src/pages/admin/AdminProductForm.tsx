@@ -350,10 +350,11 @@ const AdminProductForm: React.FC = () => {
       return;
     }
 
-    if (!form.slug || !form.sku) {
-      notify.error('Omple els camps obligatoris: slug i SKU');
+    if (!form.sku) {
+      notify.error('Omple els camps obligatoris: SKU');
       return;
     }
+
 
     // Sale price validation
     if (form.sale_price_type) {
