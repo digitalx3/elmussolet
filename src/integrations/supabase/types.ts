@@ -183,6 +183,7 @@ export type Database = {
           description: string | null
           language_code: string
           name: string | null
+          slug: string | null
           updated_at: string
         }
         Insert: {
@@ -191,6 +192,7 @@ export type Database = {
           description?: string | null
           language_code: string
           name?: string | null
+          slug?: string | null
           updated_at?: string
         }
         Update: {
@@ -199,6 +201,7 @@ export type Database = {
           description?: string | null
           language_code?: string
           name?: string | null
+          slug?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -284,6 +287,7 @@ export type Database = {
           id: string
           language: string
           name: string
+          slug: string | null
         }
         Insert: {
           category_id: string
@@ -291,6 +295,7 @@ export type Database = {
           id?: string
           language: string
           name: string
+          slug?: string | null
         }
         Update: {
           category_id?: string
@@ -298,6 +303,7 @@ export type Database = {
           id?: string
           language?: string
           name?: string
+          slug?: string | null
         }
         Relationships: [
           {
@@ -1711,6 +1717,7 @@ export type Database = {
           name: string
           product_id: string
           short_description: string | null
+          slug: string | null
         }
         Insert: {
           description: string
@@ -1719,6 +1726,7 @@ export type Database = {
           name: string
           product_id: string
           short_description?: string | null
+          slug?: string | null
         }
         Update: {
           description?: string
@@ -1727,6 +1735,7 @@ export type Database = {
           name?: string
           product_id?: string
           short_description?: string | null
+          slug?: string | null
         }
         Relationships: [
           {
@@ -2302,18 +2311,21 @@ export type Database = {
           id: string
           language: string
           name: string
+          slug: string | null
           variant_type_id: string
         }
         Insert: {
           id?: string
           language: string
           name: string
+          slug?: string | null
           variant_type_id: string
         }
         Update: {
           id?: string
           language?: string
           name?: string
+          slug?: string | null
           variant_type_id?: string
         }
         Relationships: [
