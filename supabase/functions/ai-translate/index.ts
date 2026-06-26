@@ -238,6 +238,12 @@ Deno.serve(async (req: Request) => {
       .from("profiles").select("role").eq("id", userId).single();
     if (profile?.role !== "admin") return json({ error: "Forbidden" }, 403);
 
+    const { data: hasPerm } = await admin.rpc("has_permission", {
+      _user_id: userId,
+      _perm: "ai_features",
+    });
+    if (!hasPerm) return json({ error: "Forbidden: missing ai_features permission" }, 403);
+
     body = (await req.json()) as TranslateBody;
 
     if (body.action === "status") {
