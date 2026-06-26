@@ -111,14 +111,20 @@ const AdminVariantTypes: React.FC = () => {
     setFormSlug('');
     setFormNameCa('');
     setFormNameEs('');
+    setFormSlugCa('');
+    setFormSlugEs('');
   };
 
   const startEdit = (vt: VariantTypeRow) => {
     setIsCreating(false);
     setEditingId(vt.id);
     setFormSlug(vt.slug);
-    setFormNameCa(vt.variant_type_translations.find(t => t.language === 'ca')?.name || vt.slug);
-    setFormNameEs(vt.variant_type_translations.find(t => t.language === 'es')?.name || '');
+    const trCa = vt.variant_type_translations.find(t => t.language === 'ca');
+    const trEs = vt.variant_type_translations.find(t => t.language === 'es');
+    setFormNameCa(trCa?.name || vt.slug);
+    setFormNameEs(trEs?.name || '');
+    setFormSlugCa((trCa as any)?.slug || '');
+    setFormSlugEs((trEs as any)?.slug || '');
   };
 
   const startCreate = () => {
@@ -127,6 +133,20 @@ const AdminVariantTypes: React.FC = () => {
     setFormSlug('');
     setFormNameCa('');
     setFormNameEs('');
+    setFormSlugCa('');
+    setFormSlugEs('');
+  };
+
+  const onNameCaChange = (val: string) => {
+    const prevAuto = slugifyStr(formNameCa);
+    setFormNameCa(val);
+    if (!formSlugCa || formSlugCa === prevAuto) setFormSlugCa(slugifyStr(val));
+    if (!formSlug || formSlug === prevAuto) setFormSlug(slugifyStr(val));
+  };
+  const onNameEsChange = (val: string) => {
+    const prevAuto = slugifyStr(formNameEs);
+    setFormNameEs(val);
+    if (!formSlugEs || formSlugEs === prevAuto) setFormSlugEs(slugifyStr(val));
   };
 
   const handleSave = () => {
@@ -135,8 +155,11 @@ const AdminVariantTypes: React.FC = () => {
       slug: formSlug,
       nameCa: formNameCa,
       nameEs: formNameEs,
+      slugCa: formSlugCa,
+      slugEs: formSlugEs,
     });
   };
+
 
   const getName = (vt: VariantTypeRow) => {
     const ca = vt.variant_type_translations.find(t => t.language === 'ca');
