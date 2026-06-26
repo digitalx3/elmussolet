@@ -10,7 +10,9 @@
     "cart": "Cistella",
     "admin": "Administració",
     "viewCurrentList": "Veure llista actual",
-    "exitList": "Sortir de la llista"
+    "exitList": "Sortir de la llista",
+    "exitListConfirm": "Vols sortir de la llista actual? Hauràs de tornar a introduir el codi i la contrasenya per accedir-hi.",
+    "exitListSuccess": "Has sortit de la llista"
   },
 
   "auth": {

@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useListAccess } from '@/contexts/ListAccessContext';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
 import logoHorizontal from '@/assets/mussolet-logo-horizontal.png.asset.json';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 
@@ -32,6 +33,14 @@ const Header: React.FC = () => {
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
+  };
+
+  const handleExitList = () => {
+    if (typeof window !== 'undefined' && !window.confirm(t('nav.exitListConfirm'))) return;
+    clearAccess();
+    toast({ title: t('nav.exitListSuccess') });
+    navigate('/');
+    setMobileOpen(false);
   };
 
   const lang = i18n.language === 'es' ? 'es' : 'ca';
@@ -66,7 +75,7 @@ const Header: React.FC = () => {
             ? `${t('nav.viewCurrentList')}: ${babyName}`
             : t('nav.viewCurrentList'),
           highlight: true,
-          onExit: clearAccess,
+          onExit: handleExitList,
         }]
       : []),
   ];
