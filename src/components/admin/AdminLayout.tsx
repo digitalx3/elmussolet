@@ -74,15 +74,23 @@ const groups: NavGroup[] = [
     items: [
       { key: 'users', path: '/admin/usuaris', icon: Users },
       { key: 'shipping', path: '/admin/enviaments', icon: Truck },
-      { key: 'languages', path: '/admin/idiomes', icon: LanguagesIcon },
-      { key: 'translations', path: '/admin/traduccions', icon: Globe },
-      { key: 'aiSettings', path: '/admin/ia', icon: Sparkles, label: "IA" },
-      { key: 'aiHistory', path: '/admin/ia/historial', icon: Sparkles, label: "Historial IA" },
-      { key: 'smtp', path: '/admin/smtp', icon: Server },
+      { key: 'languages', path: '/admin/idiomes', icon: LanguagesIcon, perm: 'manage_translations' },
+      { key: 'translations', path: '/admin/traduccions', icon: Globe, perm: 'manage_translations' },
+      { key: 'aiSettings', path: '/admin/ia', icon: Sparkles, label: "IA", perm: 'ai_features' },
+      { key: 'aiHistory', path: '/admin/ia/historial', icon: Sparkles, label: "Historial IA", perm: 'ai_history' },
+      { key: 'smtp', path: '/admin/smtp', icon: Server, perm: 'manage_smtp' },
       { key: 'cookies', path: '/admin/cookies', icon: Cookie, label: 'Cookies' },
       { key: 'backups', path: '/admin/backups', icon: Database },
       { key: 'maintenance', path: '/admin/manteniment', icon: Power },
       { key: 'settings', path: '/admin/configuracio', icon: Settings },
+    ],
+  },
+  {
+    id: 'superAdmin',
+    label: 'Super Admin',
+    superOnly: true,
+    items: [
+      { key: 'superPermissions', path: '/admin/super/permisos', icon: ShieldCheck, label: "Permisos d'admins" },
     ],
   },
 ];
