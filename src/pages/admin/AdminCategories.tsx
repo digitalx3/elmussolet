@@ -26,7 +26,7 @@ interface CategoryRow {
   parent_id: string | null;
   is_active: boolean;
   sort_order: number;
-  category_translations: { id: string; language: string; name: string; description: string | null }[];
+  category_translations: { id: string; language: string; name: string; description: string | null; slug: string | null }[];
 }
 
 interface FormData {
@@ -38,12 +38,19 @@ interface FormData {
   name_es: string;
   description_ca: string;
   description_es: string;
+  slug_ca: string;
+  slug_es: string;
 }
 
 const emptyForm: FormData = {
   slug: '', parent_id: null, is_active: true, sort_order: 0,
   name_ca: '', name_es: '', description_ca: '', description_es: '',
+  slug_ca: '', slug_es: '',
 };
+
+const slugifyStr = (s: string) => (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+
 
 const AdminCategories: React.FC = () => {
   const { t } = useTranslation();
@@ -79,68 +86,92 @@ const AdminCategories: React.FC = () => {
 
   const openEdit = (c: CategoryRow) => {
     setEditId(c.id);
+    const trCa = c.category_translations.find(t => t.language === 'ca');
+    const trEs = c.category_translations.find(t => t.language === 'es');
     setForm({
       slug: c.slug,
       parent_id: c.parent_id,
       is_active: c.is_active ?? true,
       sort_order: c.sort_order ?? 0,
-      name_ca: getName(c, 'ca'),
-      name_es: getName(c, 'es'),
-      description_ca: getDesc(c, 'ca'),
-      description_es: getDesc(c, 'es'),
+      name_ca: trCa?.name ?? '',
+      name_es: trEs?.name ?? '',
+      description_ca: trCa?.description ?? '',
+      description_es: trEs?.description ?? '',
+      slug_ca: (trCa as any)?.slug ?? '',
+      slug_es: (trEs as any)?.slug ?? '',
     });
     setDialogOpen(true);
   };
 
+  // Auto-fill slug when name changes if the slug was empty or matched the previous auto value
+  const onNameChange = (lang: 'ca' | 'es', value: string) => {
+    setForm(f => {
+      const prevName = lang === 'ca' ? f.name_ca : f.name_es;
+      const slugKey = lang === 'ca' ? 'slug_ca' : 'slug_es';
+      const prevSlug = (f as any)[slugKey] as string;
+      const prevAuto = slugifyStr(prevName);
+      const nextSlug = (!prevSlug || prevSlug === prevAuto) ? slugifyStr(value) : prevSlug;
+      const updates: any = lang === 'ca'
+        ? { name_ca: value, slug_ca: nextSlug }
+        : { name_es: value, slug_es: nextSlug };
+      // Also fill base slug if empty (using default lang ca preferentially)
+      if (!f.slug && lang === 'ca') updates.slug = slugifyStr(value);
+      return { ...f, ...updates };
+    });
+  };
+
+
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const baseSlug = form.slug?.trim() ? slugifyStr(form.slug) : (slugifyStr(form.name_ca) || slugifyStr(form.name_es));
+      const slugCa = form.slug_ca?.trim() ? slugifyStr(form.slug_ca) : (form.name_ca ? slugifyStr(form.name_ca) : null);
+      const slugEs = form.slug_es?.trim() ? slugifyStr(form.slug_es) : (form.name_es ? slugifyStr(form.name_es) : null);
+
       if (editId) {
-        // Update category
         const { error } = await supabase.from('categories').update({
-          slug: form.slug,
+          slug: baseSlug,
           parent_id: form.parent_id || null,
           is_active: form.is_active,
           sort_order: form.sort_order,
         }).eq('id', editId);
         if (error) throw error;
 
-        // Upsert translations
         for (const lang of ['ca', 'es'] as const) {
           const name = lang === 'ca' ? form.name_ca : form.name_es;
           const description = lang === 'ca' ? form.description_ca : form.description_es;
+          const slug = lang === 'ca' ? slugCa : slugEs;
           const existing = categories.find(c => c.id === editId)
             ?.category_translations.find(t => t.language === lang);
 
           if (existing) {
             const { error: tErr } = await supabase.from('category_translations')
-              .update({ name, description: description || null })
+              .update({ name, description: description || null, slug })
               .eq('id', existing.id);
             if (tErr) throw tErr;
           } else {
             const { error: tErr } = await supabase.from('category_translations')
-              .insert({ category_id: editId, language: lang, name, description: description || null });
+              .insert({ category_id: editId, language: lang, name, description: description || null, slug });
             if (tErr) throw tErr;
           }
         }
       } else {
-        // Create category
         const { data: newCat, error } = await supabase.from('categories').insert({
-          slug: form.slug,
+          slug: baseSlug,
           parent_id: form.parent_id || null,
           is_active: form.is_active,
           sort_order: form.sort_order,
         }).select().single();
         if (error) throw error;
 
-        // Insert translations
         const translations = [
-          { category_id: newCat.id, language: 'ca', name: form.name_ca, description: form.description_ca || null },
-          { category_id: newCat.id, language: 'es', name: form.name_es, description: form.description_es || null },
+          { category_id: newCat.id, language: 'ca', name: form.name_ca, description: form.description_ca || null, slug: slugCa },
+          { category_id: newCat.id, language: 'es', name: form.name_es, description: form.description_es || null, slug: slugEs },
         ];
         const { error: tErr } = await supabase.from('category_translations').insert(translations);
         if (tErr) throw tErr;
       }
     },
+
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-categories'] });
       qc.invalidateQueries({ queryKey: ['categories'] });
@@ -243,11 +274,29 @@ const AdminCategories: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('admin.categoryName')} (CA) *</Label>
-                <Input value={form.name_ca} onChange={e => setForm(f => ({ ...f, name_ca: e.target.value }))} />
+                <Input value={form.name_ca} onChange={e => onNameChange('ca', e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>{t('admin.categoryName')} (ES) *</Label>
-                <Input value={form.name_es} onChange={e => setForm(f => ({ ...f, name_es: e.target.value }))} />
+                <Input value={form.name_es} onChange={e => onNameChange('es', e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Slug (CA)</Label>
+                <Input
+                  value={form.slug_ca}
+                  onChange={e => setForm(f => ({ ...f, slug_ca: slugifyStr(e.target.value) }))}
+                  placeholder="auto des del nom"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Slug (ES)</Label>
+                <Input
+                  value={form.slug_es}
+                  onChange={e => setForm(f => ({ ...f, slug_es: slugifyStr(e.target.value) }))}
+                  placeholder="auto desde el nombre"
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -262,14 +311,15 @@ const AdminCategories: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Slug *</Label>
-                <Input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} placeholder="roba-bebe" />
+                <Label>Slug base</Label>
+                <Input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: slugifyStr(e.target.value) }))} placeholder="auto en desar" />
               </div>
               <div className="space-y-2">
                 <Label>{t('admin.sortOrder')}</Label>
                 <Input type="number" value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: parseInt(e.target.value) || 0 }))} />
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('admin.parentCategory')}</Label>
@@ -293,7 +343,7 @@ const AdminCategories: React.FC = () => {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('admin.cancel')}</Button>
             <Button
               onClick={() => saveMutation.mutate()}
-              disabled={!form.slug || !form.name_ca || !form.name_es || saveMutation.isPending}
+              disabled={!form.name_ca || !form.name_es || saveMutation.isPending}
             >
               {saveMutation.isPending ? '...' : (editId ? t('admin.save') : t('admin.create'))}
             </Button>

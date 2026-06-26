@@ -25,7 +25,7 @@ import { useAiProvider, isAiReady } from '@/hooks/useAiProvider';
 import RichTextEditor from '@/components/ui/rich-text-editor';
 import RelatedProductsEditor from '@/components/admin/RelatedProductsEditor';
 
-const emptyTranslation = { name: '', short_description: '', description: '' };
+const emptyTranslation = { name: '', short_description: '', description: '', slug: '' };
 
 const MAX_NAME = 200;
 const MAX_SHORT = 500;
@@ -177,8 +177,10 @@ const AdminProductForm: React.FC = () => {
           name: tr.name || '',
           short_description: tr.short_description || '',
           description: tr.description || '',
+          slug: (tr as any).slug || '',
         };
       }
+
       const relatedSorted = ((product as any).product_relations || [])
         .slice()
         .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
@@ -220,14 +222,25 @@ const AdminProductForm: React.FC = () => {
     setForm(prev => ({ ...prev, [key]: value }));
 
   const updateTranslation = (lang: string, field: string, value: string) => {
-    setForm(prev => ({
-      ...prev,
-      translations: {
-        ...prev.translations,
-        [lang]: { ...(prev.translations[lang] ?? emptyTranslation), [field]: value },
-      },
-    }));
-    // Clear the specific field error as the user edits it
+    setForm(prev => {
+      const prevTr = prev.translations[lang] ?? emptyTranslation;
+      const nextTr: any = { ...prevTr, [field]: value };
+      // Auto-fill per-language slug from name when slug is empty/untouched
+      if (field === 'name') {
+        const slugify = (s: string) => s
+          .toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase().replace(/['"`´]/g, '').replace(/&/g, '-and-')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+        const prevAuto = slugify(prevTr.name || '');
+        if (!prevTr.slug || prevTr.slug === prevAuto) {
+          nextTr.slug = slugify(value);
+        }
+      }
+      return {
+        ...prev,
+        translations: { ...prev.translations, [lang]: nextTr },
+      };
+    });
     setTranslationErrors(prev => {
       if (!prev[lang]?.[field as keyof TranslationFieldErrors]) return prev;
       const langErrs = { ...prev[lang] };
@@ -236,13 +249,15 @@ const AdminProductForm: React.FC = () => {
     });
   };
 
-  // Auto-generate slug from the default language name
+  // Auto-generate base slug from the default language name (only if still empty)
   const autoSlug = () => {
     const name = form.translations[defaultCode]?.name ?? '';
     if (name && !form.slug) {
-      updateField('slug', name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
+      updateField('slug', name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
     }
   };
+
 
   // Image upload (with automatic resize + WebP optimization)
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -335,10 +350,11 @@ const AdminProductForm: React.FC = () => {
       return;
     }
 
-    if (!form.slug || !form.sku) {
-      notify.error('Omple els camps obligatoris: slug i SKU');
+    if (!form.sku) {
+      notify.error('Omple els camps obligatoris: SKU');
       return;
     }
+
 
     // Sale price validation
     if (form.sale_price_type) {
@@ -481,6 +497,22 @@ const AdminProductForm: React.FC = () => {
                     </div>
                   </div>
                   <div>
+                    <Label>Slug ({lang.toUpperCase()})</Label>
+                    <Input
+                      value={(tr as any).slug || ''}
+                      onChange={e => updateTranslation(lang, 'slug', e.target.value
+                        .toLowerCase()
+                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                        .replace(/[^a-z0-9-]/g, '-')
+                        .replace(/-+/g, '-')
+                      )}
+                      placeholder="es-generara-automaticament-des-del-nom"
+                    />
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      S'omple automàticament des del nom. Edita per personalitzar l'URL SEO en aquest idioma.
+                    </p>
+                  </div>
+                  <div>
                     <div className="flex items-center justify-between">
                       <Label>Descripció curta</Label>
                       <Button
@@ -494,6 +526,8 @@ const AdminProductForm: React.FC = () => {
                         IA
                       </Button>
                     </div>
+
+
                     <RichTextEditor
                       value={tr.short_description || ''}
                       onChange={(html) => updateTranslation(lang, 'short_description', html)}
@@ -550,9 +584,19 @@ const AdminProductForm: React.FC = () => {
         <CardHeader><CardTitle>Informació bàsica</CardTitle></CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div>
-            <Label>Slug *</Label>
-            <Input value={form.slug} onChange={e => updateField('slug', e.target.value)} />
+            <Label>Slug base</Label>
+            <Input
+              value={form.slug}
+              onChange={e => updateField('slug', e.target.value
+                .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'))}
+              placeholder="Es generarà automàticament en desar"
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              S'omple sol des del nom de l'idioma per defecte si el deixes buit.
+            </p>
           </div>
+
           <div>
             <Label>SKU *</Label>
             <Input value={form.sku} onChange={e => updateField('sku', e.target.value)} />

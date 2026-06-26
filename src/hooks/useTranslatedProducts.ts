@@ -176,11 +176,9 @@ export function useProductBySlug(slug: string | undefined) {
     queryKey: ['product', slug, lang],
     enabled: !!slug,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select(`
+      const baseSelect = `
           *,
-          product_translations(name, short_description, description, language),
+          product_translations(name, short_description, description, language, slug),
           product_images(id, image_url, alt_text, is_primary, sort_order),
           brands(name, logo_url),
           tax_rates(id, name, percentage),
@@ -188,13 +186,40 @@ export function useProductBySlug(slug: string | undefined) {
             id, value, price_override, price_modifier, stock_quantity, sku_suffix, is_active,
             variant_types(slug, variant_type_translations(name, language))
           )
-        `)
+        `;
+
+      // 1) Try base slug
+      let { data, error } = await supabase
+        .from('products')
+        .select(baseSelect)
         .eq('slug', slug!)
         .eq('is_active', true)
-        .single();
-
+        .maybeSingle();
       if (error) throw error;
+
+      // 2) Fallback: resolve via translated slug
+      if (!data) {
+        const { data: tr, error: trErr } = await supabase
+          .from('product_translations')
+          .select('product_id')
+          .eq('slug', slug!)
+          .limit(1)
+          .maybeSingle();
+        if (trErr) throw trErr;
+        if (tr?.product_id) {
+          const { data: p2, error: p2Err } = await supabase
+            .from('products')
+            .select(baseSelect)
+            .eq('id', tr.product_id)
+            .eq('is_active', true)
+            .maybeSingle();
+          if (p2Err) throw p2Err;
+          data = p2;
+        }
+      }
+
       if (!data) return null;
+
 
       const translations = data.product_translations || [];
       const t = (translations as any[]).find((t: any) => t.language === lang) || (translations as any[])[0];

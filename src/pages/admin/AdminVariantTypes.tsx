@@ -16,8 +16,11 @@ import { notify } from '@/lib/notify';
 interface VariantTypeRow {
   id: string;
   slug: string;
-  variant_type_translations: { id: string; language: string; name: string }[];
+  variant_type_translations: { id: string; language: string; name: string; slug: string | null }[];
 }
+
+const slugifyStr = (s: string) => (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
 
 function useVariantTypesFull() {
   return useQuery({
@@ -25,13 +28,14 @@ function useVariantTypesFull() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('variant_types')
-        .select('id, slug, variant_type_translations(id, language, name)')
+        .select('id, slug, variant_type_translations(id, language, name, slug)')
         .order('slug');
       if (error) throw error;
       return data as unknown as VariantTypeRow[];
     },
   });
 }
+
 
 const AdminVariantTypes: React.FC = () => {
   const { t } = useTranslation();
@@ -43,6 +47,9 @@ const AdminVariantTypes: React.FC = () => {
   const [formSlug, setFormSlug] = useState('');
   const [formNameCa, setFormNameCa] = useState('');
   const [formNameEs, setFormNameEs] = useState('');
+  const [formSlugCa, setFormSlugCa] = useState('');
+  const [formSlugEs, setFormSlugEs] = useState('');
+
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['variant-types-full'] });
@@ -50,28 +57,33 @@ const AdminVariantTypes: React.FC = () => {
   };
 
   const saveMutation = useMutation({
-    mutationFn: async ({ id, slug, nameCa, nameEs }: { id?: string; slug: string; nameCa: string; nameEs: string }) => {
-      if (!slug || !nameCa) throw new Error('Slug i nom (CA) són obligatoris');
+    mutationFn: async ({ id, slug, nameCa, nameEs, slugCa, slugEs }: {
+      id?: string; slug: string; nameCa: string; nameEs: string; slugCa: string; slugEs: string;
+    }) => {
+      const finalBaseSlug = slug?.trim() ? slugifyStr(slug) : slugifyStr(nameCa) || slugifyStr(nameEs);
+      if (!finalBaseSlug || !nameCa) throw new Error('Slug i nom (CA) són obligatoris');
 
       let typeId = id;
       if (id) {
-        const { error } = await supabase.from('variant_types').update({ slug }).eq('id', id);
+        const { error } = await supabase.from('variant_types').update({ slug: finalBaseSlug }).eq('id', id);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from('variant_types').insert({ slug }).select('id').single();
+        const { data, error } = await supabase.from('variant_types').insert({ slug: finalBaseSlug }).select('id').single();
         if (error) throw error;
         typeId = data.id;
       }
 
-      // Sync translations
       await supabase.from('variant_type_translations').delete().eq('variant_type_id', typeId!);
+      const trCaSlug = slugCa?.trim() ? slugifyStr(slugCa) : slugifyStr(nameCa);
+      const trEsSlug = slugEs?.trim() ? slugifyStr(slugEs) : (nameEs ? slugifyStr(nameEs) : null);
       const translations = [
-        { variant_type_id: typeId!, language: 'ca', name: nameCa },
-        ...(nameEs ? [{ variant_type_id: typeId!, language: 'es', name: nameEs }] : []),
+        { variant_type_id: typeId!, language: 'ca', name: nameCa, slug: trCaSlug || null },
+        ...(nameEs ? [{ variant_type_id: typeId!, language: 'es', name: nameEs, slug: trEsSlug }] : []),
       ];
       const { error: tErr } = await supabase.from('variant_type_translations').insert(translations);
       if (tErr) throw tErr;
     },
+
     onSuccess: () => {
       invalidate();
       resetForm();
@@ -99,14 +111,20 @@ const AdminVariantTypes: React.FC = () => {
     setFormSlug('');
     setFormNameCa('');
     setFormNameEs('');
+    setFormSlugCa('');
+    setFormSlugEs('');
   };
 
   const startEdit = (vt: VariantTypeRow) => {
     setIsCreating(false);
     setEditingId(vt.id);
     setFormSlug(vt.slug);
-    setFormNameCa(vt.variant_type_translations.find(t => t.language === 'ca')?.name || vt.slug);
-    setFormNameEs(vt.variant_type_translations.find(t => t.language === 'es')?.name || '');
+    const trCa = vt.variant_type_translations.find(t => t.language === 'ca');
+    const trEs = vt.variant_type_translations.find(t => t.language === 'es');
+    setFormNameCa(trCa?.name || vt.slug);
+    setFormNameEs(trEs?.name || '');
+    setFormSlugCa((trCa as any)?.slug || '');
+    setFormSlugEs((trEs as any)?.slug || '');
   };
 
   const startCreate = () => {
@@ -115,6 +133,20 @@ const AdminVariantTypes: React.FC = () => {
     setFormSlug('');
     setFormNameCa('');
     setFormNameEs('');
+    setFormSlugCa('');
+    setFormSlugEs('');
+  };
+
+  const onNameCaChange = (val: string) => {
+    const prevAuto = slugifyStr(formNameCa);
+    setFormNameCa(val);
+    if (!formSlugCa || formSlugCa === prevAuto) setFormSlugCa(slugifyStr(val));
+    if (!formSlug || formSlug === prevAuto) setFormSlug(slugifyStr(val));
+  };
+  const onNameEsChange = (val: string) => {
+    const prevAuto = slugifyStr(formNameEs);
+    setFormNameEs(val);
+    if (!formSlugEs || formSlugEs === prevAuto) setFormSlugEs(slugifyStr(val));
   };
 
   const handleSave = () => {
@@ -123,8 +155,11 @@ const AdminVariantTypes: React.FC = () => {
       slug: formSlug,
       nameCa: formNameCa,
       nameEs: formNameEs,
+      slugCa: formSlugCa,
+      slugEs: formSlugEs,
     });
   };
+
 
   const getName = (vt: VariantTypeRow) => {
     const ca = vt.variant_type_translations.find(t => t.language === 'ca');
@@ -157,22 +192,33 @@ const AdminVariantTypes: React.FC = () => {
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <Label>Slug *</Label>
-                <Input
-                  value={formSlug}
-                  onChange={e => setFormSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                  placeholder="color"
-                />
-              </div>
-              <div>
                 <Label>Nom (CA) *</Label>
-                <Input value={formNameCa} onChange={e => setFormNameCa(e.target.value)} placeholder="Color" />
+                <Input value={formNameCa} onChange={e => onNameCaChange(e.target.value)} placeholder="Color" />
               </div>
               <div>
                 <Label>Nom (ES)</Label>
-                <Input value={formNameEs} onChange={e => setFormNameEs(e.target.value)} placeholder="Color" />
+                <Input value={formNameEs} onChange={e => onNameEsChange(e.target.value)} placeholder="Color" />
+              </div>
+              <div>
+                <Label>Slug base</Label>
+                <Input
+                  value={formSlug}
+                  onChange={e => setFormSlug(slugifyStr(e.target.value))}
+                  placeholder="auto des del nom"
+                />
               </div>
             </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label>Slug (CA)</Label>
+                <Input value={formSlugCa} onChange={e => setFormSlugCa(slugifyStr(e.target.value))} placeholder="auto" />
+              </div>
+              <div>
+                <Label>Slug (ES)</Label>
+                <Input value={formSlugEs} onChange={e => setFormSlugEs(slugifyStr(e.target.value))} placeholder="auto" />
+              </div>
+            </div>
+
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={saveMutation.isPending} className="gap-1">
                 <Check className="h-4 w-4" /> {t('common.save')}

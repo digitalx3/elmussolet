@@ -32,16 +32,18 @@ interface BrandTranslation {
   language_code: string;
   name: string | null;
   description: string | null;
+  slug: string | null;
 }
 
 interface FormData {
   name: string;
   is_active: boolean;
   logo_url: string | null;
-  translations: Record<string, { name: string; description: string }>;
+  translations: Record<string, { name: string; description: string; slug: string }>;
 }
 
 const emptyForm: FormData = { name: '', is_active: true, logo_url: null, translations: {} };
+
 
 const AdminBrands: React.FC = () => {
   const { t } = useTranslation();
@@ -113,18 +115,20 @@ const AdminBrands: React.FC = () => {
 
   const openEdit = async (b: BrandRow) => {
     setEditId(b.id);
-    const translations: Record<string, { name: string; description: string }> = {};
+    const translations: Record<string, { name: string; description: string; slug: string }> = {};
     try {
       const trs = await loadTranslations(b.id);
       trs.forEach((tr) => {
         translations[tr.language_code] = {
           name: tr.name ?? '',
           description: tr.description ?? '',
+          slug: (tr as any).slug ?? '',
         };
       });
     } catch (e: any) {
       notify.error(e.message);
     }
+
     setForm({
       name: b.name,
       is_active: b.is_active ?? true,
@@ -146,15 +150,22 @@ const AdminBrands: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const setTranslation = (code: string, field: 'name' | 'description', val: string) => {
-    setForm((f) => ({
-      ...f,
-      translations: {
-        ...f.translations,
-        [code]: { ...(f.translations[code] ?? { name: '', description: '' }), [field]: val },
-      },
-    }));
+  const setTranslation = (code: string, field: 'name' | 'description' | 'slug', val: string) => {
+    setForm((f) => {
+      const prevTr = f.translations[code] ?? { name: '', description: '', slug: '' };
+      const nextTr = { ...prevTr, [field]: val };
+      if (field === 'name') {
+        const slugify = (s: string) => s.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+        const prevAuto = slugify(prevTr.name || '');
+        if (!prevTr.slug || prevTr.slug === prevAuto) {
+          nextTr.slug = slugify(val);
+        }
+      }
+      return { ...f, translations: { ...f.translations, [code]: nextTr } };
+    });
   };
+
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -190,22 +201,29 @@ const AdminBrands: React.FC = () => {
 
       // Upsert translations for every enabled language
       if (brandId) {
-        const rows = languages.map((lng) => ({
-          brand_id: brandId,
-          language_code: lng.code,
-          name: form.translations[lng.code]?.name?.trim() || null,
-          description: form.translations[lng.code]?.description?.trim() || null,
-        }));
-        // Skip rows where both fields are empty to avoid noise
-        const meaningful = rows.filter((r) => r.name || r.description);
+        const slugify = (s: string) => s.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+        const rows = languages.map((lng) => {
+          const tr = form.translations[lng.code];
+          const name = tr?.name?.trim() || null;
+          const explicitSlug = tr?.slug?.trim();
+          const slug = explicitSlug ? slugify(explicitSlug) : (name ? slugify(name) : null);
+          return {
+            brand_id: brandId,
+            language_code: lng.code,
+            name,
+            description: tr?.description?.trim() || null,
+            slug,
+          };
+        });
+        const meaningful = rows.filter((r) => r.name || r.description || r.slug);
         if (meaningful.length > 0) {
           const { error } = await supabase
             .from('brand_translations')
             .upsert(meaningful, { onConflict: 'brand_id,language_code' });
           if (error) throw error;
         }
-        // Remove empty translations
-        const emptyCodes = rows.filter((r) => !r.name && !r.description).map((r) => r.language_code);
+        const emptyCodes = rows.filter((r) => !r.name && !r.description && !r.slug).map((r) => r.language_code);
         if (emptyCodes.length > 0) {
           await supabase
             .from('brand_translations')
@@ -214,6 +232,7 @@ const AdminBrands: React.FC = () => {
             .in('language_code', emptyCodes);
         }
       }
+
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-brands'] });
@@ -335,6 +354,17 @@ const AdminBrands: React.FC = () => {
                       />
                     </div>
                     <div>
+                      <Label className="text-xs">Slug ({code.toUpperCase()})</Label>
+                      <Input
+                        value={form.translations[code]?.slug ?? ''}
+                        onChange={(e) => setTranslation(code, 'slug', e.target.value
+                          .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                          .replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'))}
+                        placeholder="es-generara-automaticament"
+                      />
+                    </div>
+                    <div>
+
                       <Label className="text-xs">Descripció ({code.toUpperCase()})</Label>
                       <Textarea
                         rows={2}
