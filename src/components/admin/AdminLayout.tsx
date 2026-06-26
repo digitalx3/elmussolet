@@ -4,9 +4,10 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   Package, LayoutDashboard, Tags, Bookmark, ListChecks,
   FileText, ShoppingCart, Users, Truck, Settings, ArrowLeft, SlidersHorizontal, Image as ImageIcon,
-  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database, Power, Languages as LanguagesIcon, Globe, Sparkles, PackageX, Star, Cookie,
+  FileEdit, Home, Palette, Mail, Inbox, Server, ChevronDown, Database, Power, Languages as LanguagesIcon, Globe, Sparkles, PackageX, Star, Cookie, ShieldCheck,
 } from 'lucide-react';
 import AdminLanguageSwitcher from '@/components/admin/AdminLanguageSwitcher';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel,
   SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
@@ -16,8 +17,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { NavLink } from '@/components/NavLink';
 import { Button } from '@/components/ui/button';
 
-type NavItem = { key: string; path: string; icon: any; label?: string };
-type NavGroup = { id: string; label: string; items: NavItem[] };
+type NavItem = { key: string; path: string; icon: any; label?: string; perm?: string };
+type NavGroup = { id: string; label: string; items: NavItem[]; superOnly?: boolean };
 
 const groups: NavGroup[] = [
   {
@@ -73,15 +74,23 @@ const groups: NavGroup[] = [
     items: [
       { key: 'users', path: '/admin/usuaris', icon: Users },
       { key: 'shipping', path: '/admin/enviaments', icon: Truck },
-      { key: 'languages', path: '/admin/idiomes', icon: LanguagesIcon },
-      { key: 'translations', path: '/admin/traduccions', icon: Globe },
-      { key: 'aiSettings', path: '/admin/ia', icon: Sparkles, label: "IA" },
-      { key: 'aiHistory', path: '/admin/ia/historial', icon: Sparkles, label: "Historial IA" },
-      { key: 'smtp', path: '/admin/smtp', icon: Server },
+      { key: 'languages', path: '/admin/idiomes', icon: LanguagesIcon, perm: 'manage_translations' },
+      { key: 'translations', path: '/admin/traduccions', icon: Globe, perm: 'manage_translations' },
+      { key: 'aiSettings', path: '/admin/ia', icon: Sparkles, label: "IA", perm: 'ai_features' },
+      { key: 'aiHistory', path: '/admin/ia/historial', icon: Sparkles, label: "Historial IA", perm: 'ai_history' },
+      { key: 'smtp', path: '/admin/smtp', icon: Server, perm: 'manage_smtp' },
       { key: 'cookies', path: '/admin/cookies', icon: Cookie, label: 'Cookies' },
       { key: 'backups', path: '/admin/backups', icon: Database },
       { key: 'maintenance', path: '/admin/manteniment', icon: Power },
       { key: 'settings', path: '/admin/configuracio', icon: Settings },
+    ],
+  },
+  {
+    id: 'superAdmin',
+    label: 'Super Admin',
+    superOnly: true,
+    items: [
+      { key: 'superPermissions', path: '/admin/super/permisos', icon: ShieldCheck, label: "Permisos d'admins" },
     ],
   },
 ];
@@ -152,7 +161,16 @@ function MenuLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
 function AdminSidebar() {
   const { state } = useSidebar();
   const { t } = useTranslation();
+  const { isSuperAdmin, can } = useAuth();
   const collapsed = state === 'collapsed';
+
+  const visibleGroups = React.useMemo(() => {
+    return groups
+      .filter(g => !g.superOnly || isSuperAdmin)
+      .map(g => ({ ...g, items: g.items.filter(i => !i.perm || can(i.perm)) }))
+      .filter(g => g.items.length > 0);
+  }, [isSuperAdmin, can]);
+
   const { pathname } = useLocation();
 
   const isItemActive = (path: string) =>
@@ -205,7 +223,7 @@ function AdminSidebar() {
         </SidebarGroup>
 
         {collapsed
-          ? groups.map((group, idx) => (
+          ? visibleGroups.map((group, idx) => (
               <SidebarGroup key={group.id} className="py-1">
                 {idx > 0 && (
                   <div className="mx-2 mb-1 h-px bg-border/60" aria-hidden="true" />
@@ -219,7 +237,7 @@ function AdminSidebar() {
                 </SidebarGroupContent>
               </SidebarGroup>
             ))
-          : groups.map(group => {
+          : visibleGroups.map(group => {
               const isOpen = openGroups[group.id] ?? false;
               return (
                 <Collapsible

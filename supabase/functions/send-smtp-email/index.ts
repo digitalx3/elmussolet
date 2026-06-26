@@ -66,6 +66,32 @@ Deno.serve(async (req: Request) => {
       : (body?.to as string) ?? "";
     testModeForLog = !!body?.testMode;
 
+    // Admin-driven invocations (test send or override config) require manage_smtp permission.
+    if (body?.testMode || body?.override) {
+      const authHeader = req.headers.get("Authorization") || "";
+      const token = authHeader.replace("Bearer ", "");
+      if (!token) {
+        await logAttempt(false, "Missing auth");
+        return json({ error: "Missing auth" }, 401);
+      }
+      const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      });
+      const { data: userData, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !userData?.user) {
+        await logAttempt(false, "Unauthorized");
+        return json({ error: "Unauthorized" }, 401);
+      }
+      const { data: hasPerm } = await supabase.rpc("has_permission", {
+        _user_id: userData.user.id,
+        _perm: "manage_smtp",
+      });
+      if (!hasPerm) {
+        await logAttempt(false, "Forbidden: missing manage_smtp permission");
+        return json({ error: "Forbidden: missing manage_smtp permission" }, 403);
+      }
+    }
+
     if (!body?.to || !body?.subject || (!body.html && !body.text)) {
       const msg = "Missing required fields (to, subject, html/text)";
       await logAttempt(false, msg);

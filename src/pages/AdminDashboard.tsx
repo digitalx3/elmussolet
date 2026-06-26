@@ -35,6 +35,8 @@ import AdminAiHistory from '@/pages/admin/AdminAiHistory';
 import AdminStockNotifications from '@/pages/admin/AdminStockNotifications';
 import AdminFeaturedProducts from '@/pages/admin/AdminFeaturedProducts';
 import AdminCookies from '@/pages/admin/AdminCookies';
+import AdminSuperPermissions from '@/pages/admin/AdminSuperPermissions';
+import { PermissionRoute, SuperAdminRoute } from '@/components/auth/ProtectedRoute';
 
 const AdminPlaceholder: React.FC<{ titleKey: string }> = ({ titleKey }) => {
   const { t } = useTranslation();
@@ -75,17 +77,18 @@ const AdminDashboard: React.FC = () => {
         <Route path="aparenca" element={<AdminAppearance />} />
         <Route path="peu-contacte" element={<AdminContactSettings />} />
         <Route path="missatges" element={<AdminContactMessages />} />
-        <Route path="smtp" element={<AdminSmtpSettings />} />
+        <Route path="smtp" element={<PermissionRoute perm="manage_smtp"><AdminSmtpSettings /></PermissionRoute>} />
         <Route path="backups" element={<AdminBackups />} />
         <Route path="manteniment" element={<AdminMaintenance />} />
-        <Route path="idiomes" element={<AdminLanguages />} />
+        <Route path="idiomes" element={<PermissionRoute perm="manage_translations"><AdminLanguages /></PermissionRoute>} />
         <Route path="families-defecte" element={<AdminDefaultListSections />} />
-        <Route path="traduccions" element={<AdminTranslations />} />
-        <Route path="ia" element={<AdminAiSettings />} />
-        <Route path="ia/historial" element={<AdminAiHistory />} />
+        <Route path="traduccions" element={<PermissionRoute perm="manage_translations"><AdminTranslations /></PermissionRoute>} />
+        <Route path="ia" element={<PermissionRoute perm="ai_features"><AdminAiSettings /></PermissionRoute>} />
+        <Route path="ia/historial" element={<PermissionRoute perm="ai_history"><AdminAiHistory /></PermissionRoute>} />
         <Route path="notificacions-stock" element={<AdminStockNotifications />} />
-        <Route path="idiomes/:code/traduccions" element={<AdminLanguageTranslations />} />
+        <Route path="idiomes/:code/traduccions" element={<PermissionRoute perm="manage_translations"><AdminLanguageTranslations /></PermissionRoute>} />
         <Route path="cookies" element={<AdminCookies />} />
+        <Route path="super/permisos" element={<SuperAdminRoute><AdminSuperPermissions /></SuperAdminRoute>} />
       </Routes>
     </AdminLayout>
   );
