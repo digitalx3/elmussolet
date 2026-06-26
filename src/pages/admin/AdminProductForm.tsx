@@ -497,19 +497,23 @@ const AdminProductForm: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <div className="flex items-center justify-between">
-                      <Label>Descripció curta</Label>
-                      <Button
-                        type="button" size="sm" variant="ghost"
-                        className="h-7 px-2 text-xs"
-                        disabled={!aiReady || seoGenerating === lang || !(tr.name?.trim() || (form.translations[defaultCode]?.name?.trim()))}
-                        onClick={() => generateSeoDescriptions(lang, ['short'])}
-                        title="Regenera només aquest camp amb IA"
-                      >
-                        {seoGenerating === lang ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
-                        IA
-                      </Button>
-                    </div>
+                    <Label>Slug ({lang.toUpperCase()})</Label>
+                    <Input
+                      value={(tr as any).slug || ''}
+                      onChange={e => updateTranslation(lang, 'slug', e.target.value
+                        .toLowerCase()
+                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                        .replace(/[^a-z0-9-]/g, '-')
+                        .replace(/-+/g, '-')
+                      )}
+                      placeholder="es-generara-automaticament-des-del-nom"
+                    />
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      S'omple automàticament des del nom. Edita per personalitzar l'URL SEO en aquest idioma.
+                    </p>
+                  </div>
+                  <div>
+
                     <RichTextEditor
                       value={tr.short_description || ''}
                       onChange={(html) => updateTranslation(lang, 'short_description', html)}
