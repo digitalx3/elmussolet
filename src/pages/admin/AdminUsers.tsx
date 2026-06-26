@@ -22,6 +22,7 @@ import { Search, Eye, ShieldCheck, User, ShoppingBag, Baby, Plus, Pencil, Trash2
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
+import { UserPermissionsDialog } from '@/components/admin/UserPermissionsDialog';
 
 interface Profile {
   id: string;
