@@ -187,16 +187,33 @@ const Header: React.FC = () => {
       {mobileOpen && (
         <nav className="md:hidden border-t border-border bg-background p-4 animate-fade-in">
           <div className="flex flex-col gap-3">
-            {navLinks.map(link => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className="text-sm font-medium text-foreground/80 hover:text-primary py-2"
-                onClick={() => setMobileOpen(false)}
-              >
-                {link.label}
-              </Link>
+            {navLinks.map((link: any) => (
+              <div key={link.to} className="flex items-center justify-between">
+                <Link
+                  to={link.to}
+                  className={
+                    link.highlight
+                      ? 'inline-flex items-center gap-1 text-sm font-semibold text-primary py-2'
+                      : 'text-sm font-medium text-foreground/80 hover:text-primary py-2'
+                  }
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {link.highlight && <Heart className="h-3.5 w-3.5" />}
+                  {link.label}
+                </Link>
+                {link.highlight && (
+                  <button
+                    type="button"
+                    aria-label={t('nav.exitList')}
+                    onClick={() => { link.onExit?.(); setMobileOpen(false); }}
+                    className="text-primary/70 hover:text-primary p-1"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             ))}
+
           </div>
         </nav>
       )}
