@@ -128,11 +128,11 @@ const AdminSuperPermissions: React.FC = () => {
         next[userId] = set;
         return next;
       });
-      toast({ title: 'Permís actualitzat' });
+      toast({ title: t('admin.super.permUpdated') });
       if (currentUser?.id === userId) await refreshProfile();
     } catch (e: any) {
       console.error('Failed to update permission:', e);
-      toast({ title: 'Error', description: e?.message ?? 'No s\'ha pogut desar', variant: 'destructive' });
+      toast({ title: t('admin.common.error'), description: e?.message ?? t('admin.super.permError'), variant: 'destructive' });
     } finally {
       setSaving(null);
     }
