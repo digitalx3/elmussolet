@@ -91,6 +91,7 @@
   },
   "cart": {
     "title": "Cesta",
+    "addedToCart": "Producto añadido a la cesta",
     "empty": "Tu cesta está vacía",
     "emptyDesc": "¡Explora el catálogo y añade productos!",
     "subtotal": "Subtotal",

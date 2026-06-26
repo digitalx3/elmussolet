@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { toast } from 'sonner';
+import i18n from '@/i18n';
 
 export interface CartItem {
   productId: string;
@@ -76,6 +78,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       persist('cart_standard', next);
       return next;
     });
+    toast.success(i18n.t('cart.addedToCart', { defaultValue: 'Producte afegit a la cistella' }), {
+      description: item.name,
+    });
     setUpsellTrigger({ productId: item.productId, nonce: Date.now() });
   }, []);
 
@@ -86,6 +91,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const next = addItem(prev, item);
       persist('cart_list', next);
       return next;
+    });
+    toast.success(i18n.t('cart.addedToCart', { defaultValue: 'Producte afegit a la cistella' }), {
+      description: item.name,
     });
   }, []);
 
