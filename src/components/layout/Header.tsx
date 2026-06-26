@@ -75,7 +75,7 @@ const Header: React.FC = () => {
             ? `${t('nav.viewCurrentList')}: ${babyName}`
             : t('nav.viewCurrentList'),
           highlight: true,
-          onExit: clearAccess,
+          onExit: handleExitList,
         }]
       : []),
   ];
