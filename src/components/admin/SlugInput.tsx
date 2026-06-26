@@ -17,6 +17,11 @@ export interface SlugInputProps {
   className?: string;
   /** Notifies parent of validity (debounced to onBlur + onChange). */
   onValidityChange?: (valid: boolean, message: string | null) => void;
+  /**
+   * External error message (e.g. duplicate slug detected). Takes precedence
+   * over the format validator and is displayed even before the user blurs.
+   */
+  externalError?: string | null;
 }
 
 /**
@@ -48,9 +53,11 @@ export function SlugInput({
   id,
   className,
   onValidityChange,
+  externalError,
 }: SlugInputProps) {
   const [touched, setTouched] = React.useState(false);
-  const error = touched ? validateSlugValue(value, allowEmpty) : null;
+  const formatError = touched ? validateSlugValue(value, allowEmpty) : null;
+  const error = externalError || formatError;
 
   React.useEffect(() => {
     if (!onValidityChange) return;
