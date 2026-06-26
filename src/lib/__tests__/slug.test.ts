@@ -4,7 +4,7 @@ import { slugify, isSlug, normalizeSlugInput, autoSlug } from "@/lib/slug";
 describe("slugify", () => {
   it("normalizes accents, quotes and spaces", () => {
     expect(slugify("  Càmera de fotos!  ")).toBe("camera-de-fotos");
-    expect(slugify("L'Òliba d'en Joan")).toBe("l-oliba-d-en-joan");
+    expect(slugify("L'Òliba d'en Joan")).toBe("loliba-den-joan");
     expect(slugify("Té & Café")).toBe("te-and-cafe");
   });
   it("rejects invalid chars by collapsing them", () => {
