@@ -584,9 +584,19 @@ const AdminProductForm: React.FC = () => {
         <CardHeader><CardTitle>Informació bàsica</CardTitle></CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div>
-            <Label>Slug *</Label>
-            <Input value={form.slug} onChange={e => updateField('slug', e.target.value)} />
+            <Label>Slug base</Label>
+            <Input
+              value={form.slug}
+              onChange={e => updateField('slug', e.target.value
+                .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'))}
+              placeholder="Es generarà automàticament en desar"
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              S'omple sol des del nom de l'idioma per defecte si el deixes buit.
+            </p>
           </div>
+
           <div>
             <Label>SKU *</Label>
             <Input value={form.sku} onChange={e => updateField('sku', e.target.value)} />
