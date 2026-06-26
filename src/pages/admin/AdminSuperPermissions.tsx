@@ -18,6 +18,7 @@ interface AdminUser {
 type PermissionMap = Record<string, Set<PermissionKey>>; // user_id -> perms
 
 const AdminSuperPermissions: React.FC = () => {
+  const { t } = useTranslation();
   const { refreshProfile, user: currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
