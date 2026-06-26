@@ -30,12 +30,6 @@ const BirthListAccessPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!listCode.trim() || !password.trim()) return;
-    if (!user) {
-      const redirect = encodeURIComponent(`/llista-naixement?code=${encodeURIComponent(listCode.trim())}`);
-      toast.error(t('list.loginRequired', 'Inicia sessió per accedir a la llista'));
-      navigate(`/login?redirect=${redirect}`);
-      return;
-    }
 
     setLoading(true);
     try {
