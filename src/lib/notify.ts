@@ -1,14 +1,16 @@
-import { toast as sonnerToast, type ExternalToast } from "sonner";
+import { toast as sonnerToast, type ExternalToast, type ToasterProps } from "sonner";
 
 /**
- * Centralized toast configuration for the entire app.
+ * Single source of truth for toast configuration across the app.
  *
- * Duration, animation and close behaviour are defined here so every
- * success/info/error/warning notification stays consistent.
+ * - `TOASTER_CONFIG` configures the global `<Toaster />` (position, animation, styling).
+ * - `notify` wraps the imperative API with consistent duration and close behaviour.
  *
- * Visual styling (position, rich colors, close button, animations)
- * is configured in `src/components/ui/sonner.tsx`.
+ * The visual `<Toaster />` instance lives in `src/components/ui/sonner.tsx` and
+ * just consumes `TOASTER_CONFIG` — never override these values inline.
  */
+
+// ---------- Durations ----------
 
 export const TOAST_DEFAULTS = {
   /** Standard auto-dismiss duration in ms. */
@@ -21,16 +23,52 @@ export const TOAST_DEFAULTS = {
   closeButton: true,
 };
 
-type ToastDuration = number;
+// ---------- Toaster visual config ----------
 
+const TOASTER_STYLE: React.CSSProperties = {
+  // Center vertically in the viewport (sonner has no native center-center).
+  top: "50%",
+  left: "50%",
+  right: "auto",
+  bottom: "auto",
+  transform: "translate(-50%, -50%)",
+  width: "min(90vw, 420px)",
+};
+
+const TOAST_CLASSNAMES = {
+  toast:
+    "group toast group-[.toaster]:shadow-2xl group-[.toaster]:border group-[.toaster]:rounded-xl group-[.toaster]:p-4 group-[.toaster]:text-base group-[.toaster]:animate-in group-[.toaster]:fade-in-0 group-[.toaster]:zoom-in-95 group-[.toaster]:slide-in-from-top-2 data-[swipe=move]:transition-transform data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+  title: "group-[.toast]:text-base group-[.toast]:font-semibold",
+  description: "group-[.toast]:text-sm group-[.toast]:opacity-90",
+  actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
+  cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+  closeButton:
+    "group-[.toast]:bg-background group-[.toast]:text-foreground group-[.toast]:border-border",
+};
+
+export const TOASTER_CONFIG: Partial<ToasterProps> = {
+  position: "top-center",
+  richColors: true,
+  closeButton: TOAST_DEFAULTS.closeButton,
+  visibleToasts: 3,
+  duration: TOAST_DEFAULTS.duration,
+  gap: 12,
+  expand: false,
+  style: TOASTER_STYLE,
+  toastOptions: {
+    duration: TOAST_DEFAULTS.duration,
+    classNames: TOAST_CLASSNAMES,
+  },
+};
+
+// ---------- Imperative API ----------
 
 type NotifyOptions = Omit<ExternalToast, "closeButton">;
 
-function withDefaults(opts?: NotifyOptions, duration: ToastDuration = TOAST_DEFAULTS.duration): ExternalToast {
+function withDefaults(opts?: NotifyOptions, duration: number = TOAST_DEFAULTS.duration): ExternalToast {
   return {
     duration,
     closeButton: TOAST_DEFAULTS.closeButton,
-    dismissible: true,
     ...opts,
   };
 }
@@ -55,9 +93,8 @@ export const notify = {
     sonnerToast.loading(message, { ...opts, duration: TOAST_DEFAULTS.loadingDuration }),
 
   promise: sonnerToast.promise.bind(sonnerToast),
-
   dismiss: sonnerToast.dismiss.bind(sonnerToast),
 };
 
-// Re-export the raw toast for edge cases that need full sonner API.
+// Re-export the raw toast for edge cases that need the full sonner API.
 export { sonnerToast as toast };
