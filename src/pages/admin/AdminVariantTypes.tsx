@@ -152,6 +152,10 @@ const AdminVariantTypes: React.FC = () => {
   };
 
   const handleSave = () => {
+    for (const [label, val] of [['base', formSlug], ['CA', formSlugCa], ['ES', formSlugEs]] as const) {
+      const err = validateSlugValue(val || '', true);
+      if (err) { notify.error(`Slug ${label} no vàlid: ${err}`); return; }
+    }
     saveMutation.mutate({
       id: editingId || undefined,
       slug: formSlug,
@@ -161,6 +165,7 @@ const AdminVariantTypes: React.FC = () => {
       slugEs: formSlugEs,
     });
   };
+
 
 
   const getName = (vt: VariantTypeRow) => {
