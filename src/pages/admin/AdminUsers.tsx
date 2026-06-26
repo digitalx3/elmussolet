@@ -369,6 +369,11 @@ const AdminUsers: React.FC = () => {
                     <Button variant="ghost" size="icon" onClick={() => openEdit(user)} disabled={!!user.deleted_at}>
                       <Pencil className="h-4 w-4" />
                     </Button>
+                    {isSuperAdmin && user.role === 'admin' && !user.deleted_at && (
+                      <Button variant="ghost" size="sm" onClick={() => setPermsUser(user)}>
+                        Permisos
+                      </Button>
+                    )}
                     {user.deleted_at ? (
                       <Button
                         variant="outline"
