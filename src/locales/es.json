@@ -10,7 +10,9 @@
     "cart": "Cesta",
     "admin": "Administración",
     "viewCurrentList": "Ver lista actual",
-    "exitList": "Salir de la lista"
+    "exitList": "Salir de la lista",
+    "exitListConfirm": "¿Quieres salir de la lista actual? Tendrás que introducir de nuevo el código y la contraseña para acceder.",
+    "exitListSuccess": "Has salido de la lista"
   },
 
   "auth": {
