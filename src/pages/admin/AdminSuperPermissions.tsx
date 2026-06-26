@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { PREMIUM_PERMISSIONS, type PermissionKey } from '@/lib/permissions';
 import { Input } from '@/components/ui/input';
