@@ -354,6 +354,16 @@ const AdminBrands: React.FC = () => {
                       />
                     </div>
                     <div>
+                      <Label className="text-xs">Slug ({code.toUpperCase()})</Label>
+                      <Input
+                        value={form.translations[code]?.slug ?? ''}
+                        onChange={(e) => setTranslation(code, 'slug', e.target.value
+                          .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                          .replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'))}
+                        placeholder="es-generara-automaticament"
+                      />
+                    </div>
+
                       <Label className="text-xs">Descripció ({code.toUpperCase()})</Label>
                       <Textarea
                         rows={2}
