@@ -142,6 +142,9 @@ const AdminOverview: React.FC = () => {
         </CardContent>
       </Card>
 
+      <TopProductsChart />
+
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent orders */}
         <Card>
