@@ -74,7 +74,7 @@ const emptyForm: UserFormState = {
 const AdminUsers: React.FC = () => {
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, isSuperAdmin } = useAuth();
   const [search, setSearch] = useState('');
   const [detailUser, setDetailUser] = useState<Profile | null>(null);
   const [formOpen, setFormOpen] = useState(false);
