@@ -2442,6 +2442,7 @@ export type Database = {
         | "manage_cookies"
         | "manage_smtp"
         | "manage_translations"
+        | "ai_history"
       app_role: "super_admin" | "admin" | "customer"
     }
     CompositeTypes: {
@@ -2577,6 +2578,7 @@ export const Constants = {
         "manage_cookies",
         "manage_smtp",
         "manage_translations",
+        "ai_history",
       ],
       app_role: ["super_admin", "admin", "customer"],
     },
