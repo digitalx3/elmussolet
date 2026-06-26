@@ -161,7 +161,16 @@ function MenuLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
 function AdminSidebar() {
   const { state } = useSidebar();
   const { t } = useTranslation();
+  const { isSuperAdmin, can } = useAuth();
   const collapsed = state === 'collapsed';
+
+  const visibleGroups = React.useMemo(() => {
+    return groups
+      .filter(g => !g.superOnly || isSuperAdmin)
+      .map(g => ({ ...g, items: g.items.filter(i => !i.perm || can(i.perm)) }))
+      .filter(g => g.items.length > 0);
+  }, [isSuperAdmin, can]);
+
   const { pathname } = useLocation();
 
   const isItemActive = (path: string) =>
