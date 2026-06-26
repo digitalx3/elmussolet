@@ -274,11 +274,29 @@ const AdminCategories: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('admin.categoryName')} (CA) *</Label>
-                <Input value={form.name_ca} onChange={e => setForm(f => ({ ...f, name_ca: e.target.value }))} />
+                <Input value={form.name_ca} onChange={e => onNameChange('ca', e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>{t('admin.categoryName')} (ES) *</Label>
-                <Input value={form.name_es} onChange={e => setForm(f => ({ ...f, name_es: e.target.value }))} />
+                <Input value={form.name_es} onChange={e => onNameChange('es', e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Slug (CA)</Label>
+                <Input
+                  value={form.slug_ca}
+                  onChange={e => setForm(f => ({ ...f, slug_ca: slugifyStr(e.target.value) }))}
+                  placeholder="auto des del nom"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Slug (ES)</Label>
+                <Input
+                  value={form.slug_es}
+                  onChange={e => setForm(f => ({ ...f, slug_es: slugifyStr(e.target.value) }))}
+                  placeholder="auto desde el nombre"
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -293,14 +311,15 @@ const AdminCategories: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Slug *</Label>
-                <Input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} placeholder="roba-bebe" />
+                <Label>Slug base</Label>
+                <Input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: slugifyStr(e.target.value) }))} placeholder="auto en desar" />
               </div>
               <div className="space-y-2">
                 <Label>{t('admin.sortOrder')}</Label>
                 <Input type="number" value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: parseInt(e.target.value) || 0 }))} />
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('admin.parentCategory')}</Label>
