@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useListAccess } from '@/contexts/ListAccessContext';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
 import logoHorizontal from '@/assets/mussolet-logo-horizontal.png.asset.json';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 
