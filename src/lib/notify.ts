@@ -19,11 +19,14 @@ export const TOAST_DEFAULTS = {
   loadingDuration: Infinity,
   /** Always allow manual close via the close button. */
   closeButton: true,
-} as const;
+};
+
+type ToastDuration = number;
+
 
 type NotifyOptions = Omit<ExternalToast, "closeButton">;
 
-function withDefaults(opts?: NotifyOptions, duration = TOAST_DEFAULTS.duration): ExternalToast {
+function withDefaults(opts?: NotifyOptions, duration: ToastDuration = TOAST_DEFAULTS.duration): ExternalToast {
   return {
     duration,
     closeButton: TOAST_DEFAULTS.closeButton,
