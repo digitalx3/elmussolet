@@ -40,7 +40,7 @@ const CartPage: React.FC = () => {
         <p className="text-muted-foreground mb-6">{t('cart.empty')}</p>
         <p className="text-sm text-muted-foreground mb-8">{t('cart.emptyDesc')}</p>
         <Button asChild>
-          <Link to="/cataleg">{t('cart.continueShopping')}</Link>
+          <Link to={continueShoppingTo}>{t("cart.continueShopping")}</Link>
         </Button>
       </div>
     );
