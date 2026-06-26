@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { toast } from 'sonner';
+import i18n from '@/i18n';
 
 export interface CartItem {
   productId: string;
