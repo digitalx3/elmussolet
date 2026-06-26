@@ -99,10 +99,25 @@ const TopProductsChart: React.FC = () => {
       const from = new Date(Date.UTC(y, m - 1, 1)).toISOString();
       const to = new Date(Date.UTC(y, m, 1)).toISOString();
       const { data, error } = await supabase.rpc('get_top_products', {
-        p_from: from, p_to: to, p_limit: 10,
+        _from: from, _to: to, _limit: 10,
       });
       if (error) throw error;
-      return (data || []) as Array<{ product_id: string; name: string; units: number }>;
+      const rows = (data || []) as Array<{ product_id: string; slug: string; units: number; revenue: number }>;
+      if (rows.length === 0) return [] as Array<{ product_id: string; name: string; units: number }>;
+      const ids = rows.map(r => r.product_id);
+      const { data: tr } = await supabase
+        .from('product_translations')
+        .select('product_id, name, language')
+        .in('product_id', ids);
+      const nameByProduct: Record<string, string> = {};
+      (tr || []).forEach((t: any) => {
+        if (!nameByProduct[t.product_id] || t.language === 'ca') nameByProduct[t.product_id] = t.name;
+      });
+      return rows.map(r => ({
+        product_id: r.product_id,
+        name: nameByProduct[r.product_id] || r.slug,
+        units: Number(r.units) || 0,
+      }));
     },
   });
 
