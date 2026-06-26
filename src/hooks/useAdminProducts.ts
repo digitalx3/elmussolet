@@ -151,8 +151,8 @@ export function useSaveProduct() {
       }
 
       // Translations
-      const { slugify } = await import('@/lib/slug');
       for (const lang of Object.keys(data.translations)) {
+
         const tr = data.translations[lang];
         if (!tr) continue;
         await supabase.from('product_translations').delete().eq('product_id', productId!).eq('language', lang);
