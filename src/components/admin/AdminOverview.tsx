@@ -79,9 +79,7 @@ const StatCard: React.FC<{
   </Card>
 );
 
-const chartConfig = {
-  total: { label: 'Vendes (€)', color: 'hsl(var(--primary))' },
-};
+// chartConfig is built inside the component to use translations
 
 const TopProductsChart: React.FC = () => {
   const { t } = useTranslation();
