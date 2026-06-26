@@ -377,6 +377,7 @@ const AdminBrands: React.FC = () => {
                       onChange={(next) => setTranslation(code, 'slug', next)}
                       placeholder="es-generara-automaticament"
                       className="text-xs"
+                      externalError={slugDupErrors[code] ?? null}
                     />
 
                     <div>
