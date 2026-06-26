@@ -152,9 +152,9 @@ const AdminSuperPermissions: React.FC = () => {
       <header className="flex items-center gap-3">
         <ShieldCheck className="h-6 w-6 text-primary" />
         <div>
-          <h1 className="font-display text-2xl font-bold">Permisos d'administradors</h1>
+          <h1 className="font-display text-2xl font-bold">{t('admin.super.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Gestiona quines funcions extra té habilitades cada administrador. El Super Admin sempre té accés total.
+            {t('admin.super.desc')}
           </p>
         </div>
       </header>
@@ -164,19 +164,19 @@ const AdminSuperPermissions: React.FC = () => {
         <Input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Cerca per nom o correu..."
+          placeholder={t('admin.super.searchPlaceholder')}
           className="pl-9"
         />
       </div>
 
       {loading ? (
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Carregant administradors...
+          <Loader2 className="h-4 w-4 animate-spin" /> {t('admin.super.loadingAdmins')}
         </div>
       ) : filtered.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">
-            {admins.length === 0 ? 'No hi ha cap administrador.' : 'Sense resultats per a la cerca.'}
+            {admins.length === 0 ? t('admin.super.noAdmins') : t('admin.super.noSearch')}
           </CardContent>
         </Card>
       ) : (
