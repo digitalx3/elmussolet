@@ -236,7 +236,7 @@ Deno.serve(async (req: Request) => {
     admin = createClient(supabaseUrl, serviceKey);
     const { data: profile } = await admin
       .from("profiles").select("role").eq("id", userId).single();
-    if (profile?.role !== "admin") return json({ error: "Forbidden" }, 403);
+    const { data: isAdminFlag } = await admin.rpc("is_admin", { _user_id: userId }); if (!isAdminFlag) return json({ error: "Forbidden" }, 403);
 
     const { data: hasPerm } = await admin.rpc("has_permission", {
       _user_id: userId,
