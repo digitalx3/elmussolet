@@ -513,6 +513,20 @@ const AdminProductForm: React.FC = () => {
                     </p>
                   </div>
                   <div>
+                    <div className="flex items-center justify-between">
+                      <Label>Descripció curta</Label>
+                      <Button
+                        type="button" size="sm" variant="ghost"
+                        className="h-7 px-2 text-xs"
+                        disabled={!aiReady || seoGenerating === lang || !(tr.name?.trim() || (form.translations[defaultCode]?.name?.trim()))}
+                        onClick={() => generateSeoDescriptions(lang, ['short'])}
+                        title="Regenera només aquest camp amb IA"
+                      >
+                        {seoGenerating === lang ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                        IA
+                      </Button>
+                    </div>
+
 
                     <RichTextEditor
                       value={tr.short_description || ''}
