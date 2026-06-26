@@ -553,6 +553,7 @@ const AdminProductForm: React.FC = () => {
                     onChange={(next) => updateTranslation(lang, 'slug', next)}
                     placeholder="es-generara-automaticament-des-del-nom"
                     hint="S'omple automàticament des del nom. Edita per personalitzar l'URL SEO en aquest idioma."
+                    externalError={slugDupErrors[lang] ?? null}
                   />
 
                   <div>
