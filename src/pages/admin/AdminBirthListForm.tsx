@@ -18,7 +18,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
 import { useLanguages } from '@/hooks/useLanguages';
 import LanguageTabs from '@/components/admin/LanguageTabs';
@@ -209,13 +209,13 @@ const AdminBirthListForm: React.FC = () => {
       setActiveSectionTempId(nextSections[0]?.temp_id ?? null);
       setForm(prev => ({ ...prev, items: nextItems }));
       setDefaultsLoaded(true); // prevent the default-sections effect from overriding
-      toast.success(
+      notify.success(
         lang === 'es'
           ? `Plantilla cargada: ${nextSections.length} familias, ${nextItems.length} productos`
           : `Plantilla carregada: ${nextSections.length} famílies, ${nextItems.length} productes`,
       );
       if (skipped.length > 0) {
-        toast.warning(
+        notify.warning(
           (lang === 'es'
             ? `${skipped.length} producto(s) sin stock no se añadieron: `
             : `${skipped.length} producte(s) sense estoc no s'han afegit: `) + skipped.join(', '),
@@ -223,7 +223,7 @@ const AdminBirthListForm: React.FC = () => {
         );
       }
     } catch (err: any) {
-      toast.error(err?.message || (lang === 'es' ? 'No se pudo cargar la plantilla' : 'No s\'ha pogut carregar la plantilla'));
+      notify.error(err?.message || (lang === 'es' ? 'No se pudo cargar la plantilla' : 'No s\'ha pogut carregar la plantilla'));
     } finally {
       setLoadingTemplate(false);
     }
@@ -467,12 +467,12 @@ const AdminBirthListForm: React.FC = () => {
         ...prev,
         items: prev.items.map((it, i) => i === existingIdx ? { ...it, section_temp_id: targetSection } : it),
       }));
-      toast.success(lang === 'es' ? 'Producto reasignado' : 'Producte reassignat');
+      notify.success(lang === 'es' ? 'Producto reasignado' : 'Producte reassignat');
       return;
     }
 
     if (getEffectiveStock(product) <= 0) {
-      toast.error(lang === 'es'
+      notify.error(lang === 'es'
         ? 'Este producto no tiene stock. Busca uno similar.'
         : 'Aquest producte no té estoc. Busca\'n un de similar.');
       return;
@@ -575,10 +575,10 @@ const AdminBirthListForm: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!form.list_code.trim()) { toast.error('Codi de llista requerit'); return; }
-    if (isNew && !form.password.trim()) { toast.error('Contrasenya requerida'); return; }
+    if (!form.list_code.trim()) { notify.error('Codi de llista requerit'); return; }
+    if (isNew && !form.password.trim()) { notify.error('Contrasenya requerida'); return; }
     if (form.owners.length === 0 || !form.owners[0].first_name.trim()) {
-      toast.error('Mínim un propietari'); return;
+      notify.error('Mínim un propietari'); return;
     }
 
     // Validate every section has at least the default-language name filled
@@ -590,7 +590,7 @@ const AdminBirthListForm: React.FC = () => {
       return !value || !value.trim();
     });
     if (invalidSection) {
-      toast.error(
+      notify.error(
         lang === 'es'
           ? `Una familia no tiene nombre en el idioma principal (${defaultCode.toUpperCase()}). Edita sus traducciones antes de guardar.`
           : `Una família no té nom en l'idioma principal (${defaultCode.toUpperCase()}). Edita'n les traduccions abans de desar.`,
@@ -726,11 +726,11 @@ const AdminBirthListForm: React.FC = () => {
 
       queryClient.invalidateQueries({ queryKey: ['admin-birth-lists'] });
       queryClient.invalidateQueries({ queryKey: ['admin-birth-list', listId] });
-      toast.success(t('common.success'));
+      notify.success(t('common.success'));
       navigate('/admin/llistes');
     } catch (err: any) {
       const detail = err?.message || err?.error_description || t('errors.generic');
-      toast.error(
+      notify.error(
         lang === 'es'
           ? `No se ha podido guardar la lista: ${detail}`
           : `No s'ha pogut desar la llista: ${detail}`,
@@ -813,7 +813,7 @@ const AdminBirthListForm: React.FC = () => {
       setOrdersCount(counts.orders);
       setDeleteStep(counts.orders > 0 ? 'orders' : 'final');
     } catch (err: any) {
-      toast.error(err?.message || t('errors.generic'));
+      notify.error(err?.message || t('errors.generic'));
     } finally {
       setLoadingPreview(false);
     }
@@ -823,7 +823,7 @@ const AdminBirthListForm: React.FC = () => {
     if (isNew || !id) return;
     if (deleting) return; // guard against double click
     if (!canConfirmDelete) {
-      toast.error(t('admin.deleteListConfirmRequired', 'Marca la casella i escriu ELIMINAR per confirmar.'));
+      notify.error(t('admin.deleteListConfirmRequired', 'Marca la casella i escriu ELIMINAR per confirmar.'));
       return;
     }
     setDeleting(true);
@@ -869,11 +869,11 @@ const AdminBirthListForm: React.FC = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: ['admin-birth-lists'] });
-      toast.success(t('common.success'));
+      notify.success(t('common.success'));
       navigate('/admin/llistes');
     } catch (err: any) {
       console.error('[admin] delete birth list failed:', err);
-      toast.error(err?.message || t('errors.generic'));
+      notify.error(err?.message || t('errors.generic'));
     } finally {
       setDeleting(false);
       setDeleteStep('idle');
@@ -972,7 +972,7 @@ const AdminBirthListForm: React.FC = () => {
                   />
                   <Button variant="ghost" size="icon" onClick={() => {
                     navigator.clipboard.writeText(form.list_code);
-                    toast.success(t('list.copyCode'));
+                    notify.success(t('list.copyCode'));
                   }}>
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -1468,7 +1468,7 @@ const AdminBirthListForm: React.FC = () => {
             const tryClose = () => {
               const defaultValue = (sec.translations[defaultCode] ?? (defaultCode === 'ca' ? sec.name_ca : defaultCode === 'es' ? sec.name_es : '') ?? '').trim();
               if (!defaultValue) {
-                toast.error(
+                notify.error(
                   lang === 'es'
                     ? `El nombre en el idioma principal (${defaultCode.toUpperCase()}) no puede estar vacío`
                     : `El nom en l'idioma principal (${defaultCode.toUpperCase()}) no pot estar buit`,

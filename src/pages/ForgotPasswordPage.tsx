@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { ArrowLeft, Mail } from 'lucide-react';
 
 const ForgotPasswordPage: React.FC = () => {
@@ -22,7 +22,7 @@ const ForgotPasswordPage: React.FC = () => {
     });
     setLoading(false);
     if (error) {
-      toast.error(t('errors.generic'));
+      notify.error(t('errors.generic'));
     } else {
       setSent(true);
     }

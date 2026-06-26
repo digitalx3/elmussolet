@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useListAccess } from '@/contexts/ListAccessContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import PublicListSteps from '@/components/list/PublicListSteps';
 
 const BirthListAccessPage: React.FC = () => {
@@ -39,7 +39,7 @@ const BirthListAccessPage: React.FC = () => {
 
       if (error || data?.error) {
         const errKey = data?.error === 'list_not_active' ? 'list.listNotActive' : 'list.invalidCredentials';
-        toast.error(t(errKey));
+        notify.error(t(errKey));
         return;
       }
 
@@ -57,7 +57,7 @@ const BirthListAccessPage: React.FC = () => {
 
       navigate(`/llista-naixement/${data.listCode}`);
     } catch {
-      toast.error(t('errors.generic'));
+      notify.error(t('errors.generic'));
     } finally {
       setLoading(false);
     }

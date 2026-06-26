@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Save, Upload, RotateCcw } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { optimizeImage } from '@/lib/optimizeImage';
 import DefaultHero from '@/components/home/DefaultHero';
 import LanguageTabs from '@/components/admin/LanguageTabs';
@@ -127,10 +127,10 @@ const AdminDefaultHeroForm: React.FC = () => {
       if (kind === 'image') set('image_url', data.publicUrl);
       else set('card_logo_url', data.publicUrl);
       cancelPending(kind);
-      toast.success('Imatge pujada. Recorda desar els canvis.');
+      notify.success('Imatge pujada. Recorda desar els canvis.');
     } catch (e) {
       console.error(e);
-      toast.error('Error pujant la imatge');
+      notify.error('Error pujant la imatge');
     } finally {
       setUploading(null);
     }
@@ -147,9 +147,9 @@ const AdminDefaultHeroForm: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['default-hero-overrides-all'] });
       qc.invalidateQueries({ queryKey: ['default-hero-variants-public'] });
-      toast.success('Portada desada');
+      notify.success('Portada desada');
     },
-    onError: (e) => { console.error(e); toast.error('Error desant'); },
+    onError: (e) => { console.error(e); notify.error('Error desant'); },
   });
 
   const reset = useMutation({
@@ -167,9 +167,9 @@ const AdminDefaultHeroForm: React.FC = () => {
         ...s,
         [activeVariant]: { ...DEFAULT_HERO, enabled: activeVariant === 1 },
       }));
-      toast.success('Portada restaurada als valors originals');
+      notify.success('Portada restaurada als valors originals');
     },
-    onError: (e) => { console.error(e); toast.error('Error restaurant'); },
+    onError: (e) => { console.error(e); notify.error('Error restaurant'); },
   });
 
   return (

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Mail, Trash2, Check, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,7 +38,7 @@ const AdminContactMessages: React.FC = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['contact-messages'] });
-      toast.success('Missatge eliminat');
+      notify.success('Missatge eliminat');
     },
   });
 

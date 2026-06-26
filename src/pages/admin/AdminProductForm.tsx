@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminProduct, useSaveProduct, useVariantTypes, type ProductFormData } from '@/hooks/useAdminProducts';
 import { useCategories } from '@/hooks/useCategories';
@@ -96,15 +96,15 @@ const AdminProductForm: React.FC = () => {
     const defaultTr = form.translations[defaultCode] ?? emptyTranslation;
     const productName = tr.name?.trim() || defaultTr.name?.trim();
     if (!productName) {
-      toast.error('Cal omplir el nom del producte abans de generar la descripció');
+      notify.error('Cal omplir el nom del producte abans de generar la descripció');
       return;
     }
     if (!aiReady) {
-      toast.error("Configura un proveïdor d'IA a /admin/ia abans d'utilitzar aquesta funció");
+      notify.error("Configura un proveïdor d'IA a /admin/ia abans d'utilitzar aquesta funció");
       return;
     }
     if (fields.length === 0) {
-      toast.error('Selecciona almenys un camp per generar');
+      notify.error('Selecciona almenys un camp per generar');
       return;
     }
     const language = languages.find(l => l.code === lang);
@@ -140,9 +140,9 @@ const AdminProductForm: React.FC = () => {
         };
       });
       const labels = fields.map(f => (f === 'short' ? 'curta' : 'llarga')).join(' + ');
-      toast.success(`Descripció ${labels} generada amb IA (${language?.native_name || lang})`);
+      notify.success(`Descripció ${labels} generada amb IA (${language?.native_name || lang})`);
     } catch (e: any) {
-      toast.error(e?.message || 'Error generant descripcions');
+      notify.error(e?.message || 'Error generant descripcions');
     } finally {
       setSeoGenerating(null);
     }
@@ -256,7 +256,7 @@ const AdminProductForm: React.FC = () => {
       const { error } = await supabase.storage
         .from('product-images')
         .upload(path, file, { contentType: file.type });
-      if (error) { toast.error('Error pujant imatge'); continue; }
+      if (error) { notify.error('Error pujant imatge'); continue; }
       const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path);
       setForm(prev => ({
         ...prev,
@@ -331,12 +331,12 @@ const AdminProductForm: React.FC = () => {
 
     if (firstInvalidLang) {
       setActiveLang(firstInvalidLang);
-      toast.error('Revisa les traduccions: hi ha camps amb errors.');
+      notify.error('Revisa les traduccions: hi ha camps amb errors.');
       return;
     }
 
     if (!form.slug || !form.sku) {
-      toast.error('Omple els camps obligatoris: slug i SKU');
+      notify.error('Omple els camps obligatoris: slug i SKU');
       return;
     }
 
@@ -344,26 +344,26 @@ const AdminProductForm: React.FC = () => {
     if (form.sale_price_type) {
       const v = form.sale_value;
       if (v == null || isNaN(v)) {
-        toast.error("Indica el valor de l'oferta o desactiva-la.");
+        notify.error("Indica el valor de l'oferta o desactiva-la.");
         return;
       }
       if (v <= 0) {
-        toast.error("El valor de l'oferta ha de ser superior a 0.");
+        notify.error("El valor de l'oferta ha de ser superior a 0.");
         return;
       }
       if (form.sale_price_type === 'percent' && v >= 100) {
-        toast.error('El percentatge de descompte ha de ser inferior a 100.');
+        notify.error('El percentatge de descompte ha de ser inferior a 100.');
         return;
       }
       if (form.sale_price_type === 'fixed' && form.base_price > 0 && v >= form.base_price) {
-        toast.error("El preu d'oferta ha de ser inferior al preu base.");
+        notify.error("El preu d'oferta ha de ser inferior al preu base.");
         return;
       }
       if (form.sale_starts_at && form.sale_ends_at) {
         const s = new Date(form.sale_starts_at).getTime();
         const e2 = new Date(form.sale_ends_at).getTime();
         if (!isNaN(s) && !isNaN(e2) && s > e2) {
-          toast.error("La data d'inici de l'oferta ha de ser anterior a la data de fi.");
+          notify.error("La data d'inici de l'oferta ha de ser anterior a la data de fi.");
           return;
         }
       }
@@ -371,10 +371,10 @@ const AdminProductForm: React.FC = () => {
 
     try {
       await saveProduct.mutateAsync({ id: isNew ? undefined : id, data: form });
-      toast.success(isNew ? 'Producte creat' : 'Producte actualitzat');
+      notify.success(isNew ? 'Producte creat' : 'Producte actualitzat');
       navigate('/admin/productes');
     } catch (err: any) {
-      toast.error(err.message || 'Error guardant producte');
+      notify.error(err.message || 'Error guardant producte');
     }
   };
 

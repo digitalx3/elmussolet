@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Upload, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { optimizeImage } from '@/lib/optimizeImage';
 
 interface Props {
@@ -29,7 +29,7 @@ const ImageUploader: React.FC<Props> = ({
   const handleFile = async (rawFile: File) => {
     if (!rawFile) return;
     if (rawFile.size > 10 * 1024 * 1024) {
-      toast.error('Màxim 10 MB');
+      notify.error('Màxim 10 MB');
       return;
     }
     setUploading(true);
@@ -46,9 +46,9 @@ const ImageUploader: React.FC<Props> = ({
       if (error) throw error;
       const { data } = supabase.storage.from('site-assets').getPublicUrl(path);
       onChange(data.publicUrl);
-      toast.success('Pujat correctament');
+      notify.success('Pujat correctament');
     } catch (e: any) {
-      toast.error(e.message || 'Error pujant l\'arxiu');
+      notify.error(e.message || 'Error pujant l\'arxiu');
     } finally {
       setUploading(false);
     }

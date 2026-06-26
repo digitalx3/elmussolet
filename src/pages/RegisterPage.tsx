@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 
 const RegisterPage: React.FC = () => {
   const { t } = useTranslation();
@@ -20,20 +20,20 @@ const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 8) {
-      toast.error(t('auth.passwordMinLength'));
+      notify.error(t('auth.passwordMinLength'));
       return;
     }
     if (password !== confirmPassword) {
-      toast.error(t('auth.passwordMismatch'));
+      notify.error(t('auth.passwordMismatch'));
       return;
     }
     setLoading(true);
     const { error } = await signUp(email, password, fullName);
     setLoading(false);
     if (error) {
-      toast.error(error.message);
+      notify.error(error.message);
     } else {
-      toast.success(t('auth.registerSuccess'));
+      notify.success(t('auth.registerSuccess'));
       navigate('/el-meu-compte');
     }
   };

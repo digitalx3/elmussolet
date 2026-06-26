@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { CheckCircle2 } from 'lucide-react';
 
 const ResetPasswordPage: React.FC = () => {
@@ -37,18 +37,18 @@ const ResetPasswordPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 8) {
-      toast.error(t('auth.passwordMinLength'));
+      notify.error(t('auth.passwordMinLength'));
       return;
     }
     if (password !== confirm) {
-      toast.error(t('auth.passwordMismatch'));
+      notify.error(t('auth.passwordMismatch'));
       return;
     }
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (error) {
-      toast.error(t('errors.generic'));
+      notify.error(t('errors.generic'));
     } else {
       setSuccess(true);
       setTimeout(() => navigate('/el-meu-compte'), 2000);

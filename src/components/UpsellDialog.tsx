@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/CartContext';
 import { useRelatedProducts } from '@/hooks/useTranslatedProducts';
 import { formatPriceEUR } from '@/lib/pricing';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 
 const UpsellDialog: React.FC = () => {
   const { upsellTrigger, clearUpsell, addStandardItem } = useCart();
@@ -49,7 +49,7 @@ const UpsellDialog: React.FC = () => {
       taxPercentage: p.taxPercentage ?? 0,
       quantity: 1,
     });
-    toast.success(`${p.name} afegit a la cistella`);
+    notify.success(`${p.name} afegit a la cistella`);
     // Close after adding to avoid recursion
     handleClose();
   };

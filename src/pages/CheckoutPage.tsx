@@ -14,7 +14,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,7 +58,7 @@ const CheckoutPage: React.FC = () => {
   const copyToClipboard = (value: string, field: string) => {
     navigator.clipboard.writeText(value).then(() => {
       setCopiedField(field);
-      toast.success(t('checkout.copied'));
+      notify.success(t('checkout.copied'));
       setTimeout(() => setCopiedField(null), 2000);
     });
   };
@@ -155,7 +155,7 @@ const CheckoutPage: React.FC = () => {
 
   const handleConfirmOrder = async () => {
     if (!termsAccepted) {
-      toast.error(t('checkout.termsAccept'));
+      notify.error(t('checkout.termsAccept'));
       return;
     }
     setSubmitting(true);
@@ -296,7 +296,7 @@ const CheckoutPage: React.FC = () => {
         await supabase.from('orders').delete().eq('id', order.id);
         const msg = String(itemsError.message || '');
         if (msg.includes('STOCK_INSUFFICIENT')) {
-          toast.error(
+          notify.error(
             t('checkout.stockInsufficient') ||
             'Algun producte s\'ha esgotat mentre completaves la compra. Revisa la cistella.'
           );
@@ -320,7 +320,7 @@ const CheckoutPage: React.FC = () => {
       }).catch(err => console.warn('notify-list-stock-depleted failed', err));
     } catch (err) {
       console.error('Order creation failed:', err);
-      toast.error(t('errors.generic'));
+      notify.error(t('errors.generic'));
     } finally {
       setSubmitting(false);
     }

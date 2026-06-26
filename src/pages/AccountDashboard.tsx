@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { formatPrice } from '@/hooks/useTaxRates';
 import { Package, ChevronDown, ChevronUp, User, ShoppingBag, Heart } from 'lucide-react';
 import MyBirthListPage from './MyBirthListPage';
@@ -122,9 +122,9 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
     );
     setResendingEmail(false);
     if (error) {
-      toast.error(error.message || 'No s\'ha pogut reenviar la confirmació');
+      notify.error(error.message || 'No s\'ha pogut reenviar la confirmació');
     } else {
-      toast.success('Correu de confirmació reenviat. Revisa la safata d\'entrada.');
+      notify.success('Correu de confirmació reenviat. Revisa la safata d\'entrada.');
     }
   };
 
@@ -161,9 +161,9 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
     const { error } = await supabase.from('profiles').update(form).eq('id', profile.id);
     setSaving(false);
     if (error) {
-      toast.error(t('errors.generic'));
+      notify.error(t('errors.generic'));
     } else {
-      toast.success(t('account.saved'));
+      notify.success(t('account.saved'));
       await refreshProfile();
     }
   };
@@ -172,7 +172,7 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
     if (!newEmail || newEmail === currentEmail) return;
     // Basic email validation
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
-      toast.error('Format de correu invàlid');
+      notify.error('Format de correu invàlid');
       return;
     }
     setSavingEmail(true);
@@ -182,9 +182,9 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
     );
     setSavingEmail(false);
     if (error) {
-      toast.error(error.message);
+      notify.error(error.message);
     } else {
-      toast.success('Revisa el teu correu actual i el nou per confirmar el canvi');
+      notify.success('Revisa el teu correu actual i el nou per confirmar el canvi');
       setPendingEmail(newEmail);
       // Refresh from auth after a short delay to pick up new_email field
       setTimeout(loadAuthUser, 800);
@@ -193,20 +193,20 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
 
   const handleUpdatePassword = async () => {
     if (!newPassword || newPassword.length < 6) {
-      toast.error(t('account.passwordTooShort') || 'La contrasenya ha de tenir almenys 6 caràcters');
+      notify.error(t('account.passwordTooShort') || 'La contrasenya ha de tenir almenys 6 caràcters');
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error(t('account.passwordMismatch') || 'Les contrasenyes no coincideixen');
+      notify.error(t('account.passwordMismatch') || 'Les contrasenyes no coincideixen');
       return;
     }
     setSavingPassword(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setSavingPassword(false);
     if (error) {
-      toast.error(error.message);
+      notify.error(error.message);
     } else {
-      toast.success(t('account.passwordUpdated') || 'Contrasenya actualitzada');
+      notify.success(t('account.passwordUpdated') || 'Contrasenya actualitzada');
       setNewPassword('');
       setConfirmPassword('');
     }

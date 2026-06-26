@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Save, Loader2, Type, Code2, Palette, Paintbrush } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -168,9 +168,9 @@ const AdminAppearance: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-appearance'] });
       qc.invalidateQueries({ queryKey: ['appearance-config'] });
-      toast.success('Aparença desada');
+      notify.success('Aparença desada');
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => notify.error(e.message),
   });
 
   const updateEl = (key: string, patch: Partial<ElementStyle>) => {

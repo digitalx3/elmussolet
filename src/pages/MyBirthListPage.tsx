@@ -15,7 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { formatPrice } from '@/hooks/useTaxRates';
 import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
 
@@ -107,7 +107,7 @@ const MyBirthListPage: React.FC = () => {
       await supabase.from('list_owners').delete().eq('list_id', lid);
       const { error } = await supabase.from('birth_lists').delete().eq('id', lid);
       if (error) throw error;
-      toast.success(lang === 'es' ? 'Lista eliminada' : 'Llista eliminada');
+      notify.success(lang === 'es' ? 'Lista eliminada' : 'Llista eliminada');
       if (editingListId === lid) {
         setEditingListId(null);
         setView('list');
@@ -117,7 +117,7 @@ const MyBirthListPage: React.FC = () => {
       await queryClient.refetchQueries({ queryKey: ['my-birth-lists', user?.id] });
       setDeletingList(null);
     } catch (e: any) {
-      toast.error(e?.message || (lang === 'es' ? 'No se pudo eliminar' : 'No s\'ha pogut eliminar'));
+      notify.error(e?.message || (lang === 'es' ? 'No se pudo eliminar' : 'No s\'ha pogut eliminar'));
     } finally {
       setDeleting(false);
     }
@@ -412,11 +412,11 @@ const MyBirthListPage: React.FC = () => {
 
   const addProduct = (product: any) => {
     if (form.items.some(i => i.product_id === product.id)) {
-      toast.info(t('list.productAlreadyAdded'));
+      notify.info(t('list.productAlreadyAdded'));
       return;
     }
     if (getEffectiveStock(product) <= 0) {
-      toast.error(lang === 'es'
+      notify.error(lang === 'es'
         ? 'Este producto no tiene stock. Busca uno similar.'
         : 'Aquest producte no té estoc. Busca\'n un de similar.');
       return;
@@ -505,9 +505,9 @@ const MyBirthListPage: React.FC = () => {
 
       setSections(newSections);
       setForm(prev => ({ ...prev, items: newItems }));
-      toast.success(t('list.templateLoaded'));
+      notify.success(t('list.templateLoaded'));
       if (skipped.length > 0) {
-        toast.warning(
+        notify.warning(
           (lang === 'es'
             ? `${skipped.length} producto(s) sin stock no se han añadido: `
             : `${skipped.length} producte(s) sense estoc no s'han afegit: `) + skipped.join(', '),
@@ -515,7 +515,7 @@ const MyBirthListPage: React.FC = () => {
         );
       }
     } catch (e: any) {
-      toast.error(e.message || t('errors.generic'));
+      notify.error(e.message || t('errors.generic'));
     } finally {
       setLoadingTemplate(false);
     }
@@ -532,7 +532,7 @@ const MyBirthListPage: React.FC = () => {
     const ca = newSectionCa.trim();
     const es = newSectionEs.trim();
     if (!ca && !es) {
-      toast.error(lang === 'es' ? 'Indica un nombre para la sección' : 'Indica un nom per a la secció');
+      notify.error(lang === 'es' ? 'Indica un nombre para la sección' : 'Indica un nom per a la secció');
       return;
     }
     setSections(prev => [...prev, {
@@ -586,7 +586,7 @@ const MyBirthListPage: React.FC = () => {
           : 'El nou ordre s\'ha desat al servidor.';
         if (options?.previous) {
           const snapshot = options.previous;
-          toast.success(lang === 'es' ? 'Orden actualizado' : 'Ordre actualitzat', {
+          notify.success(lang === 'es' ? 'Orden actualizado' : 'Ordre actualitzat', {
             description,
             action: {
               label: lang === 'es' ? 'Deshacer' : 'Desfer',
@@ -594,12 +594,12 @@ const MyBirthListPage: React.FC = () => {
             },
           });
         } else {
-          toast.success(lang === 'es' ? 'Orden actualizado' : 'Ordre actualitzat', { description });
+          notify.success(lang === 'es' ? 'Orden actualizado' : 'Ordre actualitzat', { description });
         }
       }
     } catch (err: any) {
       setSectionsSaveStatus('error');
-      toast.error(err.message || t('errors.generic'), {
+      notify.error(err.message || t('errors.generic'), {
         description: lang === 'es'
           ? 'No se pudo guardar el orden. Inténtalo de nuevo.'
           : 'No s\'ha pogut desar l\'ordre. Torna-ho a provar.',
@@ -667,7 +667,7 @@ const MyBirthListPage: React.FC = () => {
       return;
     }
     if (getEffectiveStock(product) <= 0) {
-      toast.error(lang === 'es'
+      notify.error(lang === 'es'
         ? 'Este producto no tiene stock. Busca uno similar.'
         : 'Aquest producte no té estoc. Busca\'n un de similar.');
       return;
@@ -694,9 +694,9 @@ const MyBirthListPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!user) return;
-    if (!form.first_name.trim()) { toast.error(t('list.firstNameRequired')); return; }
-    if (!listId && !form.password.trim()) { toast.error(t('list.passwordRequired')); return; }
-    if (form.password && form.password.length < 6) { toast.error(t('list.passwordTooShort')); return; }
+    if (!form.first_name.trim()) { notify.error(t('list.firstNameRequired')); return; }
+    if (!listId && !form.password.trim()) { notify.error(t('list.passwordRequired')); return; }
+    if (form.password && form.password.length < 6) { notify.error(t('list.passwordTooShort')); return; }
 
     setSaving(true);
     try {
@@ -832,14 +832,14 @@ const MyBirthListPage: React.FC = () => {
       await queryClient.refetchQueries({ queryKey: ['my-birth-lists', user.id] });
 
       queryClient.invalidateQueries({ queryKey: ['my-birth-list-detail', currentId] });
-      toast.success(t('common.success'));
+      notify.success(t('common.success'));
       setForm(prev => ({ ...prev, password: '' }));
       if (wasCreating) {
         setEditingListId(null);
         setView('list');
       }
     } catch (err: any) {
-      toast.error(err.message || t('errors.generic'));
+      notify.error(err.message || t('errors.generic'));
     } finally {
       setSaving(false);
     }
@@ -859,9 +859,9 @@ const MyBirthListPage: React.FC = () => {
         document.execCommand('copy');
         document.body.removeChild(ta);
       }
-      toast.success(`${label} ${t('list.copied')}`);
+      notify.success(`${label} ${t('list.copied')}`);
     } catch {
-      toast.error(lang === 'es' ? 'No se pudo copiar' : 'No s\'ha pogut copiar');
+      notify.error(lang === 'es' ? 'No se pudo copiar' : 'No s\'ha pogut copiar');
     }
   };
 
@@ -1686,7 +1686,7 @@ const MyBirthListPage: React.FC = () => {
                             const desc = lang === 'es'
                               ? `No se puede ${action}: este producto ya tiene compras pagadas. Solo se permiten cambios (cantidad, prioridad, sección o eliminar) mientras todas las compras estén pendientes.`
                               : `No es pot ${action}: aquest producte ja té compres pagades. Només es permeten canvis (quantitat, prioritat, secció o eliminar) mentre totes les compres estiguin pendents.`;
-                            toast.error(title, { description: desc });
+                            notify.error(title, { description: desc });
                           };
                           const lockGuard = (action: string) => (e: React.SyntheticEvent) => {
                             if (!hasPaid) return false;
@@ -2014,7 +2014,7 @@ const MyBirthListPage: React.FC = () => {
                           draggable={!oos}
                           onDragStart={() => { if (!oos) productDragRef.current = { kind: 'add', product: p }; }}
                           onDragEnd={() => { productDragRef.current = null; }}
-                          onClick={() => { if (oos) { toast.error(lang === 'es' ? 'Sin stock. Busca otro similar.' : 'Sense estoc. Busca\'n un de similar.'); return; } if (!added) addProduct(p); }}
+                          onClick={() => { if (oos) { notify.error(lang === 'es' ? 'Sin stock. Busca otro similar.' : 'Sense estoc. Busca\'n un de similar.'); return; } if (!added) addProduct(p); }}
                           className={`group relative flex flex-col items-stretch gap-1 p-2 rounded-md border-2 bg-background transition-colors text-left ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-grab hover:border-primary hover:bg-primary/5'} ${added ? 'border-primary/40' : 'border-border'}`}
                         >
                           <div className="aspect-square w-full bg-muted rounded overflow-hidden flex items-center justify-center">

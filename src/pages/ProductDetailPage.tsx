@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { useProductBySlug, useRelatedProducts } from '@/hooks/useTranslatedProducts';
 import { useCart } from '@/contexts/CartContext';
 import { computePrice, formatPriceEUR } from '@/lib/pricing';
@@ -71,7 +71,7 @@ const ProductDetailPage: React.FC = () => {
   const handleAddToCart = () => {
     if (!product) return;
     if (product.hasVariants && variantGroups.length > 0 && !selectedVariantId) {
-      toast.error('Selecciona una variant');
+      notify.error('Selecciona una variant');
       return;
     }
     const payload = {
@@ -88,21 +88,21 @@ const ProductDetailPage: React.FC = () => {
     };
     if (isGiftMode && giftListId) {
       addListItem(payload, giftListId);
-      toast.success(t('list.giftAdded') || 'Regal afegit a la cistella');
+      notify.success(t('list.giftAdded') || 'Regal afegit a la cistella');
       navigate('/cistella');
       return;
     }
     addStandardItem(payload);
-    toast.success(t('products.addToCart'));
+    notify.success(t('products.addToCart'));
     requestUpsell(product.id);
   };
 
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      toast.success('URL copiada!');
+      notify.success('URL copiada!');
     } catch {
-      toast.error('Error');
+      notify.error('Error');
     }
   };
 

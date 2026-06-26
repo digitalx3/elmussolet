@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ca } from 'date-fns/locale';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import {
   Download, Trash2, RefreshCw, ShieldAlert, Database, HardDrive, Loader2,
 } from 'lucide-react';
@@ -100,10 +100,10 @@ const AdminBackups: React.FC = () => {
       return data;
     },
     onSuccess: () => {
-      toast.success(t('admin.backupCreated', 'Còpia creada correctament'));
+      notify.success(t('admin.backupCreated', 'Còpia creada correctament'));
       qc.invalidateQueries({ queryKey: ['admin-backup-runs'] });
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => notify.error(err.message),
     onSettled: () => setCreating(false),
   });
 
@@ -116,10 +116,10 @@ const AdminBackups: React.FC = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success(t('admin.backupDeleted', 'Còpia eliminada'));
+      notify.success(t('admin.backupDeleted', 'Còpia eliminada'));
       qc.invalidateQueries({ queryKey: ['admin-backup-runs'] });
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => notify.error(err.message),
   });
 
   const handleDownload = async (run: BackupRun) => {
@@ -128,7 +128,7 @@ const AdminBackups: React.FC = () => {
       .from('backups')
       .createSignedUrl(run.file_path, 300);
     if (error || !data?.signedUrl) {
-      toast.error(error?.message ?? 'No s\'ha pogut crear l\'enllaç');
+      notify.error(error?.message ?? 'No s\'ha pogut crear l\'enllaç');
       return;
     }
     window.open(data.signedUrl, '_blank');
@@ -171,10 +171,10 @@ const AdminBackups: React.FC = () => {
       if (error) throw new Error(error.message);
       if ((data as any)?.error) throw new Error((data as any).error + (((data as any).detail) ? `: ${(data as any).detail}` : ''));
       setRestoreReport((data as any).report);
-      toast.success(t('admin.restoreOk', 'Restauració completada'));
+      notify.success(t('admin.restoreOk', 'Restauració completada'));
       qc.invalidateQueries();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      notify.error(err instanceof Error ? err.message : String(err));
     } finally {
       setRestoring(false);
     }

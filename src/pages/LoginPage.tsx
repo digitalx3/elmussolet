@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
@@ -21,7 +21,7 @@ const LoginPage: React.FC = () => {
     const { error } = await signIn(email, password);
     setLoading(false);
     if (error) {
-      toast.error(t('auth.loginError'));
+      notify.error(t('auth.loginError'));
     } else {
       navigate('/el-meu-compte');
     }
