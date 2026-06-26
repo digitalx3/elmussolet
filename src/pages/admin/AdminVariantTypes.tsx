@@ -192,22 +192,33 @@ const AdminVariantTypes: React.FC = () => {
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <Label>Slug *</Label>
-                <Input
-                  value={formSlug}
-                  onChange={e => setFormSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                  placeholder="color"
-                />
-              </div>
-              <div>
                 <Label>Nom (CA) *</Label>
-                <Input value={formNameCa} onChange={e => setFormNameCa(e.target.value)} placeholder="Color" />
+                <Input value={formNameCa} onChange={e => onNameCaChange(e.target.value)} placeholder="Color" />
               </div>
               <div>
                 <Label>Nom (ES)</Label>
-                <Input value={formNameEs} onChange={e => setFormNameEs(e.target.value)} placeholder="Color" />
+                <Input value={formNameEs} onChange={e => onNameEsChange(e.target.value)} placeholder="Color" />
+              </div>
+              <div>
+                <Label>Slug base</Label>
+                <Input
+                  value={formSlug}
+                  onChange={e => setFormSlug(slugifyStr(e.target.value))}
+                  placeholder="auto des del nom"
+                />
               </div>
             </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label>Slug (CA)</Label>
+                <Input value={formSlugCa} onChange={e => setFormSlugCa(slugifyStr(e.target.value))} placeholder="auto" />
+              </div>
+              <div>
+                <Label>Slug (ES)</Label>
+                <Input value={formSlugEs} onChange={e => setFormSlugEs(slugifyStr(e.target.value))} placeholder="auto" />
+              </div>
+            </div>
+
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={saveMutation.isPending} className="gap-1">
                 <Check className="h-4 w-4" /> {t('common.save')}
