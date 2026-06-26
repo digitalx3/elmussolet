@@ -26,7 +26,7 @@ interface CategoryRow {
   parent_id: string | null;
   is_active: boolean;
   sort_order: number;
-  category_translations: { id: string; language: string; name: string; description: string | null }[];
+  category_translations: { id: string; language: string; name: string; description: string | null; slug: string | null }[];
 }
 
 interface FormData {
@@ -38,12 +38,19 @@ interface FormData {
   name_es: string;
   description_ca: string;
   description_es: string;
+  slug_ca: string;
+  slug_es: string;
 }
 
 const emptyForm: FormData = {
   slug: '', parent_id: null, is_active: true, sort_order: 0,
   name_ca: '', name_es: '', description_ca: '', description_es: '',
+  slug_ca: '', slug_es: '',
 };
+
+const slugifyStr = (s: string) => (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+
 
 const AdminCategories: React.FC = () => {
   const { t } = useTranslation();
@@ -79,18 +86,40 @@ const AdminCategories: React.FC = () => {
 
   const openEdit = (c: CategoryRow) => {
     setEditId(c.id);
+    const trCa = c.category_translations.find(t => t.language === 'ca');
+    const trEs = c.category_translations.find(t => t.language === 'es');
     setForm({
       slug: c.slug,
       parent_id: c.parent_id,
       is_active: c.is_active ?? true,
       sort_order: c.sort_order ?? 0,
-      name_ca: getName(c, 'ca'),
-      name_es: getName(c, 'es'),
-      description_ca: getDesc(c, 'ca'),
-      description_es: getDesc(c, 'es'),
+      name_ca: trCa?.name ?? '',
+      name_es: trEs?.name ?? '',
+      description_ca: trCa?.description ?? '',
+      description_es: trEs?.description ?? '',
+      slug_ca: (trCa as any)?.slug ?? '',
+      slug_es: (trEs as any)?.slug ?? '',
     });
     setDialogOpen(true);
   };
+
+  // Auto-fill slug when name changes if the slug was empty or matched the previous auto value
+  const onNameChange = (lang: 'ca' | 'es', value: string) => {
+    setForm(f => {
+      const prevName = lang === 'ca' ? f.name_ca : f.name_es;
+      const slugKey = lang === 'ca' ? 'slug_ca' : 'slug_es';
+      const prevSlug = (f as any)[slugKey] as string;
+      const prevAuto = slugifyStr(prevName);
+      const nextSlug = (!prevSlug || prevSlug === prevAuto) ? slugifyStr(value) : prevSlug;
+      const updates: any = lang === 'ca'
+        ? { name_ca: value, slug_ca: nextSlug }
+        : { name_es: value, slug_es: nextSlug };
+      // Also fill base slug if empty (using default lang ca preferentially)
+      if (!f.slug && lang === 'ca') updates.slug = slugifyStr(value);
+      return { ...f, ...updates };
+    });
+  };
+
 
   const saveMutation = useMutation({
     mutationFn: async () => {
