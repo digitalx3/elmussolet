@@ -22,7 +22,9 @@ const Header: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user, profile, isAdmin, signOut } = useAuth();
   const { totalItemsCount } = useCart();
+  const { hasAccess, listCode, babyName, clearAccess } = useListAccess();
   const navigate = useNavigate();
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: settings } = useSiteSettings(['logo_header_url', 'store_name']);
   const logoUrl = settings?.logo_header_url || logoHorizontal.url;
