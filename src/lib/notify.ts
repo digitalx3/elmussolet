@@ -12,16 +12,55 @@ import { toast as sonnerToast, type ExternalToast, type ToasterProps } from "son
 
 // ---------- Durations ----------
 
+/** Per-variant auto-dismiss durations in milliseconds. */
+export interface ToastDurations {
+  success: number;
+  info: number;
+  warning: number;
+  error: number;
+  message: number;
+  loading: number;
+}
+
+const DEFAULT_DURATIONS: ToastDurations = {
+  success: 3000,
+  info: 3500,
+  warning: 4500,
+  error: 5500,
+  message: 3000,
+  loading: Infinity, // persistent until resolved/dismissed
+};
+
+/** Live, mutable copy. Use `setToastDurations` to override at runtime. */
+export const TOAST_DURATIONS: ToastDurations = { ...DEFAULT_DURATIONS };
+
+/** Override one or more variant durations (e.g. for tests or admin settings). */
+export function setToastDurations(overrides: Partial<ToastDurations>) {
+  Object.assign(TOAST_DURATIONS, overrides);
+}
+
+/** Restore the original defaults. */
+export function resetToastDurations() {
+  Object.assign(TOAST_DURATIONS, DEFAULT_DURATIONS);
+}
+
 export const TOAST_DEFAULTS = {
-  /** Standard auto-dismiss duration in ms. */
-  duration: 3000,
-  /** Longer duration for destructive / error messages so users can read them. */
-  errorDuration: 5000,
-  /** Persistent toasts (loading states) should not auto-close. */
-  loadingDuration: Infinity,
+  /** Standard auto-dismiss duration in ms (alias of success). */
+  get duration() {
+    return TOAST_DURATIONS.success;
+  },
+  /** Longer duration for destructive / error messages. */
+  get errorDuration() {
+    return TOAST_DURATIONS.error;
+  },
+  /** Persistent toasts (loading states). */
+  get loadingDuration() {
+    return TOAST_DURATIONS.loading;
+  },
   /** Always allow manual close via the close button. */
   closeButton: true,
 };
+
 
 // ---------- Toaster visual config ----------
 
@@ -158,20 +197,21 @@ export interface Notify {
 
 export const notify: Notify = {
   success: (message, opts) =>
-    emit("success", sonnerToast.success, message, opts, TOAST_DEFAULTS.duration),
+    emit("success", sonnerToast.success, message, opts, TOAST_DURATIONS.success),
   info: (message, opts) =>
-    emit("info", sonnerToast.info, message, opts, TOAST_DEFAULTS.duration),
+    emit("info", sonnerToast.info, message, opts, TOAST_DURATIONS.info),
   warning: (message, opts) =>
-    emit("warning", sonnerToast.warning, message, opts, TOAST_DEFAULTS.duration),
+    emit("warning", sonnerToast.warning, message, opts, TOAST_DURATIONS.warning),
   error: (message, opts) =>
-    emit("error", sonnerToast.error, message, opts, TOAST_DEFAULTS.errorDuration),
+    emit("error", sonnerToast.error, message, opts, TOAST_DURATIONS.error),
   message: (message, opts) =>
-    emit("message", (m, o) => sonnerToast(m, o), message, opts, TOAST_DEFAULTS.duration),
+    emit("message", (m, o) => sonnerToast(m, o), message, opts, TOAST_DURATIONS.message),
   loading: (message, opts) =>
-    emit("loading", sonnerToast.loading, message, opts, TOAST_DEFAULTS.loadingDuration),
+    emit("loading", sonnerToast.loading, message, opts, TOAST_DURATIONS.loading),
   promise: sonnerToast.promise.bind(sonnerToast),
   dismiss: sonnerToast.dismiss.bind(sonnerToast),
 };
+
 
 
 // Re-export the raw toast and sonner option types for edge cases.
