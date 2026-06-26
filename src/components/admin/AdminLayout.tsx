@@ -33,7 +33,7 @@ const groups: NavGroup[] = [
     label: 'Catàleg',
     items: [
       { key: 'products', path: '/admin/productes', icon: Package },
-      { key: 'featured', path: '/admin/productes-destacats', icon: Star, label: 'Productes destacats' },
+      { key: 'featured', path: '/admin/productes-destacats', icon: Star },
       { key: 'attributes', path: '/admin/atributs', icon: SlidersHorizontal },
       { key: 'categories', path: '/admin/categories', icon: Tags },
       { key: 'brands', path: '/admin/marques', icon: Bookmark },
@@ -65,7 +65,7 @@ const groups: NavGroup[] = [
     label: 'Comunicació',
     items: [
       { key: 'messages', path: '/admin/missatges', icon: Inbox },
-      { key: 'stockNotifications', path: '/admin/notificacions-stock', icon: PackageX, label: 'Avisos sense estoc' },
+      { key: 'stockNotifications', path: '/admin/notificacions-stock', icon: PackageX },
     ],
   },
   {
@@ -76,10 +76,10 @@ const groups: NavGroup[] = [
       { key: 'shipping', path: '/admin/enviaments', icon: Truck },
       { key: 'languages', path: '/admin/idiomes', icon: LanguagesIcon, perm: 'manage_translations' },
       { key: 'translations', path: '/admin/traduccions', icon: Globe, perm: 'manage_translations' },
-      { key: 'aiSettings', path: '/admin/ia', icon: Sparkles, label: "IA", perm: 'ai_features' },
-      { key: 'aiHistory', path: '/admin/ia/historial', icon: Sparkles, label: "Historial IA", perm: 'ai_history' },
+      { key: 'aiSettings', path: '/admin/ia', icon: Sparkles, perm: 'ai_features' },
+      { key: 'aiHistory', path: '/admin/ia/historial', icon: Sparkles, perm: 'ai_history' },
       { key: 'smtp', path: '/admin/smtp', icon: Server, perm: 'manage_smtp' },
-      { key: 'cookies', path: '/admin/cookies', icon: Cookie, label: 'Cookies' },
+      { key: 'cookiesMenu', path: '/admin/cookies', icon: Cookie },
       { key: 'backups', path: '/admin/backups', icon: Database },
       { key: 'maintenance', path: '/admin/manteniment', icon: Power },
       { key: 'settings', path: '/admin/configuracio', icon: Settings },
@@ -90,7 +90,7 @@ const groups: NavGroup[] = [
     label: 'Super Admin',
     superOnly: true,
     items: [
-      { key: 'superPermissions', path: '/admin/super/permisos', icon: ShieldCheck, label: "Permisos d'admins" },
+      { key: 'superPermissions', path: '/admin/super/permisos', icon: ShieldCheck },
     ],
   },
 ];

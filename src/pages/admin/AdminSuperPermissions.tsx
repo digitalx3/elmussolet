@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { PREMIUM_PERMISSIONS, type PermissionKey } from '@/lib/permissions';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ interface AdminUser {
 type PermissionMap = Record<string, Set<PermissionKey>>; // user_id -> perms
 
 const AdminSuperPermissions: React.FC = () => {
+  const { t } = useTranslation();
   const { refreshProfile, user: currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
@@ -93,7 +95,7 @@ const AdminSuperPermissions: React.FC = () => {
       setPerms(map);
     } catch (e: any) {
       console.error('Failed to load admins:', e);
-      toast({ title: 'Error', description: e?.message ?? 'No s\'han pogut carregar els admins', variant: 'destructive' });
+      toast({ title: t('admin.common.error'), description: e?.message ?? t('admin.super.loadError'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -126,11 +128,11 @@ const AdminSuperPermissions: React.FC = () => {
         next[userId] = set;
         return next;
       });
-      toast({ title: 'Permís actualitzat' });
+      toast({ title: t('admin.super.permUpdated') });
       if (currentUser?.id === userId) await refreshProfile();
     } catch (e: any) {
       console.error('Failed to update permission:', e);
-      toast({ title: 'Error', description: e?.message ?? 'No s\'ha pogut desar', variant: 'destructive' });
+      toast({ title: t('admin.common.error'), description: e?.message ?? t('admin.super.permError'), variant: 'destructive' });
     } finally {
       setSaving(null);
     }
@@ -150,9 +152,9 @@ const AdminSuperPermissions: React.FC = () => {
       <header className="flex items-center gap-3">
         <ShieldCheck className="h-6 w-6 text-primary" />
         <div>
-          <h1 className="font-display text-2xl font-bold">Permisos d'administradors</h1>
+          <h1 className="font-display text-2xl font-bold">{t('admin.super.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Gestiona quines funcions extra té habilitades cada administrador. El Super Admin sempre té accés total.
+            {t('admin.super.desc')}
           </p>
         </div>
       </header>
@@ -162,19 +164,19 @@ const AdminSuperPermissions: React.FC = () => {
         <Input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Cerca per nom o correu..."
+          placeholder={t('admin.super.searchPlaceholder')}
           className="pl-9"
         />
       </div>
 
       {loading ? (
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Carregant administradors...
+          <Loader2 className="h-4 w-4 animate-spin" /> {t('admin.super.loadingAdmins')}
         </div>
       ) : filtered.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">
-            {admins.length === 0 ? 'No hi ha cap administrador.' : 'Sense resultats per a la cerca.'}
+            {admins.length === 0 ? t('admin.super.noAdmins') : t('admin.super.noSearch')}
           </CardContent>
         </Card>
       ) : (
@@ -200,8 +202,8 @@ const AdminSuperPermissions: React.FC = () => {
                         className="flex items-start justify-between gap-3 rounded-md border border-border p-3 hover:bg-muted/40"
                       >
                         <div>
-                          <div className="font-medium">{p.fallback}</div>
-                          <div className="text-xs text-muted-foreground">{p.description}</div>
+                          <div className="font-medium">{t(`admin.permissions.${p.key}`, p.fallback)}</div>
+                          <div className="text-xs text-muted-foreground">{t(`admin.permissions.${p.key}_desc`, p.description)}</div>
                         </div>
                         <div className="flex items-center gap-2">
                           {saving === key && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
