@@ -54,7 +54,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfile(prof as unknown as Profile | null);
       setRoles(((roleRows ?? []) as any[]).map(r => r.role));
       setPermissions(((permRows ?? []) as any[]).map(r => r.permission));
-      setEnforced(setting?.value === true || (setting?.value as any) === 'true');
+      const v = setting?.value as any;
+      setEnforced(v === true || v === 'true');
     } catch (e) {
       console.error('Failed to fetch profile:', e);
       setProfile(null);
