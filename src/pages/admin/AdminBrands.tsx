@@ -363,6 +363,7 @@ const AdminBrands: React.FC = () => {
                         placeholder="es-generara-automaticament"
                       />
                     </div>
+                    <div>
 
                       <Label className="text-xs">Descripció ({code.toUpperCase()})</Label>
                       <Textarea
