@@ -228,11 +228,12 @@ const AdminVariantTypes: React.FC = () => {
                 value={formSlug}
                 onChange={setFormSlug}
                 placeholder="auto des del nom"
+                externalError={slugDupErrors.base ?? null}
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <SlugInput label="Slug (CA)" value={formSlugCa} onChange={setFormSlugCa} placeholder="auto" />
-              <SlugInput label="Slug (ES)" value={formSlugEs} onChange={setFormSlugEs} placeholder="auto" />
+              <SlugInput label="Slug (CA)" value={formSlugCa} onChange={setFormSlugCa} placeholder="auto" externalError={slugDupErrors.ca ?? null} />
+              <SlugInput label="Slug (ES)" value={formSlugEs} onChange={setFormSlugEs} placeholder="auto" externalError={slugDupErrors.es ?? null} />
             </div>
 
 
