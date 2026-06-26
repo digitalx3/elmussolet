@@ -258,11 +258,13 @@ const AdminOverview: React.FC = () => {
           </CardHeader>
           <CardContent>
             {stats.lowStockProducts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Cap producte amb estoc crític 🎉</p>
+              <p className="text-sm text-muted-foreground">{t('admin.overview.criticalStockOk')}</p>
             ) : (
               <div className="space-y-3">
                 {stats.lowStockProducts.map((p: any) => {
-                  const name = p.product_translations?.find((t: any) => t.language === 'ca')?.name || p.sku;
+                  const name = p.product_translations?.find((t: any) => t.language === i18n.language)?.name
+                    || p.product_translations?.find((t: any) => t.language === 'ca')?.name
+                    || p.sku;
                   return (
                     <div key={p.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                       <div>
@@ -270,7 +272,7 @@ const AdminOverview: React.FC = () => {
                         <p className="text-xs text-muted-foreground">{p.sku}</p>
                       </div>
                       <Badge variant={p.stock_quantity === 0 ? 'destructive' : 'outline'} className="text-xs">
-                        {p.stock_quantity} uds
+                        {p.stock_quantity} {t('admin.common.unitsShort')}
                       </Badge>
                     </div>
                   );
