@@ -82,16 +82,38 @@ const Header: React.FC = () => {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6">
-          {navLinks.map(link => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link: any) =>
+            link.highlight ? (
+              <span key={link.to} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1">
+                <Link
+                  to={link.to}
+                  className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                >
+                  <Heart className="h-3.5 w-3.5" />
+                  {link.label}
+                </Link>
+                <button
+                  type="button"
+                  aria-label={t('nav.exitList')}
+                  title={t('nav.exitList')}
+                  onClick={link.onExit}
+                  className="text-primary/70 hover:text-primary"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            ) : (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
+              >
+                {link.label}
+              </Link>
+            )
+          )}
         </nav>
+
 
         {/* Right actions */}
         <div className="flex items-center gap-2">
