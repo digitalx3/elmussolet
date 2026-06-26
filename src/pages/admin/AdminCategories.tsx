@@ -343,7 +343,7 @@ const AdminCategories: React.FC = () => {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('admin.cancel')}</Button>
             <Button
               onClick={() => saveMutation.mutate()}
-              disabled={!form.slug || !form.name_ca || !form.name_es || saveMutation.isPending}
+              disabled={!form.name_ca || !form.name_es || saveMutation.isPending}
             >
               {saveMutation.isPending ? '...' : (editId ? t('admin.save') : t('admin.create'))}
             </Button>
