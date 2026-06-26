@@ -54,6 +54,17 @@ const AdminVariantTypes: React.FC = () => {
   const [formSlugCa, setFormSlugCa] = useState('');
   const [formSlugEs, setFormSlugEs] = useState('');
 
+  const slugDupErrors = useDuplicateSlugErrors(
+    () => [
+      { key: 'base', run: () => checkBaseSlugDuplicate('variant_types', formSlug, editingId) },
+      { key: 'ca', run: () => checkTranslationSlugDuplicate({ table: 'variant_type_translations', fk: 'variant_type_id', langCol: 'language' }, 'ca', formSlugCa, editingId) },
+      { key: 'es', run: () => checkTranslationSlugDuplicate({ table: 'variant_type_translations', fk: 'variant_type_id', langCol: 'language' }, 'es', formSlugEs, editingId) },
+    ],
+    [formSlug, formSlugCa, formSlugEs, editingId],
+  );
+
+
+
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['variant-types-full'] });
