@@ -20,6 +20,8 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
+import { checkBaseSlugDuplicate, checkTranslationSlugDuplicate } from '@/lib/checkSlugDuplicate';
+import { useDuplicateSlugErrors, hasAnySlugError } from '@/hooks/useDuplicateSlugErrors';
 
 
 interface CategoryRow {
@@ -73,6 +75,16 @@ const AdminCategories: React.FC = () => {
       return data as CategoryRow[];
     },
   });
+
+  const slugDupErrors = useDuplicateSlugErrors(
+    () => [
+      { key: 'base', run: () => checkBaseSlugDuplicate('categories', form.slug, editId) },
+      { key: 'ca', run: () => checkTranslationSlugDuplicate({ table: 'category_translations', fk: 'category_id', langCol: 'language' }, 'ca', form.slug_ca, editId) },
+      { key: 'es', run: () => checkTranslationSlugDuplicate({ table: 'category_translations', fk: 'category_id', langCol: 'language' }, 'es', form.slug_es, editId) },
+    ],
+    [form.slug, form.slug_ca, form.slug_es, editId],
+  );
+
 
   const getName = (c: CategoryRow, lang: string) =>
     c.category_translations.find(t => t.language === lang)?.name ?? c.slug;
@@ -289,12 +301,14 @@ const AdminCategories: React.FC = () => {
                 value={form.slug_ca}
                 onChange={(next) => setForm(f => ({ ...f, slug_ca: next }))}
                 placeholder="auto des del nom"
+                externalError={slugDupErrors.ca ?? null}
               />
               <SlugInput
                 label="Slug (ES)"
                 value={form.slug_es}
                 onChange={(next) => setForm(f => ({ ...f, slug_es: next }))}
                 placeholder="auto desde el nombre"
+                externalError={slugDupErrors.es ?? null}
               />
             </div>
 
@@ -314,6 +328,7 @@ const AdminCategories: React.FC = () => {
                 value={form.slug}
                 onChange={(next) => setForm(f => ({ ...f, slug: next }))}
                 placeholder="auto en desar"
+                externalError={slugDupErrors.base ?? null}
               />
               <div className="space-y-2">
                 <Label>{t('admin.sortOrder')}</Label>
@@ -348,6 +363,10 @@ const AdminCategories: React.FC = () => {
                 for (const [label, val] of [['base', form.slug], ['CA', form.slug_ca], ['ES', form.slug_es]] as const) {
                   const err = validateSlugValue(val || '', true);
                   if (err) { notify.error(`Slug ${label} no vàlid: ${err}`); return; }
+                }
+                if (hasAnySlugError(slugDupErrors)) {
+                  notify.error('Hi ha slugs duplicats. Revisa els camps marcats.');
+                  return;
                 }
                 saveMutation.mutate();
               }}

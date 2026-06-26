@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { notify } from '@/lib/notify';
 import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
+import { checkBaseSlugDuplicate, checkTranslationSlugDuplicate } from '@/lib/checkSlugDuplicate';
+import { useDuplicateSlugErrors, hasAnySlugError } from '@/hooks/useDuplicateSlugErrors';
 
 
 interface VariantTypeRow {
@@ -51,6 +53,17 @@ const AdminVariantTypes: React.FC = () => {
   const [formNameEs, setFormNameEs] = useState('');
   const [formSlugCa, setFormSlugCa] = useState('');
   const [formSlugEs, setFormSlugEs] = useState('');
+
+  const slugDupErrors = useDuplicateSlugErrors(
+    () => [
+      { key: 'base', run: () => checkBaseSlugDuplicate('variant_types', formSlug, editingId) },
+      { key: 'ca', run: () => checkTranslationSlugDuplicate({ table: 'variant_type_translations', fk: 'variant_type_id', langCol: 'language' }, 'ca', formSlugCa, editingId) },
+      { key: 'es', run: () => checkTranslationSlugDuplicate({ table: 'variant_type_translations', fk: 'variant_type_id', langCol: 'language' }, 'es', formSlugEs, editingId) },
+    ],
+    [formSlug, formSlugCa, formSlugEs, editingId],
+  );
+
+
 
 
   const invalidate = () => {
@@ -156,6 +169,10 @@ const AdminVariantTypes: React.FC = () => {
       const err = validateSlugValue(val || '', true);
       if (err) { notify.error(`Slug ${label} no vàlid: ${err}`); return; }
     }
+    if (hasAnySlugError(slugDupErrors)) {
+      notify.error('Hi ha slugs duplicats. Revisa els camps marcats.');
+      return;
+    }
     saveMutation.mutate({
       id: editingId || undefined,
       slug: formSlug,
@@ -211,11 +228,12 @@ const AdminVariantTypes: React.FC = () => {
                 value={formSlug}
                 onChange={setFormSlug}
                 placeholder="auto des del nom"
+                externalError={slugDupErrors.base ?? null}
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <SlugInput label="Slug (CA)" value={formSlugCa} onChange={setFormSlugCa} placeholder="auto" />
-              <SlugInput label="Slug (ES)" value={formSlugEs} onChange={setFormSlugEs} placeholder="auto" />
+              <SlugInput label="Slug (CA)" value={formSlugCa} onChange={setFormSlugCa} placeholder="auto" externalError={slugDupErrors.ca ?? null} />
+              <SlugInput label="Slug (ES)" value={formSlugEs} onChange={setFormSlugEs} placeholder="auto" externalError={slugDupErrors.es ?? null} />
             </div>
 
 

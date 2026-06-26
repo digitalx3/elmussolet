@@ -20,6 +20,8 @@ import { optimizeImage } from '@/lib/optimizeImage';
 import LanguageTabs from '@/components/admin/LanguageTabs';
 import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
 import { useLanguages } from '@/hooks/useLanguages';
+import { checkTranslationSlugDuplicate } from '@/lib/checkSlugDuplicate';
+import { useDuplicateSlugErrors, hasAnySlugError } from '@/hooks/useDuplicateSlugErrors';
 
 
 interface BrandRow {
@@ -59,6 +61,20 @@ const AdminBrands: React.FC = () => {
   const [previewFile, setPreviewFile] = useState<File | null>(null);
 
   const { data: languages = [] } = useLanguages({ onlyEnabled: true });
+
+  // Live duplicate-slug detection per language (debounced).
+  const slugDupErrors = useDuplicateSlugErrors(
+    () => languages.map((lng) => ({
+      key: lng.code,
+      run: () => checkTranslationSlugDuplicate(
+        { table: 'brand_translations', fk: 'brand_id', langCol: 'language_code' },
+        lng.code,
+        form.translations[lng.code]?.slug || '',
+        editId,
+      ),
+    })),
+    [languages.map(l => l.code).join(','), JSON.stringify(Object.fromEntries(languages.map(l => [l.code, form.translations[l.code]?.slug || '']))), editId],
+  );
 
   const { data: brands = [], isLoading } = useQuery({
     queryKey: ['admin-brands'],
@@ -361,6 +377,7 @@ const AdminBrands: React.FC = () => {
                       onChange={(next) => setTranslation(code, 'slug', next)}
                       placeholder="es-generara-automaticament"
                       className="text-xs"
+                      externalError={slugDupErrors[code] ?? null}
                     />
 
                     <div>
@@ -427,6 +444,10 @@ const AdminBrands: React.FC = () => {
                   const s = form.translations[lng.code]?.slug || '';
                   const err = validateSlugValue(s, true);
                   if (err) { notify.error(`Slug (${lng.code.toUpperCase()}) no vàlid: ${err}`); return; }
+                }
+                if (hasAnySlugError(slugDupErrors)) {
+                  notify.error('Hi ha slugs duplicats en algun idioma. Revisa els camps marcats.');
+                  return;
                 }
                 saveMutation.mutate();
               }}

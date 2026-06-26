@@ -25,6 +25,8 @@ import { useAiProvider, isAiReady } from '@/hooks/useAiProvider';
 import RichTextEditor from '@/components/ui/rich-text-editor';
 import RelatedProductsEditor from '@/components/admin/RelatedProductsEditor';
 import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
+import { checkBaseSlugDuplicate, checkTranslationSlugDuplicate } from '@/lib/checkSlugDuplicate';
+import { useDuplicateSlugErrors, hasAnySlugError } from '@/hooks/useDuplicateSlugErrors';
 
 
 const emptyTranslation = { name: '', short_description: '', description: '', slug: '' };
@@ -90,6 +92,28 @@ const AdminProductForm: React.FC = () => {
   const [seoGenerating, setSeoGenerating] = useState<string | null>(null);
   const { data: aiStatus } = useAiProvider();
   const aiReady = isAiReady(aiStatus);
+
+  // Live duplicate-slug detection (base + per language)
+  const slugDupErrors = useDuplicateSlugErrors(
+    () => [
+      { key: 'base', run: () => checkBaseSlugDuplicate('products', form.slug, isNew ? null : id) },
+      ...languages.map((lng) => ({
+        key: lng.code,
+        run: () => checkTranslationSlugDuplicate(
+          { table: 'product_translations', fk: 'product_id', langCol: 'language' },
+          lng.code,
+          (form.translations[lng.code] as any)?.slug || '',
+          isNew ? null : id,
+        ),
+      })),
+    ],
+    [
+      form.slug,
+      languages.map(l => l.code).join(','),
+      JSON.stringify(Object.fromEntries(languages.map(l => [l.code, (form.translations[l.code] as any)?.slug || '']))),
+      id, isNew,
+    ],
+  );
 
   type SeoField = 'short' | 'long';
 
@@ -368,6 +392,14 @@ const AdminProductForm: React.FC = () => {
       }
     }
 
+    // Duplicate slug check (server-side validated, surfaced inline already)
+    if (hasAnySlugError(slugDupErrors)) {
+      const dupLang = languages.find(l => slugDupErrors[l.code]);
+      if (dupLang) setActiveLang(dupLang.code);
+      notify.error('Hi ha slugs duplicats. Revisa els camps marcats en vermell.');
+      return;
+    }
+
     if (!form.sku) {
       notify.error('Omple els camps obligatoris: SKU');
       return;
@@ -521,6 +553,7 @@ const AdminProductForm: React.FC = () => {
                     onChange={(next) => updateTranslation(lang, 'slug', next)}
                     placeholder="es-generara-automaticament-des-del-nom"
                     hint="S'omple automàticament des del nom. Edita per personalitzar l'URL SEO en aquest idioma."
+                    externalError={slugDupErrors[lang] ?? null}
                   />
 
                   <div>
@@ -600,6 +633,7 @@ const AdminProductForm: React.FC = () => {
             onChange={(next) => updateField('slug', next)}
             placeholder="Es generarà automàticament en desar"
             hint="S'omple sol des del nom de l'idioma per defecte si el deixes buit."
+            externalError={slugDupErrors.base ?? null}
           />
 
 
