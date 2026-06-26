@@ -8,8 +8,11 @@
     "myAccount": "Mi cuenta",
     "logout": "Cerrar sesión",
     "cart": "Cesta",
-    "admin": "Administración"
+    "admin": "Administración",
+    "viewCurrentList": "Ver lista actual",
+    "exitList": "Salir de la lista"
   },
+
   "auth": {
     "login": "Iniciar sesión",
     "register": "Registrarse",

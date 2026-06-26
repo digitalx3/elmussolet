@@ -6,8 +6,10 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/CartContext';
+import { useListAccess } from '@/contexts/ListAccessContext';
 import CartItemRow from '@/components/cart/CartItemRow';
 import PublicListSteps from '@/components/list/PublicListSteps';
+
 
 const CartPage: React.FC = () => {
   const { t } = useTranslation();
@@ -19,6 +21,11 @@ const CartPage: React.FC = () => {
     clearStandard, clearList,
     standardTotal, listTotal, totalItemsCount,
   } = useCart();
+  const { hasAccess, listCode } = useListAccess();
+  const continueShoppingTo = hasAccess && listCode
+    ? `/llista-naixement/${listCode}`
+    : '/cataleg';
+
 
   const hasStandard = standardItems.length > 0;
   const hasList = listItems.length > 0;
@@ -33,7 +40,7 @@ const CartPage: React.FC = () => {
         <p className="text-muted-foreground mb-6">{t('cart.empty')}</p>
         <p className="text-sm text-muted-foreground mb-8">{t('cart.emptyDesc')}</p>
         <Button asChild>
-          <Link to="/cataleg">{t('cart.continueShopping')}</Link>
+          <Link to={continueShoppingTo}>{t("cart.continueShopping")}</Link>
         </Button>
       </div>
     );
@@ -134,7 +141,7 @@ const CartPage: React.FC = () => {
 
           <div className="mt-6 flex flex-col sm:flex-row gap-3">
             <Button variant="outline" className="flex-1 gap-2" asChild>
-              <Link to="/cataleg">
+              <Link to={continueShoppingTo}>
                 <ArrowLeft className="h-4 w-4" />
                 {t('cart.continueShopping')}
               </Link>

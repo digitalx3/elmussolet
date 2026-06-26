@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface ListAccessState {
   listId: string | null;
@@ -20,10 +20,35 @@ const initial: ListAccessState = {
   babyName: null, owners: [], expectedDate: null,
 };
 
+const STORAGE_KEY = 'mussolet:list-access';
+
+const loadInitial = (): ListAccessState => {
+  if (typeof window === 'undefined') return initial;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return initial;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && parsed.token) {
+      return { ...initial, ...parsed };
+    }
+  } catch {}
+  return initial;
+};
+
 const ListAccessContext = createContext<ListAccessContextType | undefined>(undefined);
 
 export const ListAccessProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<ListAccessState>(initial);
+  const [state, setState] = useState<ListAccessState>(loadInitial);
+
+  useEffect(() => {
+    try {
+      if (state.token) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch {}
+  }, [state]);
 
   const setAccess = (data: Omit<ListAccessState, 'token'> & { token: string }) => {
     setState(data);

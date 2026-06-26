@@ -8,8 +8,11 @@
     "myAccount": "El meu compte",
     "logout": "Tancar sessió",
     "cart": "Cistella",
-    "admin": "Administració"
+    "admin": "Administració",
+    "viewCurrentList": "Veure llista actual",
+    "exitList": "Sortir de la llista"
   },
+
   "auth": {
     "login": "Iniciar sessió",
     "register": "Registrar-se",

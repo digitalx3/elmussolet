@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { ShoppingBag, Menu, X, User, Globe, ChevronDown } from 'lucide-react';
+import { ShoppingBag, Menu, X, User, Globe, ChevronDown, Heart, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
+import { useListAccess } from '@/contexts/ListAccessContext';
 import { Button } from '@/components/ui/button';
 import logoHorizontal from '@/assets/mussolet-logo-horizontal.png.asset.json';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +22,9 @@ const Header: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user, profile, isAdmin, signOut } = useAuth();
   const { totalItemsCount } = useCart();
+  const { hasAccess, listCode, babyName, clearAccess } = useListAccess();
   const navigate = useNavigate();
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: settings } = useSiteSettings(['logo_header_url', 'store_name']);
   const logoUrl = settings?.logo_header_url || logoHorizontal.url;
@@ -55,7 +59,18 @@ const Header: React.FC = () => {
       label: (lang === 'es' ? p.title_es : p.title_ca) || p.slug,
     })),
     ...(user ? [{ to: '/la-meva-llista', label: t('home.createList') }] : []),
+    ...(hasAccess && listCode
+      ? [{
+          to: `/llista-naixement/${listCode}`,
+          label: babyName
+            ? `${t('nav.viewCurrentList')}: ${babyName}`
+            : t('nav.viewCurrentList'),
+          highlight: true,
+          onExit: clearAccess,
+        }]
+      : []),
   ];
+
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -67,16 +82,38 @@ const Header: React.FC = () => {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6">
-          {navLinks.map(link => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link: any) =>
+            link.highlight ? (
+              <span key={link.to} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1">
+                <Link
+                  to={link.to}
+                  className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                >
+                  <Heart className="h-3.5 w-3.5" />
+                  {link.label}
+                </Link>
+                <button
+                  type="button"
+                  aria-label={t('nav.exitList')}
+                  title={t('nav.exitList')}
+                  onClick={link.onExit}
+                  className="text-primary/70 hover:text-primary"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            ) : (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
+              >
+                {link.label}
+              </Link>
+            )
+          )}
         </nav>
+
 
         {/* Right actions */}
         <div className="flex items-center gap-2">
@@ -150,16 +187,33 @@ const Header: React.FC = () => {
       {mobileOpen && (
         <nav className="md:hidden border-t border-border bg-background p-4 animate-fade-in">
           <div className="flex flex-col gap-3">
-            {navLinks.map(link => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className="text-sm font-medium text-foreground/80 hover:text-primary py-2"
-                onClick={() => setMobileOpen(false)}
-              >
-                {link.label}
-              </Link>
+            {navLinks.map((link: any) => (
+              <div key={link.to} className="flex items-center justify-between">
+                <Link
+                  to={link.to}
+                  className={
+                    link.highlight
+                      ? 'inline-flex items-center gap-1 text-sm font-semibold text-primary py-2'
+                      : 'text-sm font-medium text-foreground/80 hover:text-primary py-2'
+                  }
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {link.highlight && <Heart className="h-3.5 w-3.5" />}
+                  {link.label}
+                </Link>
+                {link.highlight && (
+                  <button
+                    type="button"
+                    aria-label={t('nav.exitList')}
+                    onClick={() => { link.onExit?.(); setMobileOpen(false); }}
+                    className="text-primary/70 hover:text-primary p-1"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             ))}
+
           </div>
         </nav>
       )}
