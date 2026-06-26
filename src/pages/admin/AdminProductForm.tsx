@@ -633,6 +633,7 @@ const AdminProductForm: React.FC = () => {
             onChange={(next) => updateField('slug', next)}
             placeholder="Es generarà automàticament en desar"
             hint="S'omple sol des del nom de l'idioma per defecte si el deixes buit."
+            externalError={slugDupErrors.base ?? null}
           />
 
 
