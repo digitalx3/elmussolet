@@ -21,6 +21,11 @@ const CartPage: React.FC = () => {
     clearStandard, clearList,
     standardTotal, listTotal, totalItemsCount,
   } = useCart();
+  const { hasAccess, listCode } = useListAccess();
+  const continueShoppingTo = hasAccess && listCode
+    ? `/llista-naixement/${listCode}`
+    : '/cataleg';
+
 
   const hasStandard = standardItems.length > 0;
   const hasList = listItems.length > 0;
