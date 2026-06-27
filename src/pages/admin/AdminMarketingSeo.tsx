@@ -243,6 +243,7 @@ const AdminMarketingSeo: React.FC = () => {
                 title={t('admin.seo.liveIndex', 'Sitemap index (live)')}
                 subtitle="Storage"
                 url={live.sitemapIndex}
+                stampKey="sitemap-index"
               />
               {live.sitemaps.map((s) => (
                 <UrlRow
@@ -250,12 +251,14 @@ const AdminMarketingSeo: React.FC = () => {
                   title={`Sitemap ${s.lang} (live)`}
                   subtitle="Storage"
                   url={s.url}
+                  stampKey={`sitemap-${s.lang}`}
                 />
               ))}
               <UrlRow
                 title={t('admin.seo.liveRobots', 'robots.txt (live)')}
                 subtitle="Storage"
                 url={live.robots}
+                stampKey="robots"
               />
             </div>
           )}
