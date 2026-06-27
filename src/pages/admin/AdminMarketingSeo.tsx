@@ -17,6 +17,7 @@ const DEFAULT_HOST =
   typeof window !== 'undefined' ? window.location.origin : 'https://elmussolet.lovable.app';
 
 const FUNCTIONS_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sitemap`;
+const ROBOTS_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/robots`;
 
 const AdminMarketingSeo: React.FC = () => {
   const { t } = useTranslation();
