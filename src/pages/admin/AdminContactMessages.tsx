@@ -41,6 +41,22 @@ const AdminContactMessages: React.FC = () => {
     },
   });
 
+  const { data: statusLogByMsg = {} } = useQuery({
+    queryKey: ['contact-message-status-log'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('contact_message_status_log')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      const grouped: Record<string, any[]> = {};
+      for (const r of data || []) {
+        (grouped[(r as any).message_id] ||= []).push(r);
+      }
+      return grouped;
+    },
+  });
+
   const markRead = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('contact_messages').update({ is_read: true }).eq('id', id);
