@@ -167,6 +167,10 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
 
   const handleSave = async () => {
     if (!profile) return;
+    if (!validateProvince()) {
+      notify.error(t('errors.provinceRequired'));
+      return;
+    }
     setSaving(true);
     const { error } = await supabase.from('profiles').update(form).eq('id', profile.id);
     setSaving(false);
