@@ -66,6 +66,7 @@ const BirthListAccessPage: React.FC = () => {
 
   return (
     <div className="container py-12 max-w-md mx-auto">
+      <NoIndex />
       <PublicListSteps current="access" />
       <div className="text-center mb-8">
         <Heart className="h-10 w-10 text-primary mx-auto mb-4" />
