@@ -87,7 +87,12 @@
     "noResults": "No s'han trobat productes",
     "noResultsDesc": "Prova a canviar els filtres o la cerca.",
     "productCount_one": "{{count}} producte",
-    "productCount_other": "{{count}} productes"
+    "productCount_other": "{{count}} productes",
+    "discontinuedTitle": "Aquest producte està descatalogat.",
+    "discontinuedWithReplacement": "Aquest producte està descatalogat. Ha estat substituït per {{name}}.",
+    "replacementLabel": "Producte substitut",
+    "viewReplacement": "Veure producte substitut",
+    "noReplacement": "Contacta'ns per a més informació sobre alternatives."
   },
   "cart": {
     "title": "Cistella",
