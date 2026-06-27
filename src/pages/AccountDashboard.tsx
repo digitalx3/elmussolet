@@ -148,6 +148,7 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
         city: profile.city || '',
         postal_code: profile.postal_code || '',
         province: profile.province || '',
+        country: profile.country || 'ES',
         preferred_language: profile.preferred_language || 'ca',
         nif: profile.nif || '',
         company_name: profile.company_name || '',
