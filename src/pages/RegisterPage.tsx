@@ -1,16 +1,53 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { notify } from '@/lib/notify';
 import PasswordStrength, { getPasswordRules, getPasswordScore } from '@/components/auth/PasswordStrength';
+import { cn } from '@/lib/utils';
+
+const PasswordField: React.FC<{
+  id: string;
+  value: string;
+  onChange: (v: string) => void;
+  showLabel: string;
+  hideLabel: string;
+}> = ({ id, value, onChange, showLabel, hideLabel }) => {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <Input
+        id={id}
+        type={visible ? 'text' : 'password'}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required
+        className="pr-10"
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? hideLabel : showLabel}
+        title={visible ? hideLabel : showLabel}
+        className={cn(
+          'absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground'
+        )}
+        tabIndex={-1}
+      >
+        {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+};
 
 const RegisterPage: React.FC = () => {
   const { t } = useTranslation();
-  const { signUp } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -33,10 +70,22 @@ const RegisterPage: React.FC = () => {
       return;
     }
     setLoading(true);
-    const { error } = await signUp(email, password, fullName);
+    const { data, error } = await supabase.functions.invoke('secure-signup', {
+      body: { email, password, full_name: fullName },
+    });
+    if (error || (data as any)?.error) {
+      setLoading(false);
+      const msg = (data as any)?.error === 'weak_password'
+        ? t('auth.passwordRequirementsNotMet')
+        : (data as any)?.error || error?.message || 'Error';
+      notify.error(typeof msg === 'string' ? msg : 'Error');
+      return;
+    }
+    const { error: signInErr } = await signIn(email, password);
     setLoading(false);
-    if (error) {
-      notify.error(error.message);
+    if (signInErr) {
+      notify.success(t('auth.registerSuccess'));
+      navigate('/login');
     } else {
       notify.success(t('auth.registerSuccess'));
       navigate('/el-meu-compte');
@@ -57,12 +106,24 @@ const RegisterPage: React.FC = () => {
         </div>
         <div>
           <Label htmlFor="password">{t('auth.password')}</Label>
-          <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+          <PasswordField
+            id="password"
+            value={password}
+            onChange={setPassword}
+            showLabel={t('auth.showPassword')}
+            hideLabel={t('auth.hidePassword')}
+          />
           <PasswordStrength password={password} />
         </div>
         <div>
           <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
-          <Input id="confirmPassword" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+          <PasswordField
+            id="confirmPassword"
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            showLabel={t('auth.showPassword')}
+            hideLabel={t('auth.hidePassword')}
+          />
           {confirmPassword && confirmPassword !== password && (
             <p className="mt-1 text-xs text-destructive">{t('auth.passwordMismatch')}</p>
           )}
