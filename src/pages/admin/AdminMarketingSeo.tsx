@@ -25,7 +25,7 @@ const AdminMarketingSeo: React.FC = () => {
   const { t } = useTranslation();
   const { data: languages = [] } = useLanguages({ onlyEnabled: true });
   const [host, setHost] = React.useState<string>(DEFAULT_HOST);
-  const [regenerating, setRegenerating] = React.useState(false);
+  const [regenBusy, setRegenBusy] = React.useState<string | null>(null);
   const [live, setLive] = React.useState<RegenResult | null>(null);
 
   const base = host.replace(/\/$/, '');
@@ -42,11 +42,12 @@ const AdminMarketingSeo: React.FC = () => {
     }
   };
 
-  const regenerate = async () => {
-    setRegenerating(true);
+  type Targets = { robots?: boolean; sitemapIndex?: boolean; langs?: string[] | 'all' };
+  const regenerate = async (busyKey: string, targets?: Targets) => {
+    setRegenBusy(busyKey);
     try {
       const { data, error } = await supabase.functions.invoke('regenerate-seo', {
-        body: { host: base },
+        body: targets ? { host: base, targets } : { host: base },
       });
       if (error || !data?.ok) throw new Error(error?.message || 'failed');
       setLive(data as RegenResult);
@@ -54,9 +55,10 @@ const AdminMarketingSeo: React.FC = () => {
     } catch (e: any) {
       notify.error(e?.message || t('common.error', 'Error'));
     } finally {
-      setRegenerating(false);
+      setRegenBusy(null);
     }
   };
+  const regenerating = regenBusy !== null;
 
 
   const UrlRow: React.FC<{ title: string; subtitle?: string; url: string; primary?: boolean }> = ({
