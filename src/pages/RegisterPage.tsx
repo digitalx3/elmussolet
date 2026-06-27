@@ -106,10 +106,10 @@ const RegisterPage: React.FC = () => {
     setLoading(false);
     if (signInErr) {
       notify.success(t('auth.registerSuccess'));
-      navigate('/login');
+      navigate('/login', { state: from ? { from: { pathname: from } } : undefined });
     } else {
       notify.success(t('auth.registerSuccess'));
-      navigate('/el-meu-compte');
+      navigate(from && !from.startsWith('/login') && !from.startsWith('/registre') ? from : '/el-meu-compte', { replace: true });
     }
   };
 
