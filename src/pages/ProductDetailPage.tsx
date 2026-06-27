@@ -59,14 +59,16 @@ const ProductDetailPage: React.FC = () => {
   const basePriceWithTax = pricing.base * (1 + taxPct / 100);
   const finalPriceWithTax = pricing.final * (1 + taxPct / 100);
 
+  const isDiscontinued = product?.stockStatus === 'discontinued';
   const variantStockTotal = (product?.variants ?? []).reduce((s, v) => s + (v.stockQuantity ?? 0), 0);
   const hasUsableVariants = !!product?.hasVariants && variantGroups.length > 0;
-  const effectiveOutOfStock = hasUsableVariants
+  const effectiveOutOfStock = isDiscontinued || (hasUsableVariants
     ? variantStockTotal === 0
-    : product?.stockStatus === 'out_of_stock';
+    : product?.stockStatus === 'out_of_stock');
   const currentStock = selectedVariant
     ? selectedVariant.stockQuantity
     : (hasUsableVariants ? variantStockTotal : (product?.stockQuantity ?? 0));
+
 
   const handleAddToCart = () => {
     if (!product) return;
