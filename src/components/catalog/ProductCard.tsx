@@ -148,6 +148,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
               {t('products.addToCart')}
             </Button>
           </div>
+          <ReplacementBlock />
         </div>
       </Link>
     );
