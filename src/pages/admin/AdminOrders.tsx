@@ -571,7 +571,50 @@ const AdminOrders: React.FC = () => {
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="flex justify-end -mt-2">
+              <div className="flex justify-end gap-2 -mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => {
+                    const lines = orderItems.map(it => ({
+                      name: getProductName(it),
+                      variant: it.product_variants?.value || null,
+                      quantity: it.quantity,
+                    }));
+                    printDeliveryNote({
+                      orderNumber: selectedOrder.order_number,
+                      createdAt: selectedOrder.created_at,
+                      customerName: selectedOrder.customers?.full_name || '',
+                      shippingAddress: selectedOrder.shipping_address || null,
+                      deliveryMethod: getDeliveryLabel(selectedOrder.delivery_method),
+                      notes: selectedOrder.notes,
+                      lines,
+                      siteName: 'El Mussolet',
+                      labels: {
+                        title: t('admin.deliveryNoteTitle', 'Albarà'),
+                        order: t('admin.orderNumber', 'Comanda'),
+                        date: t('admin.date', 'Data'),
+                        recipient: t('admin.recipient', 'Destinatari'),
+                        shippingAddress: t('admin.shippingAddress'),
+                        deliveryMethod: t('admin.deliveryMethod'),
+                        notes: t('admin.notes'),
+                        item: t('admin.item', 'Article'),
+                        variant: t('admin.variant', 'Variant'),
+                        quantity: t('admin.quantity', 'Quantitat'),
+                        totalItems: t('admin.totalItems', 'Total articles'),
+                        signature: t('admin.signature', 'Signatura'),
+                        noPricesNotice: t(
+                          'admin.deliveryNoteNoPrices',
+                          'Document intern d\'enviament. No conté preus ni informació fiscal.',
+                        ),
+                      },
+                    });
+                  }}
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  {t('admin.printDeliveryNote', 'Imprimir albarà')}
+                </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm" className="gap-1">
