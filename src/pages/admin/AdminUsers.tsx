@@ -50,6 +50,7 @@ interface UserFormState {
   city: string;
   postal_code: string;
   province: string;
+  country: string;
   nif: string;
   company_name: string;
   send_welcome_email: boolean;
