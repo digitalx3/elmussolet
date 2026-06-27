@@ -185,8 +185,14 @@ export function useProductBySlug(slug: string | undefined) {
           product_variants(
             id, value, price_override, price_modifier, stock_quantity, sku_suffix, is_active,
             variant_types(slug, variant_type_translations(name, language))
+          ),
+          replacement:replacement_product_id (
+            id, slug,
+            product_translations(name, language, slug),
+            product_images(image_url, is_primary, sort_order)
           )
         `;
+
 
       // 1) Try base slug
       let { data, error } = await supabase
