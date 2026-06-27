@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -49,6 +49,8 @@ const RegisterPage: React.FC = () => {
   const { t } = useTranslation();
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -104,10 +106,10 @@ const RegisterPage: React.FC = () => {
     setLoading(false);
     if (signInErr) {
       notify.success(t('auth.registerSuccess'));
-      navigate('/login');
+      navigate('/login', { state: from ? { from: { pathname: from } } : undefined });
     } else {
       notify.success(t('auth.registerSuccess'));
-      navigate('/el-meu-compte');
+      navigate(from && !from.startsWith('/login') && !from.startsWith('/registre') ? from : '/el-meu-compte', { replace: true });
     }
   };
 
@@ -152,7 +154,7 @@ const RegisterPage: React.FC = () => {
         </Button>
         <p className="text-center text-sm text-muted-foreground">
           {t('auth.hasAccount')}{' '}
-          <Link to="/login" className="text-primary hover:underline">{t('auth.login')}</Link>
+          <Link to="/login" state={from ? { from: { pathname: from } } : undefined} className="text-primary hover:underline">{t('auth.login')}</Link>
         </p>
       </form>
     </div>
