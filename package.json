@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "seo:generate": "tsx scripts/generate-seo.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:rls": "vitest run --config vitest.rls.config.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
