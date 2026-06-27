@@ -81,40 +81,50 @@ const AdminMarketingSeo: React.FC = () => {
   const regenerating = regenBusy !== null;
 
 
-  const UrlRow: React.FC<{ title: string; subtitle?: string; url: string; primary?: boolean }> = ({
-    title,
-    subtitle,
-    url,
-    primary,
-  }) => (
-    <div
-      className={`rounded-md p-3 space-y-2 ${
-        primary ? 'border-2 border-primary/40 bg-primary/5' : 'border'
-      }`}
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <div className="font-medium text-sm">{title}</div>
-          {subtitle && <div className="text-xs text-muted-foreground">{subtitle}</div>}
+  const UrlRow: React.FC<{
+    title: string;
+    subtitle?: string;
+    url: string;
+    primary?: boolean;
+    stampKey?: string;
+  }> = ({ title, subtitle, url, primary, stampKey }) => {
+    const stamp = stampKey ? stamps[stampKey] : undefined;
+    return (
+      <div
+        className={`rounded-md p-3 space-y-2 ${
+          primary ? 'border-2 border-primary/40 bg-primary/5' : 'border'
+        }`}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div className="font-medium text-sm">{title}</div>
+            {subtitle && <div className="text-xs text-muted-foreground">{subtitle}</div>}
+            {stamp && (
+              <div className="text-[11px] text-muted-foreground mt-0.5">
+                {t('admin.seo.regenAt', 'Última regeneració:')}{' '}
+                {new Date(stamp).toLocaleString()}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => copy(url)} className="gap-1">
+              <Copy className="h-4 w-4" />
+              {t('admin.seo.copy', 'Copiar')}
+            </Button>
+            <Button size="sm" variant="outline" asChild className="gap-1">
+              <a href={url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4" />
+                {t('admin.seo.open', 'Obrir')}
+              </a>
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => copy(url)} className="gap-1">
-            <Copy className="h-4 w-4" />
-            {t('admin.seo.copy', 'Copiar')}
-          </Button>
-          <Button size="sm" variant="outline" asChild className="gap-1">
-            <a href={url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4" />
-              {t('admin.seo.open', 'Obrir')}
-            </a>
-          </Button>
+        <div className={`text-xs ${primary ? 'bg-background' : 'bg-muted'} p-2 rounded font-mono break-all`}>
+          {url}
         </div>
       </div>
-      <div className={`text-xs ${primary ? 'bg-background' : 'bg-muted'} p-2 rounded font-mono break-all`}>
-        {url}
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6 max-w-4xl">
