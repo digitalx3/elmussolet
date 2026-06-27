@@ -75,6 +75,7 @@ const AdminContactMessages: React.FC = () => {
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['contact-messages'] });
+      qc.invalidateQueries({ queryKey: ['contact-message-status-log'] });
       notify.success(vars.status === 'closed' ? 'Conversa tancada' : 'Conversa reoberta');
     },
     onError: (e: any) => notify.error(e?.message || 'Error'),
