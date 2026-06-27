@@ -973,11 +973,22 @@ const AdminProductForm: React.FC = () => {
         )}
       </Card>
 
-      {/* Related products */}
+      {/* Upsell — shown on product page + in cart pop-up */}
       <RelatedProductsEditor
         productId={isNew ? undefined : id}
         value={form.related_product_ids}
         onChange={(ids) => updateField('related_product_ids', ids)}
+        title="Productes UP-SELL (pop-up i fitxa de producte)"
+        description="Es mostraran a la fitxa del producte (bloc 'Productes relacionats...') i en un pop-up quan el client afegeixi aquest producte a la cistella."
+      />
+
+      {/* Cross-sell — shown only on product page */}
+      <RelatedProductsEditor
+        productId={isNew ? undefined : id}
+        value={form.cross_sell_product_ids}
+        onChange={(ids) => updateField('cross_sell_product_ids', ids)}
+        title="Productes CROSS-SELL (només fitxa de producte)"
+        description="Es mostraran només a la fitxa del producte (bloc 'Productes que et poden interessar...'). No apareixen al pop-up."
       />
 
       {/* Bottom actions */}
