@@ -81,7 +81,6 @@ Deno.serve(async (req) => {
         id,
         full_name: u.full_name,
         preferred_language: "ca",
-        role: u.role ? "admin" : "customer",
       });
       assertNoError(profileErr, `profile upsert failed for ${u.key}`);
 
