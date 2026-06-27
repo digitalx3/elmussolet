@@ -49,7 +49,7 @@ export interface TranslatedProduct {
   replacement: { id: string; slug: string; name: string; image: string | null } | null;
 }
 
-function mapProduct(p: any, translation: any): TranslatedProduct {
+function mapProduct(p: any, translation: any, lang: string = 'ca'): TranslatedProduct {
   const images = p.product_images || [];
   const primaryImg = images.find((i: any) => i.is_primary) || images.sort((a: any, b: any) => a.sort_order - b.sort_order)[0];
 
@@ -64,6 +64,21 @@ function mapProduct(p: any, translation: any): TranslatedProduct {
     saleStartsAt: p.sale_starts_at,
     saleEndsAt: p.sale_ends_at,
   });
+
+  const rep = p.replacement;
+  let replacement: TranslatedProduct['replacement'] = null;
+  if (rep) {
+    const rTrs = rep.product_translations || [];
+    const rTr = rTrs.find((x: any) => x.language === lang) || rTrs[0];
+    const rImgs = (rep.product_images || []).slice().sort((a: any, b: any) => a.sort_order - b.sort_order);
+    const rPrimary = rImgs.find((i: any) => i.is_primary) || rImgs[0];
+    replacement = {
+      id: rep.id,
+      slug: (rTr as any)?.slug || rep.slug,
+      name: rTr?.name || rep.slug,
+      image: rPrimary?.image_url || null,
+    };
+  }
 
   return {
     id: p.id,
@@ -96,6 +111,7 @@ function mapProduct(p: any, translation: any): TranslatedProduct {
     description: translation?.description ?? '',
     primaryImage: primaryImg?.image_url ?? null,
     createdAt: p.created_at,
+    replacement,
   };
 }
 
