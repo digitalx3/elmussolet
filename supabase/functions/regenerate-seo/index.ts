@@ -246,6 +246,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         ok: true,
         generated_at: new Date().toISOString(),
+        regenerated: uploaded.map((u) => u.path),
         robots: `${base}/robots.txt`,
         sitemapIndex: `${base}/sitemap.xml`,
         sitemaps: langs.map((c) => ({ lang: c, url: `${base}/sitemap-${c}.xml` })),
