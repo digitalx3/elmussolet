@@ -9,6 +9,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    // RLS integration suite hits the live backend and is opt-in via `bun run test:rls`.
+    exclude: ["node_modules/**", "src/test/rls/**"],
+    testTimeout: 30_000,
   },
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
