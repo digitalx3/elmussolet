@@ -226,12 +226,14 @@ Deno.serve(async (req) => {
     }
 
 
-    // Upload all
+    // Upload all. Use no-store so Storage/CDN always revalidates against origin,
+    // guaranteeing robots/sitemap consumers (Googlebot, Bingbot…) see the latest
+    // version immediately after each regeneration.
     for (const f of uploaded) {
       const { error } = await sb.storage.from(BUCKET).upload(f.path, new Blob([f.content], { type: f.type }), {
         upsert: true,
         contentType: f.type,
-        cacheControl: "60",
+        cacheControl: "no-store, max-age=0, must-revalidate",
       });
       if (error) {
         return new Response(JSON.stringify({ error: `upload ${f.path}: ${error.message}` }), {
@@ -242,16 +244,41 @@ Deno.serve(async (req) => {
     }
 
     const base = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/seo`;
+    const generatedAt = new Date().toISOString();
+    // Cache-busting version token appended to every returned URL so the admin
+    // UI (and anything copying these links) always fetches the latest object
+    // bypassing any intermediate cache.
+    const v = String(Date.parse(generatedAt));
+    const bust = (u: string) => `${u}?v=${v}`;
+
+    // Best-effort CDN warm/purge: issue a no-cache fetch against each public
+    // URL so the storage edge revalidates the object right after upload.
+    await Promise.all(
+      uploaded.map((f) =>
+        fetch(`${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${f.path}?v=${v}`, {
+          method: "GET",
+          headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+        }).catch(() => null),
+      ),
+    );
+
     return new Response(
       JSON.stringify({
         ok: true,
-        generated_at: new Date().toISOString(),
+        generated_at: generatedAt,
         regenerated: uploaded.map((u) => u.path),
-        robots: `${base}/robots.txt`,
-        sitemapIndex: `${base}/sitemap.xml`,
-        sitemaps: langs.map((c) => ({ lang: c, url: `${base}/sitemap-${c}.xml` })),
+        robots: bust(`${base}/robots.txt`),
+        sitemapIndex: bust(`${base}/sitemap.xml`),
+        sitemaps: langs.map((c) => ({ lang: c, url: bust(`${base}/sitemap-${c}.xml`) })),
       }),
-      { status: 200, headers: { ...cors, "Content-Type": "application/json" } },
+      {
+        status: 200,
+        headers: {
+          ...cors,
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+        },
+      },
     );
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), {
