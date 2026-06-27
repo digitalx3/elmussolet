@@ -28,6 +28,8 @@ function parseDotenv(content: string): Record<string, string> {
 }
 
 let loaded = false;
+const filledByDotenv = new Set<string>();
+
 export function loadRlsEnv(): void {
   if (loaded) return;
   for (const file of FILES) {
@@ -35,15 +37,16 @@ export function loadRlsEnv(): void {
     if (!fs.existsSync(p)) continue;
     const parsed = parseDotenv(fs.readFileSync(p, "utf8"));
     for (const [k, v] of Object.entries(parsed)) {
-      // Real process.env (CI / shell) always wins. Later files override earlier ones.
-      const fromShell = process.env[k] !== undefined && !(k in (loadRlsEnv as any).__filled ?? {});
-      if (fromShell) continue;
+      // Real process.env (CI / shell) always wins over dotenv files.
+      // Later dotenv files override earlier ones.
+      if (process.env[k] !== undefined && !filledByDotenv.has(k)) continue;
       process.env[k] = v;
-      (loadRlsEnv as any).__filled = { ...((loadRlsEnv as any).__filled ?? {}), [k]: true };
+      filledByDotenv.add(k);
     }
   }
   loaded = true;
 }
+
 
 export interface RlsEnv {
   supabaseUrl: string;
