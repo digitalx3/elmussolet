@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Store, Truck, CreditCard, Landmark, CheckCircle2, Copy, Check } from 'lucide-react';
+import CountryProvinceSelect from '@/components/CountryProvinceSelect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
