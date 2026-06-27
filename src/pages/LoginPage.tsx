@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,12 +20,24 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     const { error } = await signIn(email, password);
-    setLoading(false);
     if (error) {
+      setLoading(false);
       notify.error(t('auth.loginError'));
-    } else {
-      navigate('/');
+      return;
     }
+    // Route admins straight to the admin panel; everyone else to the storefront.
+    let isAdmin = false;
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user) {
+        const { data } = await supabase.rpc('is_admin', { _user_id: userData.user.id });
+        isAdmin = !!data;
+      }
+    } catch {
+      isAdmin = false;
+    }
+    setLoading(false);
+    navigate(isAdmin ? '/admin' : '/');
   };
 
   return (
