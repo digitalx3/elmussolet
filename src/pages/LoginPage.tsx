@@ -67,7 +67,7 @@ const LoginPage: React.FC = () => {
           </Link>
           <p className="text-muted-foreground">
             {t('auth.noAccount')}{' '}
-            <Link to="/registre" className="text-primary hover:underline">{t('auth.register')}</Link>
+            <Link to="/registre" state={from ? { from: { pathname: from } } : undefined} className="text-primary hover:underline">{t('auth.register')}</Link>
           </p>
         </div>
       </form>
