@@ -277,11 +277,14 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
             <CountryProvinceSelect
               country={form.country}
               province={form.province}
-              onCountryChange={(v) => update('country', v)}
-              onProvinceChange={(v) => update('province', v)}
+              onCountryChange={(v) => { update('country', v); setProvinceError(false); }}
+              onProvinceChange={(v) => { update('province', v); setProvinceError(false); }}
               countryLabel={t('account.country')}
               provinceLabel={t('account.province')}
             />
+            {provinceError && (
+              <p className="text-sm font-medium text-destructive">{t('errors.provinceRequired')}</p>
+            )}
           </div>
         </div>
 
