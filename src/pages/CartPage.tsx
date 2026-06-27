@@ -36,6 +36,7 @@ const CartPage: React.FC = () => {
   if (isEmpty) {
     return (
       <div className="container py-16 text-center max-w-lg mx-auto">
+        <NoIndex />
         <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
         <h1 className="font-display text-3xl font-bold mb-3">{t('cart.title')}</h1>
         <p className="text-muted-foreground mb-6">{t('cart.empty')}</p>
