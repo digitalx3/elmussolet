@@ -368,19 +368,20 @@ export function useFeaturedProducts(limit: number = 8) {
   });
 }
 
-// Related products for a given product (used in product page + upsell dialog).
-export function useRelatedProducts(productId: string | undefined) {
+// Internal: fetch related products by relation type, preserving admin-defined order.
+function useRelationsByType(productId: string | undefined, relationType: 'upsell' | 'cross_sell', queryKey: string) {
   const { i18n } = useTranslation();
   const lang = i18n.language === 'es' ? 'es' : 'ca';
 
   return useQuery({
-    queryKey: ['related-products', productId, lang],
+    queryKey: [queryKey, productId, lang],
     enabled: !!productId,
     queryFn: async () => {
       const { data: rels, error: relErr } = await supabase
         .from('product_relations')
-        .select('related_product_id, position')
+        .select('related_product_id, position, relation_type')
         .eq('product_id', productId!)
+        .eq('relation_type', relationType)
         .order('position', { ascending: true });
       if (relErr) throw relErr;
       const ids = (rels ?? []).map((r: any) => r.related_product_id);
@@ -410,8 +411,17 @@ export function useRelatedProducts(productId: string | undefined) {
         const tr = Array.isArray(p.product_translations) ? p.product_translations[0] : p.product_translations;
         byId.set(p.id, mapProduct(p, tr, lang));
       });
-      // Preserve admin-defined order
       return ids.map(id => byId.get(id)).filter(Boolean) as TranslatedProduct[];
     },
   });
+}
+
+// Up-sell products (shown in product page + cart pop-up).
+export function useRelatedProducts(productId: string | undefined) {
+  return useRelationsByType(productId, 'upsell', 'related-products');
+}
+
+// Cross-sell products (shown only in product page, never in pop-up).
+export function useCrossSellProducts(productId: string | undefined) {
+  return useRelationsByType(productId, 'cross_sell', 'cross-sell-products');
 }
