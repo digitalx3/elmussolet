@@ -36,6 +36,7 @@ import AdminStockNotifications from '@/pages/admin/AdminStockNotifications';
 import AdminFeaturedProducts from '@/pages/admin/AdminFeaturedProducts';
 import AdminCookies from '@/pages/admin/AdminCookies';
 import AdminSuperPermissions from '@/pages/admin/AdminSuperPermissions';
+import AdminMarketingSeo from '@/pages/admin/AdminMarketingSeo';
 import { PermissionRoute, SuperAdminRoute } from '@/components/auth/ProtectedRoute';
 
 const AdminPlaceholder: React.FC<{ titleKey: string }> = ({ titleKey }) => {
