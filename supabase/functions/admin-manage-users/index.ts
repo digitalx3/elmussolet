@@ -40,7 +40,7 @@ Deno.serve(async (req: Request) => {
 
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace("Bearer ", "");
-    if (!token) return json({ error: "Missing auth" }, 200);
+    if (!token) return json({ error: "Unauthorized" }, 401);
 
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: `Bearer ${token}` } },
@@ -48,20 +48,13 @@ Deno.serve(async (req: Request) => {
     const { data: userData, error: userErr } = await userClient.auth.getUser();
     if (userErr || !userData?.user) {
       console.error("auth.getUser failed", userErr);
-      return json({
-        error:
-          "La teva sessió ha caducat. Tanca sessió i torna a entrar per continuar.",
-      }, 200);
+      return json({ error: "Unauthorized" }, 401);
     }
 
     const admin = createClient(supabaseUrl, serviceKey);
 
-    const { data: profile } = await admin
-      .from("profiles")
-      .select("role")
-      .eq("id", userData.user.id)
-      .single();
-    if (profile?.role !== "admin") return json({ error: "Forbidden" }, 200);
+    const { data: isAdminFlag } = await admin.rpc("is_admin", { _user_id: userData.user.id });
+    if (!isAdminFlag) return json({ error: "Forbidden" }, 403);
 
     // Check if caller is super_admin
     const { data: callerRoles } = await admin
