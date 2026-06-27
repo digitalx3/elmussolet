@@ -22,6 +22,7 @@ interface Body {
   city?: string;
   postal_code?: string;
   province?: string;
+  country?: string;
   nif?: string;
   company_name?: string;
   send_welcome_email?: boolean;
@@ -149,6 +150,7 @@ Deno.serve(async (req: Request) => {
       if (body.city !== undefined) profileUpdate.city = body.city;
       if (body.postal_code !== undefined) profileUpdate.postal_code = body.postal_code;
       if (body.province !== undefined) profileUpdate.province = body.province;
+      if (body.country !== undefined) profileUpdate.country = body.country;
       if (body.nif !== undefined) profileUpdate.nif = body.nif;
       if (body.company_name !== undefined) profileUpdate.company_name = body.company_name;
       if (Object.keys(profileUpdate).length > 0) {

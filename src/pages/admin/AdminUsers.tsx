@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import CountryProvinceSelect from '@/components/CountryProvinceSelect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,6 +51,7 @@ interface UserFormState {
   city: string;
   postal_code: string;
   province: string;
+  country: string;
   nif: string;
   company_name: string;
   send_welcome_email: boolean;
@@ -67,6 +69,7 @@ const emptyForm: UserFormState = {
   city: '',
   postal_code: '',
   province: '',
+  country: 'ES',
   nif: '',
   company_name: '',
   send_welcome_email: true,
@@ -170,6 +173,7 @@ const AdminUsers: React.FC = () => {
         city: form.city,
         postal_code: form.postal_code,
         province: form.province,
+        country: form.country,
         nif: form.nif,
         company_name: form.company_name,
       };
@@ -263,6 +267,7 @@ const AdminUsers: React.FC = () => {
         city: p.city || '',
         postal_code: p.postal_code || '',
         province: p.province || '',
+        country: p.country || 'ES',
         nif: p.nif || '',
         company_name: p.company_name || '',
         send_welcome_email: false,
@@ -505,7 +510,7 @@ const AdminUsers: React.FC = () => {
                   <Label>Adreça (línia 2)</Label>
                   <Input value={form.address_line2} onChange={e => setForm({ ...form, address_line2: e.target.value })} />
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>Població</Label>
                     <Input value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} />
@@ -514,11 +519,16 @@ const AdminUsers: React.FC = () => {
                     <Label>Codi postal</Label>
                     <Input value={form.postal_code} onChange={e => setForm({ ...form, postal_code: e.target.value })} />
                   </div>
-                  <div>
-                    <Label>Província</Label>
-                    <Input value={form.province} onChange={e => setForm({ ...form, province: e.target.value })} />
-                  </div>
                 </div>
+                <CountryProvinceSelect
+                  country={form.country}
+                  province={form.province}
+                  onCountryChange={(v) => setForm({ ...form, country: v })}
+                  onProvinceChange={(v) => setForm({ ...form, province: v })}
+                  countryLabel="País"
+                  provinceLabel="Província"
+                />
+
               </div>
             </div>
 

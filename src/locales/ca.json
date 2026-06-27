@@ -249,6 +249,7 @@
     "city": "Ciutat",
     "postalCode": "Codi postal",
     "province": "Província",
+    "country": "País",
     "language": "Idioma preferit",
     "nif": "NIF / CIF",
     "nifHelp": "Necessari per a la facturació",

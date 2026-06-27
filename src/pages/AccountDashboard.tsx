@@ -14,6 +14,7 @@ import { notify } from '@/lib/notify';
 import { formatPrice } from '@/hooks/useTaxRates';
 import { Package, ChevronDown, ChevronUp, User, ShoppingBag, Heart } from 'lucide-react';
 import MyBirthListPage from './MyBirthListPage';
+import CountryProvinceSelect from '@/components/CountryProvinceSelect';
 
 interface OrderItem {
   id: string;
@@ -96,6 +97,7 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
     city: '',
     postal_code: '',
     province: '',
+    country: 'ES',
     preferred_language: 'ca',
     nif: '',
     company_name: '',
@@ -147,6 +149,7 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
         city: profile.city || '',
         postal_code: profile.postal_code || '',
         province: profile.province || '',
+        country: profile.country || 'ES',
         preferred_language: profile.preferred_language || 'ca',
         nif: profile.nif || '',
         company_name: profile.company_name || '',
@@ -256,11 +259,18 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
           <div className="space-y-4">
             <div><Label>{t('account.addressLine1')}</Label><Input value={form.address_line1} onChange={e => update('address_line1', e.target.value)} /></div>
             <div><Label>{t('account.addressLine2')}</Label><Input value={form.address_line2} onChange={e => update('address_line2', e.target.value)} /></div>
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid sm:grid-cols-2 gap-4">
               <div><Label>{t('account.city')}</Label><Input value={form.city} onChange={e => update('city', e.target.value)} /></div>
               <div><Label>{t('account.postalCode')}</Label><Input value={form.postal_code} onChange={e => update('postal_code', e.target.value)} /></div>
-              <div><Label>{t('account.province')}</Label><Input value={form.province} onChange={e => update('province', e.target.value)} /></div>
             </div>
+            <CountryProvinceSelect
+              country={form.country}
+              province={form.province}
+              onCountryChange={(v) => update('country', v)}
+              onProvinceChange={(v) => update('province', v)}
+              countryLabel={t('account.country')}
+              provinceLabel={t('account.province')}
+            />
           </div>
         </div>
 

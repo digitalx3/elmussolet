@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Store, Truck, CreditCard, Landmark, CheckCircle2, Copy, Check } from 'lucide-react';
+import CountryProvinceSelect from '@/components/CountryProvinceSelect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,6 +30,7 @@ const shippingSchema = z.object({
   city: z.string().trim().min(1, 'Required').max(100),
   postalCode: z.string().trim().min(4, 'Required').max(10),
   province: z.string().trim().min(1, 'Required').max(100),
+  country: z.string().trim().min(2, 'Required').max(2),
 });
 
 type ShippingForm = z.infer<typeof shippingSchema>;
@@ -90,6 +92,7 @@ const CheckoutPage: React.FC = () => {
       city: profile?.city ?? '',
       postalCode: profile?.postal_code ?? '',
       province: profile?.province ?? '',
+      country: (profile as any)?.country ?? 'ES',
     },
   });
 
@@ -174,6 +177,7 @@ const CheckoutPage: React.FC = () => {
         city: shippingData.city,
         postal_code: shippingData.postalCode,
         province: shippingData.province,
+        country: shippingData.country,
       } : null;
 
       // Upsert customer record (linked to auth user)
@@ -198,6 +202,7 @@ const CheckoutPage: React.FC = () => {
                 city: shippingAddress.city,
                 postal_code: shippingAddress.postal_code,
                 province: shippingAddress.province,
+                country: shippingAddress.country,
               })
               .eq('id', existing.id);
           }
@@ -214,6 +219,7 @@ const CheckoutPage: React.FC = () => {
               city: shippingAddress?.city ?? null,
               postal_code: shippingAddress?.postal_code ?? null,
               province: shippingAddress?.province ?? null,
+              country: shippingAddress?.country ?? 'ES',
             })
             .select('id')
             .single();
@@ -409,7 +415,7 @@ const CheckoutPage: React.FC = () => {
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="city" render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('account.city')}</FormLabel>
@@ -424,14 +430,24 @@ const CheckoutPage: React.FC = () => {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={form.control} name="province" render={({ field }) => (
-                      <FormItem className="col-span-2 sm:col-span-1">
-                        <FormLabel>{t('account.province')}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
+                  </div>
+                  <FormField control={form.control} name="country" render={({ field: cField }) => (
+                    <FormField control={form.control} name="province" render={({ field: pField }) => (
+                      <FormItem>
+                        <FormLabel>{t('account.country')} / {t('account.province')}</FormLabel>
+                        <FormControl>
+                          <CountryProvinceSelect
+                            country={cField.value}
+                            province={pField.value}
+                            onCountryChange={cField.onChange}
+                            onProvinceChange={pField.onChange}
+                            hideLabels
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
-                  </div>
+                  )} />
                 </div>
               </Form>
             )}

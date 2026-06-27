@@ -763,6 +763,7 @@ export type Database = {
           auth_user_id: string | null
           city: string | null
           company_name: string | null
+          country: string | null
           created_at: string
           deleted_at: string | null
           email: string
@@ -781,6 +782,7 @@ export type Database = {
           auth_user_id?: string | null
           city?: string | null
           company_name?: string | null
+          country?: string | null
           created_at?: string
           deleted_at?: string | null
           email: string
@@ -799,6 +801,7 @@ export type Database = {
           auth_user_id?: string | null
           city?: string | null
           company_name?: string | null
+          country?: string | null
           created_at?: string
           deleted_at?: string | null
           email?: string
@@ -2005,6 +2008,7 @@ export type Database = {
           address_line2: string | null
           city: string | null
           company_name: string | null
+          country: string | null
           created_at: string
           deleted_at: string | null
           deleted_email: string | null
@@ -2023,6 +2027,7 @@ export type Database = {
           address_line2?: string | null
           city?: string | null
           company_name?: string | null
+          country?: string | null
           created_at?: string
           deleted_at?: string | null
           deleted_email?: string | null
@@ -2041,6 +2046,7 @@ export type Database = {
           address_line2?: string | null
           city?: string | null
           company_name?: string | null
+          country?: string | null
           created_at?: string
           deleted_at?: string | null
           deleted_email?: string | null
