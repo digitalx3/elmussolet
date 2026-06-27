@@ -24,6 +24,7 @@ import LanguageTabs from '@/components/admin/LanguageTabs';
 import { useAiProvider, isAiReady } from '@/hooks/useAiProvider';
 import RichTextEditor from '@/components/ui/rich-text-editor';
 import RelatedProductsEditor from '@/components/admin/RelatedProductsEditor';
+import ReplacementProductPicker from '@/components/admin/ReplacementProductPicker';
 import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
 import { checkBaseSlugDuplicate, checkTranslationSlugDuplicate } from '@/lib/checkSlugDuplicate';
 import { useDuplicateSlugErrors, hasAnySlugError } from '@/hooks/useDuplicateSlugErrors';
