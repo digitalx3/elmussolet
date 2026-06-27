@@ -603,7 +603,14 @@ const AdminOrders: React.FC = () => {
                       deliveryMethod: getDeliveryLabel(selectedOrder.delivery_method),
                       notes: selectedOrder.notes,
                       lines,
-                      siteName: 'El Mussolet',
+                      company: {
+                        name: siteSettings?.store_name || 'El Mussolet',
+                        nif: siteSettings?.store_nif || null,
+                        address: siteSettings?.store_address || null,
+                        email: siteSettings?.store_email || null,
+                        phone: siteSettings?.store_phone || null,
+                        logoUrl: siteSettings?.logo_header_url || null,
+                      },
                       labels: {
                         title: t('admin.deliveryNoteTitle', 'Albarà'),
                         order: t('admin.orderNumber', 'Comanda'),
@@ -621,6 +628,9 @@ const AdminOrders: React.FC = () => {
                           'admin.deliveryNoteNoPrices',
                           'Document intern d\'enviament. No conté preus ni informació fiscal.',
                         ),
+                        print: t('admin.print', 'Imprimir'),
+                        downloadPdf: t('admin.downloadPdf', 'Descarregar PDF'),
+                        close: t('admin.close', 'Tancar'),
                       },
                     });
                   }}
