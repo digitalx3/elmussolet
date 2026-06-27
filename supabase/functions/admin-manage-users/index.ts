@@ -76,6 +76,9 @@ Deno.serve(async (req: Request) => {
       if (!body.email || !body.password) {
         return json({ error: "email and password required" }, 400);
       }
+      if (body.country === "ES" && (!body.province || body.province.trim() === "")) {
+        return json({ error: "La província és obligatòria per a Espanya." }, 400);
+      }
       // Block re-registration with an email that belongs to a soft-deleted user
       const { data: blocked } = await admin
         .from("profiles")
