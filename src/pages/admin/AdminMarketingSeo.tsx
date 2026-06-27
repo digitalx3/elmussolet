@@ -36,6 +36,7 @@ const AdminMarketingSeo: React.FC = () => {
   const [host, setHost] = React.useState<string>(DEFAULT_HOST);
   const [regenBusy, setRegenBusy] = React.useState<string | null>(null);
   const [live, setLive] = React.useState<RegenResult | null>(null);
+  const [stamps, setStamps] = React.useState<Record<string, string>>({});
 
   const base = host.replace(/\/$/, '');
   const robotsUrl = `${base}/robots.txt`;
