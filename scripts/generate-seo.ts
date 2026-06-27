@@ -176,9 +176,7 @@ async function main() {
       entries.push({ loc: `${BASE_URL}/cataleg/${slug}`, lastmod: c.updated_at });
     }
 
-    for (const b of brands) {
-      entries.push({ loc: `${BASE_URL}/cataleg?brand=${b.slug}`, lastmod: b.updated_at });
-    }
+    // (brands skipped — see above)
 
     const file = `public/sitemap-${lang}.xml`;
     writeFile(file, buildUrlset(entries));
