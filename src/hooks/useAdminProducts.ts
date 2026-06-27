@@ -96,6 +96,7 @@ export interface ProductFormData {
   sale_ends_at: string | null;
   is_featured: boolean;
   featured_order: number | null;
+  replacement_product_id: string | null;
   translations: Record<string, { name: string; short_description: string; description: string; slug?: string }>;
   images: { id?: string; image_url: string; alt_text: string; is_primary: boolean; sort_order: number }[];
   variants: {
