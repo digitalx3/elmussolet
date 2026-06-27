@@ -1,0 +1,163 @@
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet-async';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Copy, ExternalLink, RefreshCw } from 'lucide-react';
+import { useLanguages } from '@/hooks/useLanguages';
+import { notify } from '@/lib/notify';
+
+const TYPE_KEYS = ['static', 'products', 'pages', 'categories', 'brands'] as const;
+type TypeKey = (typeof TYPE_KEYS)[number];
+
+const DEFAULT_HOST =
+  typeof window !== 'undefined' ? window.location.origin : 'https://elmussolet.lovable.app';
+
+const FUNCTIONS_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sitemap`;
+
+const AdminMarketingSeo: React.FC = () => {
+  const { t } = useTranslation();
+  const { data: languages = [] } = useLanguages({ onlyEnabled: true });
+  const [selected, setSelected] = React.useState<Record<TypeKey, boolean>>({
+    static: true,
+    products: true,
+    pages: true,
+    categories: true,
+    brands: true,
+  });
+  const [host, setHost] = React.useState<string>(DEFAULT_HOST);
+  const [tick, setTick] = React.useState(0);
+
+  const activeTypes = TYPE_KEYS.filter((k) => selected[k]);
+
+  const buildUrl = (lang: string) => {
+    const params = new URLSearchParams({
+      lang,
+      host: host.replace(/\/$/, ''),
+      types: activeTypes.join(','),
+      v: String(tick),
+    });
+    return `${FUNCTIONS_BASE}?${params.toString()}`;
+  };
+
+  const copy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      notify.success(t('admin.seo.copied', 'Enllaç copiat'));
+    } catch {
+      notify.error(t('common.error', 'Error'));
+    }
+  };
+
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <Helmet>
+        <title>{t('admin.marketingSeo', 'Marketing i SEO')} · Admin</title>
+      </Helmet>
+
+      <div>
+        <h1 className="font-display text-2xl font-bold">{t('admin.marketingSeo', 'Marketing i SEO')}</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          {t(
+            'admin.seo.intro',
+            'Genera sitemaps per idioma per pujar a Google Search Console. Les llistes de naixement queden sempre excloses.',
+          )}
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('admin.seo.configTitle', 'Configuració del sitemap')}</CardTitle>
+          <CardDescription>
+            {t('admin.seo.configDesc', 'Selecciona quin tipus de pàgines vols incloure.')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="host">{t('admin.seo.host', 'URL base del lloc')}</Label>
+            <Input id="host" value={host} onChange={(e) => setHost(e.target.value)} placeholder="https://..." />
+            <p className="text-xs text-muted-foreground">
+              {t('admin.seo.hostHelp', "Domini públic on s'allotja la botiga (sense barra final).")}
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Label>{t('admin.seo.includeTypes', 'Contingut a incloure')}</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {TYPE_KEYS.map((k) => (
+                <label key={k} className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={selected[k]}
+                    onCheckedChange={(v) => setSelected((s) => ({ ...s, [k]: !!v }))}
+                  />
+                  <span className="text-sm">{t(`admin.seo.type_${k}`, k)}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t('admin.seo.privacyNote', 'Les llistes de naixement no s’inclouen mai (són privades).')}
+            </p>
+          </div>
+
+          <Button variant="outline" size="sm" onClick={() => setTick((n) => n + 1)} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            {t('admin.seo.regenerate', 'Regenerar enllaços')}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('admin.seo.urlsTitle', 'Enllaços per idioma')}</CardTitle>
+          <CardDescription>
+            {t(
+              'admin.seo.urlsDesc',
+              "Copia cada enllaç i afegeix-lo com a sitemap a Google Search Console (un per idioma).",
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {activeTypes.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              {t('admin.seo.noTypes', 'Selecciona almenys un tipus de contingut.')}
+            </p>
+          )}
+          {activeTypes.length > 0 &&
+            languages.map((lng) => {
+              const url = buildUrl(lng.code);
+              return (
+                <div key={lng.code} className="rounded-md border p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <div className="font-medium text-sm">
+                        {lng.native_name} ({lng.code})
+                      </div>
+                      <div className="text-xs text-muted-foreground">sitemap-{lng.code}.xml</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={() => copy(url)} className="gap-1">
+                        <Copy className="h-4 w-4" />
+                        {t('admin.seo.copy', 'Copiar')}
+                      </Button>
+                      <Button size="sm" variant="outline" asChild className="gap-1">
+                        <a href={url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4" />
+                          {t('admin.seo.open', 'Obrir')}
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="text-xs bg-muted p-2 rounded font-mono break-all">{url}</div>
+                </div>
+              );
+            })}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default AdminMarketingSeo;

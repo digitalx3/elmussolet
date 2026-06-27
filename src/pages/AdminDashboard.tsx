@@ -36,6 +36,7 @@ import AdminStockNotifications from '@/pages/admin/AdminStockNotifications';
 import AdminFeaturedProducts from '@/pages/admin/AdminFeaturedProducts';
 import AdminCookies from '@/pages/admin/AdminCookies';
 import AdminSuperPermissions from '@/pages/admin/AdminSuperPermissions';
+import AdminMarketingSeo from '@/pages/admin/AdminMarketingSeo';
 import { PermissionRoute, SuperAdminRoute } from '@/components/auth/ProtectedRoute';
 
 const AdminPlaceholder: React.FC<{ titleKey: string }> = ({ titleKey }) => {
@@ -88,6 +89,7 @@ const AdminDashboard: React.FC = () => {
         <Route path="notificacions-stock" element={<AdminStockNotifications />} />
         <Route path="idiomes/:code/traduccions" element={<PermissionRoute perm="manage_translations"><AdminLanguageTranslations /></PermissionRoute>} />
         <Route path="cookies" element={<AdminCookies />} />
+        <Route path="marketing-seo" element={<AdminMarketingSeo />} />
         <Route path="super/permisos" element={<SuperAdminRoute><AdminSuperPermissions /></SuperAdminRoute>} />
       </Routes>
     </AdminLayout>

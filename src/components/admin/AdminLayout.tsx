@@ -80,6 +80,7 @@ const groups: NavGroup[] = [
       { key: 'aiHistory', path: '/admin/ia/historial', icon: Sparkles, perm: 'ai_history' },
       { key: 'smtp', path: '/admin/smtp', icon: Server, perm: 'manage_smtp' },
       { key: 'cookiesMenu', path: '/admin/cookies', icon: Cookie },
+      { key: 'marketingSeo', path: '/admin/marketing-seo', icon: Globe },
       { key: 'backups', path: '/admin/backups', icon: Database },
       { key: 'maintenance', path: '/admin/manteniment', icon: Power },
       { key: 'settings', path: '/admin/configuracio', icon: Settings },
