@@ -47,6 +47,9 @@ Deno.serve(async (req) => {
     const lang = (url.searchParams.get("lang") || "ca").toLowerCase();
     const hostParam = url.searchParams.get("host");
     const host = (hostParam || `${url.protocol}//${url.host}`).replace(/\/$/, "");
+    const isIndex = ["1", "true", "yes"].includes(
+      (url.searchParams.get("index") || "").toLowerCase(),
+    );
     const types = (url.searchParams.get("types") || "static,products,pages,categories,brands")
       .split(",")
       .map((s) => s.trim())
