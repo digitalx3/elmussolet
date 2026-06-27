@@ -23,10 +23,13 @@ const stockBadge = (status: string, quantity: number, t: (k: string) => string) 
       return <Badge variant="secondary" className="bg-warm text-warm-foreground">{t('products.onOrder')}</Badge>;
     case 'out_of_stock':
       return <Badge variant="destructive">{t('products.outOfStock')}</Badge>;
+    case 'discontinued':
+      return <Badge variant="destructive">Descatalogat</Badge>;
     default:
       return null;
   }
 };
+
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('ca-ES', { style: 'currency', currency: 'EUR' }).format(price);
