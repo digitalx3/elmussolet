@@ -16,26 +16,22 @@ Deno.serve(async (req) => {
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const authHeader = req.headers.get("Authorization") ?? "";
 
-    if (!authHeader) return json({ error: "No autoritzat" });
+    if (!authHeader) return json({ error: "Unauthorized" }, 401);
 
     // Verify admin
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user }, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !user) return json({ error: "Sessió no vàlida. Torna a iniciar sessió." });
+    if (userErr || !user) return json({ error: "Unauthorized" }, 401);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-    const { data: profile, error: profErr } = await admin
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-    if (profErr || profile?.role !== "admin") return json({ error: "Només administradors" });
+    const { data: isAdminFlag } = await admin.rpc("is_admin", { _user_id: user.id });
+    if (!isAdminFlag) return json({ error: "Forbidden" }, 403);
 
     const body = await req.json().catch(() => ({}));
     const listId = body?.list_id as string | undefined;
-    if (!listId) return json({ error: "Falta list_id" });
+    if (!listId) return json({ error: "Falta list_id" }, 400);
 
     // 1) Find all orders for this list
     const { data: orders, error: ordersErr } = await admin
