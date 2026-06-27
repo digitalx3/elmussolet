@@ -714,8 +714,19 @@ const AdminProductForm: React.FC = () => {
               <option value="in_stock">{t('products.inStock')}</option>
               <option value="on_order">{t('products.onOrder')}</option>
               <option value="out_of_stock">{t('products.outOfStock')}</option>
+              <option value="discontinued">Descatalogat</option>
             </select>
+            {form.stock_status === 'discontinued' && (
+              <div className="mt-3">
+                <ReplacementProductPicker
+                  excludeId={id}
+                  value={form.replacement_product_id}
+                  onChange={(rid) => updateField('replacement_product_id', rid)}
+                />
+              </div>
+            )}
           </div>
+
           <div className="flex items-center gap-3 sm:col-span-2">
             <Switch checked={form.is_active} onCheckedChange={v => updateField('is_active', v)} />
             <Label>Producte actiu</Label>
