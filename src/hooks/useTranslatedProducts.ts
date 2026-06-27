@@ -393,7 +393,12 @@ export function useRelatedProducts(productId: string | undefined) {
           product_translations!inner(name, short_description, description, language),
           product_images(image_url, is_primary, sort_order),
           brands(name, logo_url),
-          tax_rates(id, name, percentage)
+          tax_rates(id, name, percentage),
+          replacement:replacement_product_id (
+            id, slug,
+            product_translations(name, language, slug),
+            product_images(image_url, is_primary, sort_order)
+          )
         `)
         .in('id', ids)
         .eq('is_active', true)
@@ -403,7 +408,7 @@ export function useRelatedProducts(productId: string | undefined) {
       const byId = new Map<string, TranslatedProduct>();
       (data || []).forEach((p: any) => {
         const tr = Array.isArray(p.product_translations) ? p.product_translations[0] : p.product_translations;
-        byId.set(p.id, mapProduct(p, tr));
+        byId.set(p.id, mapProduct(p, tr, lang));
       });
       // Preserve admin-defined order
       return ids.map(id => byId.get(id)).filter(Boolean) as TranslatedProduct[];
