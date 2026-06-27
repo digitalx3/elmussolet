@@ -5,17 +5,28 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Copy, ExternalLink, FileText, Map as MapIcon } from 'lucide-react';
+import { Copy, ExternalLink, FileText, Map as MapIcon, RefreshCw } from 'lucide-react';
 import { useLanguages } from '@/hooks/useLanguages';
 import { notify } from '@/lib/notify';
+import { supabase } from '@/integrations/supabase/client';
 
 const DEFAULT_HOST =
   typeof window !== 'undefined' ? window.location.origin : 'https://elmussolet.lovable.app';
+
+type RegenResult = {
+  ok: boolean;
+  generated_at: string;
+  robots: string;
+  sitemapIndex: string;
+  sitemaps: { lang: string; url: string }[];
+};
 
 const AdminMarketingSeo: React.FC = () => {
   const { t } = useTranslation();
   const { data: languages = [] } = useLanguages({ onlyEnabled: true });
   const [host, setHost] = React.useState<string>(DEFAULT_HOST);
+  const [regenerating, setRegenerating] = React.useState(false);
+  const [live, setLive] = React.useState<RegenResult | null>(null);
 
   const base = host.replace(/\/$/, '');
   const robotsUrl = `${base}/robots.txt`;
@@ -30,6 +41,23 @@ const AdminMarketingSeo: React.FC = () => {
       notify.error(t('common.error', 'Error'));
     }
   };
+
+  const regenerate = async () => {
+    setRegenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('regenerate-seo', {
+        body: { host: base },
+      });
+      if (error || !data?.ok) throw new Error(error?.message || 'failed');
+      setLive(data as RegenResult);
+      notify.success(t('admin.seo.regenerated', 'Fitxers regenerats correctament'));
+    } catch (e: any) {
+      notify.error(e?.message || t('common.error', 'Error'));
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
 
   const UrlRow: React.FC<{ title: string; subtitle?: string; url: string; primary?: boolean }> = ({
     title,
