@@ -29,6 +29,7 @@ const shippingSchema = z.object({
   city: z.string().trim().min(1, 'Required').max(100),
   postalCode: z.string().trim().min(4, 'Required').max(10),
   province: z.string().trim().min(1, 'Required').max(100),
+  country: z.string().trim().min(2, 'Required').max(2),
 });
 
 type ShippingForm = z.infer<typeof shippingSchema>;
