@@ -309,6 +309,45 @@ const ProductDetailPage: React.FC = () => {
             </Button>
           </div>
 
+          {isDiscontinued && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3">
+              <p className="text-sm font-semibold text-destructive mb-2">
+                Aquest producte està descatalogat.
+              </p>
+              {product.replacement ? (
+                <Link
+                  to={`/producte/${product.replacement.slug}`}
+                  className="flex items-center gap-3 rounded-md border bg-background p-2 hover:border-primary transition-colors"
+                >
+                  {product.replacement.image ? (
+                    <img
+                      src={product.replacement.image}
+                      alt={product.replacement.name}
+                      className="h-12 w-12 rounded object-cover"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded bg-muted" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Producte substitut
+                    </div>
+                    <div className="text-sm font-medium truncate">
+                      {product.replacement.name}
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Contacta'ns per a més informació sobre alternatives.
+                </p>
+              )}
+            </div>
+          )}
+
+
+
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="gap-1" onClick={handleShare}>
               <Share2 className="h-4 w-4" />
