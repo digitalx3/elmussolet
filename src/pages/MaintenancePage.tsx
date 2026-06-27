@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
+import logoHorizontal from '@/assets/mussolet-logo-horizontal.png.asset.json';
 
 interface Props {
   showLogo: boolean;
@@ -13,7 +14,7 @@ const MaintenancePage: React.FC<Props> = ({ showLogo, messageCa, messageEs }) =>
   const { i18n, t } = useTranslation();
   const { data: settings } = useSiteSettings(['logo_header_url', 'logo_footer_url', 'store_name']);
   const rawLogo = settings?.logo_header_url || settings?.logo_footer_url || '';
-  const logoUrl = rawLogo ? resolveMediaUrl(rawLogo) : null;
+  const logoUrl = rawLogo ? resolveMediaUrl(rawLogo) : logoHorizontal.url;
   const siteName = settings?.store_name || 'El Mussolet';
 
   const lang = (i18n.language || 'ca').toLowerCase().startsWith('es') ? 'es' : 'ca';
