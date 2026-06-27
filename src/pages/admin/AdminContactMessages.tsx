@@ -190,34 +190,54 @@ const AdminContactMessages: React.FC = () => {
                         </div>
                         {m.message}
                       </div>
-                      {replies.map((r: any) => (
-                        <div
-                          key={r.id}
-                          className={`rounded p-3 whitespace-pre-wrap text-sm border ${
-                            r.direction === 'admin'
-                              ? 'bg-primary/5 border-primary/30 ml-6'
-                              : 'bg-muted border-transparent mr-6'
-                          }`}
-                        >
-                          <div className="text-xs text-muted-foreground mb-1 flex items-center gap-2 flex-wrap">
-                            <strong>{r.direction === 'admin' ? (r.author_name || 'Administració') : m.name}</strong>
-                            <span>· {new Date(r.created_at).toLocaleString('ca-ES')}</span>
-                            {r.direction === 'admin' && (
-                              r.email_sent ? (
-                                <span className="text-emerald-600">· enviat</span>
-                              ) : (
-                                <span className="text-destructive flex items-center gap-1">
-                                  <AlertCircle className="h-3 w-3" /> correu no enviat
-                                </span>
-                              )
+                      {timeline.map((entry: any) => {
+                        if (entry.kind === 'status') {
+                          const s = entry.data;
+                          const closed = s.to_status === 'closed';
+                          return (
+                            <div
+                              key={`s-${s.id}`}
+                              className="flex items-center gap-2 text-xs text-muted-foreground italic justify-center py-1"
+                            >
+                              {closed ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+                              <span>
+                                {closed ? 'Conversa tancada' : 'Conversa reoberta'} per{' '}
+                                <strong className="not-italic">{s.actor_name || 'sistema'}</strong> ·{' '}
+                                {new Date(s.created_at).toLocaleString('ca-ES')}
+                              </span>
+                            </div>
+                          );
+                        }
+                        const r = entry.data;
+                        return (
+                          <div
+                            key={`r-${r.id}`}
+                            className={`rounded p-3 whitespace-pre-wrap text-sm border ${
+                              r.direction === 'admin'
+                                ? 'bg-primary/5 border-primary/30 ml-6'
+                                : 'bg-muted border-transparent mr-6'
+                            }`}
+                          >
+                            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-2 flex-wrap">
+                              <strong>{r.direction === 'admin' ? (r.author_name || 'Administració') : m.name}</strong>
+                              <span>· {new Date(r.created_at).toLocaleString('ca-ES')}</span>
+                              {r.direction === 'admin' && (
+                                r.email_sent ? (
+                                  <span className="text-emerald-600">· enviat</span>
+                                ) : (
+                                  <span className="text-destructive flex items-center gap-1">
+                                    <AlertCircle className="h-3 w-3" /> correu no enviat
+                                  </span>
+                                )
+                              )}
+                            </div>
+                            {r.body}
+                            {r.email_error && (
+                              <div className="text-xs text-destructive mt-1">{r.email_error}</div>
                             )}
                           </div>
-                          {r.body}
-                          {r.email_error && (
-                            <div className="text-xs text-destructive mt-1">{r.email_error}</div>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     {/* Reply form */}
