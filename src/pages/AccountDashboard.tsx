@@ -103,6 +103,13 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
     company_name: '',
   });
   const [saving, setSaving] = useState(false);
+  const [provinceError, setProvinceError] = useState(false);
+
+  const validateProvince = () => {
+    const required = form.country === 'ES' && !form.province?.trim();
+    setProvinceError(required);
+    return !required;
+  };
 
   // Auth credentials state
   const [currentEmail, setCurrentEmail] = useState('');
