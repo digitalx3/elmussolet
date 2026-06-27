@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { notify } from '@/lib/notify';
 import PublicListSteps from '@/components/list/PublicListSteps';
+import NoIndex from '@/components/seo/NoIndex';
 
 const BirthListAccessPage: React.FC = () => {
   const { t } = useTranslation();
