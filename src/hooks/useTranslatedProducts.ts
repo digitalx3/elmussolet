@@ -160,7 +160,7 @@ export function useTranslatedProducts(filters: ProductFilters = {}) {
 
       let products: TranslatedProduct[] = (data || []).map((p: any) => {
         const tr = Array.isArray(p.product_translations) ? p.product_translations[0] : p.product_translations;
-        return mapProduct(p, tr);
+        return mapProduct(p, tr, lang);
       });
 
       if (filters.search) {
