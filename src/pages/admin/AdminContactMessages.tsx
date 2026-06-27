@@ -41,6 +41,22 @@ const AdminContactMessages: React.FC = () => {
     },
   });
 
+  const { data: statusLogByMsg = {} } = useQuery({
+    queryKey: ['contact-message-status-log'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('contact_message_status_log')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      const grouped: Record<string, any[]> = {};
+      for (const r of data || []) {
+        (grouped[(r as any).message_id] ||= []).push(r);
+      }
+      return grouped;
+    },
+  });
+
   const markRead = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('contact_messages').update({ is_read: true }).eq('id', id);
@@ -59,6 +75,7 @@ const AdminContactMessages: React.FC = () => {
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['contact-messages'] });
+      qc.invalidateQueries({ queryKey: ['contact-message-status-log'] });
       notify.success(vars.status === 'closed' ? 'Conversa tancada' : 'Conversa reoberta');
     },
     onError: (e: any) => notify.error(e?.message || 'Error'),
@@ -118,6 +135,11 @@ const AdminContactMessages: React.FC = () => {
           {messages.map((m: any) => {
             const isOpen = openId === m.id;
             const replies = (repliesByMsg as any)[m.id] || [];
+            const statusLog = (statusLogByMsg as any)[m.id] || [];
+            const timeline = [
+              ...replies.map((r: any) => ({ kind: 'reply', at: r.created_at, data: r })),
+              ...statusLog.map((s: any) => ({ kind: 'status', at: s.created_at, data: s })),
+            ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
             const status = m.status || 'open';
             const draft = replyDrafts[m.id] ?? '';
             return (
@@ -168,34 +190,54 @@ const AdminContactMessages: React.FC = () => {
                         </div>
                         {m.message}
                       </div>
-                      {replies.map((r: any) => (
-                        <div
-                          key={r.id}
-                          className={`rounded p-3 whitespace-pre-wrap text-sm border ${
-                            r.direction === 'admin'
-                              ? 'bg-primary/5 border-primary/30 ml-6'
-                              : 'bg-muted border-transparent mr-6'
-                          }`}
-                        >
-                          <div className="text-xs text-muted-foreground mb-1 flex items-center gap-2 flex-wrap">
-                            <strong>{r.direction === 'admin' ? (r.author_name || 'Administració') : m.name}</strong>
-                            <span>· {new Date(r.created_at).toLocaleString('ca-ES')}</span>
-                            {r.direction === 'admin' && (
-                              r.email_sent ? (
-                                <span className="text-emerald-600">· enviat</span>
-                              ) : (
-                                <span className="text-destructive flex items-center gap-1">
-                                  <AlertCircle className="h-3 w-3" /> correu no enviat
-                                </span>
-                              )
+                      {timeline.map((entry: any) => {
+                        if (entry.kind === 'status') {
+                          const s = entry.data;
+                          const closed = s.to_status === 'closed';
+                          return (
+                            <div
+                              key={`s-${s.id}`}
+                              className="flex items-center gap-2 text-xs text-muted-foreground italic justify-center py-1"
+                            >
+                              {closed ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+                              <span>
+                                {closed ? 'Conversa tancada' : 'Conversa reoberta'} per{' '}
+                                <strong className="not-italic">{s.actor_name || 'sistema'}</strong> ·{' '}
+                                {new Date(s.created_at).toLocaleString('ca-ES')}
+                              </span>
+                            </div>
+                          );
+                        }
+                        const r = entry.data;
+                        return (
+                          <div
+                            key={`r-${r.id}`}
+                            className={`rounded p-3 whitespace-pre-wrap text-sm border ${
+                              r.direction === 'admin'
+                                ? 'bg-primary/5 border-primary/30 ml-6'
+                                : 'bg-muted border-transparent mr-6'
+                            }`}
+                          >
+                            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-2 flex-wrap">
+                              <strong>{r.direction === 'admin' ? (r.author_name || 'Administració') : m.name}</strong>
+                              <span>· {new Date(r.created_at).toLocaleString('ca-ES')}</span>
+                              {r.direction === 'admin' && (
+                                r.email_sent ? (
+                                  <span className="text-emerald-600">· enviat</span>
+                                ) : (
+                                  <span className="text-destructive flex items-center gap-1">
+                                    <AlertCircle className="h-3 w-3" /> correu no enviat
+                                  </span>
+                                )
+                              )}
+                            </div>
+                            {r.body}
+                            {r.email_error && (
+                              <div className="text-xs text-destructive mt-1">{r.email_error}</div>
                             )}
                           </div>
-                          {r.body}
-                          {r.email_error && (
-                            <div className="text-xs text-destructive mt-1">{r.email_error}</div>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     {/* Reply form */}
