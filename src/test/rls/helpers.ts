@@ -1,11 +1,13 @@
 /* eslint-disable no-console */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { getRlsEnv } from "./env";
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? import.meta.env?.VITE_SUPABASE_URL;
-const SUPABASE_ANON = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY;
+const ENV = getRlsEnv();
+const SUPABASE_URL = ENV.supabaseUrl;
+const SUPABASE_ANON = ENV.supabaseAnonKey;
+const ADMIN_EMAIL = ENV.adminEmail;
+const ADMIN_PASSWORD = ENV.adminPassword;
 
-const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL ?? "admin@elmussolet.com";
-const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD ?? "Admin2026!Mussolet";
 
 export type RoleKey = "anon" | "user" | "owner" | "admin" | "super";
 
