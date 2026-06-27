@@ -12,6 +12,7 @@ import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
 import { notify } from '@/lib/notify';
 import PublicListSteps from '@/components/list/PublicListSteps';
+import NoIndex from '@/components/seo/NoIndex';
 
 interface ListSection {
   id: string;
@@ -188,6 +189,7 @@ const BirthListViewPage: React.FC = () => {
 
   return (
     <div className="container py-8 max-w-4xl mx-auto">
+      <NoIndex />
       <PublicListSteps current="view" />
       {/* Header */}
       <motion.div

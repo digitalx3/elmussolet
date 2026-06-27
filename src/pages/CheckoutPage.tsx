@@ -19,6 +19,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useShippingCost } from '@/hooks/useShippingCost';
+import NoIndex from '@/components/seo/NoIndex';
 
 const shippingSchema = z.object({
   fullName: z.string().trim().min(1, 'Required').max(100),
@@ -334,6 +335,7 @@ const CheckoutPage: React.FC = () => {
 
   return (
     <div className="container py-8 max-w-2xl mx-auto">
+      <NoIndex />
       {/* Step indicator */}
       <div className="flex items-center justify-center gap-2 mb-8">
         {steps.map((s, i) => (

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Copy, ExternalLink, RefreshCw } from 'lucide-react';
+import { Copy, ExternalLink, RefreshCw, Download, FileText } from 'lucide-react';
 import { useLanguages } from '@/hooks/useLanguages';
 import { notify } from '@/lib/notify';
 
@@ -17,6 +17,7 @@ const DEFAULT_HOST =
   typeof window !== 'undefined' ? window.location.origin : 'https://elmussolet.lovable.app';
 
 const FUNCTIONS_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sitemap`;
+const ROBOTS_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/robots`;
 
 const AdminMarketingSeo: React.FC = () => {
   const { t } = useTranslation();
@@ -51,6 +52,46 @@ const AdminMarketingSeo: React.FC = () => {
       v: String(tick),
     });
     return `${FUNCTIONS_BASE}?${params.toString()}`;
+  };
+
+  const buildRobotsUrl = (lang?: string) => {
+    const params = new URLSearchParams({
+      host: host.replace(/\/$/, ''),
+      v: String(tick),
+    });
+    if (lang) params.set('lang', lang);
+    return `${ROBOTS_BASE}?${params.toString()}`;
+  };
+
+  const [robotsPreview, setRobotsPreview] = React.useState<string>('');
+  const [robotsLoading, setRobotsLoading] = React.useState<boolean>(false);
+
+  const fetchRobots = async (lang?: string) => {
+    setRobotsLoading(true);
+    try {
+      const res = await fetch(buildRobotsUrl(lang));
+      const text = await res.text();
+      setRobotsPreview(text);
+      return text;
+    } catch (e) {
+      notify.error(t('common.error', 'Error'));
+      return '';
+    } finally {
+      setRobotsLoading(false);
+    }
+  };
+
+  const downloadRobots = async (lang?: string) => {
+    const text = await fetchRobots(lang);
+    if (!text) return;
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = lang ? `robots.${lang}.txt` : 'robots.txt';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
   };
 
   const copy = async (text: string) => {
@@ -197,6 +238,100 @@ const AdminMarketingSeo: React.FC = () => {
                 </div>
               );
             })}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            {t('admin.seo.robotsTitle', 'robots.txt')}
+          </CardTitle>
+          <CardDescription>
+            {t(
+              'admin.seo.robotsDesc',
+              'Genera el robots.txt amb la directiva Sitemap i bloqueja les llistes privades, comptes, cistella, checkout i admin. Disponible global i per idioma.',
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-md border-2 border-primary/40 bg-primary/5 p-3 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="font-medium text-sm">
+                  {t('admin.seo.robotsGlobal', 'robots.txt global (totes les llengües)')}
+                </div>
+                <div className="text-xs text-muted-foreground">/robots.txt</div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button size="sm" variant="outline" onClick={() => fetchRobots()} disabled={robotsLoading} className="gap-1">
+                  <RefreshCw className="h-4 w-4" />
+                  {t('admin.seo.previewRobots', 'Previsualitzar')}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => copy(buildRobotsUrl())} className="gap-1">
+                  <Copy className="h-4 w-4" />
+                  {t('admin.seo.copy', 'Copiar')}
+                </Button>
+                <Button size="sm" onClick={() => downloadRobots()} disabled={robotsLoading} className="gap-1">
+                  <Download className="h-4 w-4" />
+                  {t('admin.seo.downloadRobots', 'Descarregar robots.txt')}
+                </Button>
+              </div>
+            </div>
+            <div className="text-xs bg-background p-2 rounded font-mono break-all">{buildRobotsUrl()}</div>
+            <p className="text-xs text-muted-foreground">
+              {t(
+                'admin.seo.robotsSaveHint',
+                "Descarrega el fitxer i substitueix public/robots.txt al projecte perquè es publiqui a l'arrel del domini.",
+              )}
+            </p>
+          </div>
+
+          {languages.map((lng) => {
+            const u = buildRobotsUrl(lng.code);
+            return (
+              <div key={`r-${lng.code}`} className="rounded-md border p-3 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <div className="font-medium text-sm">
+                      {lng.native_name} ({lng.code})
+                    </div>
+                    <div className="text-xs text-muted-foreground">/{lng.code}/robots.txt</div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={() => fetchRobots(lng.code)} disabled={robotsLoading} className="gap-1">
+                      <RefreshCw className="h-4 w-4" />
+                      {t('admin.seo.previewRobots', 'Previsualitzar')}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => copy(u)} className="gap-1">
+                      <Copy className="h-4 w-4" />
+                      {t('admin.seo.copy', 'Copiar')}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => downloadRobots(lng.code)} disabled={robotsLoading} className="gap-1">
+                      <Download className="h-4 w-4" />
+                      {t('admin.seo.download', 'Descarregar')}
+                    </Button>
+                    <Button size="sm" variant="outline" asChild className="gap-1">
+                      <a href={u} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                        {t('admin.seo.open', 'Obrir')}
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+                <div className="text-xs bg-muted p-2 rounded font-mono break-all">{u}</div>
+              </div>
+            );
+          })}
+
+          {robotsPreview && (
+            <div>
+              <Label className="text-xs">{t('admin.seo.robotsPreview', 'Previsualització')}</Label>
+              <pre className="mt-1 text-xs bg-muted p-3 rounded max-h-80 overflow-auto whitespace-pre-wrap">
+{robotsPreview}
+              </pre>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

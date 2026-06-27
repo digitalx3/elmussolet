@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { notify } from '@/lib/notify';
 import PublicListSteps from '@/components/list/PublicListSteps';
+import NoIndex from '@/components/seo/NoIndex';
 
 const BirthListAccessPage: React.FC = () => {
   const { t } = useTranslation();
@@ -65,6 +66,7 @@ const BirthListAccessPage: React.FC = () => {
 
   return (
     <div className="container py-12 max-w-md mx-auto">
+      <NoIndex />
       <PublicListSteps current="access" />
       <div className="text-center mb-8">
         <Heart className="h-10 w-10 text-primary mx-auto mb-4" />
