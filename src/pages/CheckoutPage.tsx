@@ -218,6 +218,7 @@ const CheckoutPage: React.FC = () => {
               city: shippingAddress?.city ?? null,
               postal_code: shippingAddress?.postal_code ?? null,
               province: shippingAddress?.province ?? null,
+              country: shippingAddress?.country ?? 'ES',
             })
             .select('id')
             .single();
