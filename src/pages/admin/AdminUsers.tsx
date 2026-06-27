@@ -68,6 +68,7 @@ const emptyForm: UserFormState = {
   city: '',
   postal_code: '',
   province: '',
+  country: 'ES',
   nif: '',
   company_name: '',
   send_welcome_email: true,
