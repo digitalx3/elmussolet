@@ -84,6 +84,7 @@ const AdminUsers: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<UserFormState>(emptyForm);
   const [editMode, setEditMode] = useState(false);
+  const [provinceError, setProvinceError] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteMode, setDeleteMode] = useState<'soft' | 'hard' | null>(null);
   const [restoreId, setRestoreId] = useState<string | null>(null);
@@ -162,6 +163,11 @@ const AdminUsers: React.FC = () => {
       if (form.password && form.password.length < 6) {
         throw new Error("La contrasenya ha de tenir almenys 6 caràcters");
       }
+      if (form.country === 'ES' && !form.province?.trim()) {
+        setProvinceError(true);
+        throw new Error(t('errors.provinceRequired'));
+      }
+      setProvinceError(false);
       const body: any = {
         action,
         full_name: form.full_name,
