@@ -36,11 +36,23 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Fetch admin credentials via GitHub OIDC
+      - name: Resolve admin credentials
         id: bootstrap
+        env:
+          GITHUB_TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
+          GITHUB_TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
         run: |
           set +x
           set -euo pipefail
+          if [ -n "${GITHUB_TEST_ADMIN_EMAIL:-}" ] && [ -n "${GITHUB_TEST_ADMIN_PASSWORD:-}" ]; then
+            echo "::add-mask::$GITHUB_TEST_ADMIN_EMAIL"
+            echo "::add-mask::$GITHUB_TEST_ADMIN_PASSWORD"
+            echo "TEST_ADMIN_EMAIL=$GITHUB_TEST_ADMIN_EMAIL" >> "$GITHUB_ENV"
+            echo "TEST_ADMIN_PASSWORD=$GITHUB_TEST_ADMIN_PASSWORD" >> "$GITHUB_ENV"
+            echo "Credentials resolved from GitHub Actions secrets (values masked)."
+            exit 0
+          fi
+
           # Never echo the OIDC token or the bootstrap response in clear:
           # mask any non-empty value we extract from them before any other step
           # has a chance to print it.
