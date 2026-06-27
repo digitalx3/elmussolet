@@ -87,6 +87,7 @@ const AdminProductForm: React.FC = () => {
     images: [],
     variants: [],
     related_product_ids: [],
+    cross_sell_product_ids: [],
   });
 
   const [translationErrors, setTranslationErrors] = useState<TranslationErrors>({});
@@ -209,8 +210,13 @@ const AdminProductForm: React.FC = () => {
         };
       }
 
-      const relatedSorted = ((product as any).product_relations || [])
-        .slice()
+      const allRels = ((product as any).product_relations || []).slice();
+      const relatedSorted = allRels
+        .filter((r: any) => (r.relation_type ?? 'upsell') === 'upsell')
+        .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+        .map((r: any) => r.related_product_id as string);
+      const crossSellSorted = allRels
+        .filter((r: any) => r.relation_type === 'cross_sell')
         .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
         .map((r: any) => r.related_product_id as string);
       setForm({
@@ -243,6 +249,7 @@ const AdminProductForm: React.FC = () => {
           is_active: v.is_active, variant_type_id: v.variant_type_id,
         })),
         related_product_ids: relatedSorted,
+        cross_sell_product_ids: crossSellSorted,
       });
     }
   }, [product, isNew, languages]);
