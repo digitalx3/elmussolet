@@ -135,6 +135,56 @@ const AdminMarketingSeo: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
+            <RefreshCw className="h-5 w-5" />
+            {t('admin.seo.regenTitle', 'Regenerar sense desplegar')}
+          </CardTitle>
+          <CardDescription>
+            {t(
+              'admin.seo.regenDesc',
+              'Genera ara mateix robots.txt i tots els sitemaps amb el contingut actual i els puja a Cloud Storage. Els fitxers de l’arrel del domini només es refresquen amb un desplegament; aquests s’actualitzen al moment.',
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button onClick={regenerate} disabled={regenerating} className="gap-2">
+            <RefreshCw className={`h-4 w-4 ${regenerating ? 'animate-spin' : ''}`} />
+            {regenerating
+              ? t('admin.seo.regenerating', 'Regenerant…')
+              : t('admin.seo.regenerateNow', 'Regenerar ara')}
+          </Button>
+          {live && (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                {t('admin.seo.regenAt', 'Última regeneració:')}{' '}
+                {new Date(live.generated_at).toLocaleString()}
+              </p>
+              <UrlRow
+                primary
+                title={t('admin.seo.liveIndex', 'Sitemap index (live)')}
+                subtitle="Storage"
+                url={live.sitemapIndex}
+              />
+              {live.sitemaps.map((s) => (
+                <UrlRow
+                  key={s.lang}
+                  title={`Sitemap ${s.lang} (live)`}
+                  subtitle="Storage"
+                  url={s.url}
+                />
+              ))}
+              <UrlRow
+                title={t('admin.seo.liveRobots', 'robots.txt (live)')}
+                subtitle="Storage"
+                url={live.robots}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
             <MapIcon className="h-5 w-5" />
             {t('admin.seo.sitemapsTitle', 'Sitemaps')}
           </CardTitle>
