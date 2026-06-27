@@ -176,6 +176,7 @@ const CheckoutPage: React.FC = () => {
         city: shippingData.city,
         postal_code: shippingData.postalCode,
         province: shippingData.province,
+        country: shippingData.country,
       } : null;
 
       // Upsert customer record (linked to auth user)
