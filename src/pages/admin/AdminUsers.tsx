@@ -509,7 +509,7 @@ const AdminUsers: React.FC = () => {
                   <Label>Adreça (línia 2)</Label>
                   <Input value={form.address_line2} onChange={e => setForm({ ...form, address_line2: e.target.value })} />
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>Població</Label>
                     <Input value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} />
@@ -518,11 +518,16 @@ const AdminUsers: React.FC = () => {
                     <Label>Codi postal</Label>
                     <Input value={form.postal_code} onChange={e => setForm({ ...form, postal_code: e.target.value })} />
                   </div>
-                  <div>
-                    <Label>Província</Label>
-                    <Input value={form.province} onChange={e => setForm({ ...form, province: e.target.value })} />
-                  </div>
                 </div>
+                <CountryProvinceSelect
+                  country={form.country}
+                  province={form.province}
+                  onCountryChange={(v) => setForm({ ...form, country: v })}
+                  onProvinceChange={(v) => setForm({ ...form, province: v })}
+                  countryLabel="País"
+                  provinceLabel="Província"
+                />
+
               </div>
             </div>
 
