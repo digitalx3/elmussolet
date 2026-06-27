@@ -73,14 +73,33 @@ const RegisterPage: React.FC = () => {
     const { data, error } = await supabase.functions.invoke('secure-signup', {
       body: { email, password, full_name: fullName },
     });
-    if (error || (data as any)?.error) {
+
+    // Try to extract the JSON error body when the function returned non-2xx
+    let payload: any = data;
+    if (error && (error as any).context?.json) {
+      try { payload = await (error as any).context.json(); } catch { /* ignore */ }
+    } else if (error && (error as any).context?.text) {
+      try { payload = JSON.parse(await (error as any).context.text()); } catch { /* ignore */ }
+    }
+
+    if (error || payload?.error) {
       setLoading(false);
-      const msg = (data as any)?.error === 'weak_password'
-        ? t('auth.passwordRequirementsNotMet')
-        : (data as any)?.error || error?.message || 'Error';
-      notify.error(typeof msg === 'string' ? msg : 'Error');
+      const code = payload?.error;
+      if (code === 'weak_password' && Array.isArray(payload?.failed_rules)) {
+        const ruleLabels = payload.failed_rules
+          .map((k: string) => t(`auth.passwordRules.${k}`))
+          .filter(Boolean);
+        notify.error(`${t('auth.weakPasswordIntro')} ${ruleLabels.join(', ')}`);
+      } else if (code === 'invalid_email') {
+        notify.error(t('auth.invalidEmail'));
+      } else if (typeof code === 'string' && /already|registered|exists/i.test(code)) {
+        notify.error(t('auth.emailAlreadyRegistered'));
+      } else {
+        notify.error(typeof code === 'string' ? code : error?.message || 'Error');
+      }
       return;
     }
+
     const { error: signInErr } = await signIn(email, password);
     setLoading(false);
     if (signInErr) {
