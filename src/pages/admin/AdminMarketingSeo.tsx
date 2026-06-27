@@ -54,6 +54,46 @@ const AdminMarketingSeo: React.FC = () => {
     return `${FUNCTIONS_BASE}?${params.toString()}`;
   };
 
+  const buildRobotsUrl = (lang?: string) => {
+    const params = new URLSearchParams({
+      host: host.replace(/\/$/, ''),
+      v: String(tick),
+    });
+    if (lang) params.set('lang', lang);
+    return `${ROBOTS_BASE}?${params.toString()}`;
+  };
+
+  const [robotsPreview, setRobotsPreview] = React.useState<string>('');
+  const [robotsLoading, setRobotsLoading] = React.useState<boolean>(false);
+
+  const fetchRobots = async (lang?: string) => {
+    setRobotsLoading(true);
+    try {
+      const res = await fetch(buildRobotsUrl(lang));
+      const text = await res.text();
+      setRobotsPreview(text);
+      return text;
+    } catch (e) {
+      notify.error(t('common.error', 'Error'));
+      return '';
+    } finally {
+      setRobotsLoading(false);
+    }
+  };
+
+  const downloadRobots = async (lang?: string) => {
+    const text = await fetchRobots(lang);
+    if (!text) return;
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = lang ? `robots.${lang}.txt` : 'robots.txt';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  };
+
   const copy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
