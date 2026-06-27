@@ -78,6 +78,19 @@ const AdminOrders: React.FC = () => {
   const [editing, setEditing] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [productResults, setProductResults] = useState<any[]>([]);
+
+  // Site settings for delivery note header (logo + fiscal data)
+  const { data: siteSettings } = useQuery({
+    queryKey: ['site-settings-delivery-note'],
+    queryFn: async () => {
+      const keys = ['store_name', 'store_nif', 'store_address', 'store_email', 'store_phone', 'logo_header_url'];
+      const { data } = await supabase.from('site_settings').select('key, value').in('key', keys);
+      const map: Record<string, string> = {};
+      (data || []).forEach((r: any) => { map[r.key] = r.value || ''; });
+      return map;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
   const [auditOpen, setAuditOpen] = useState(false);
   const [auditDetail, setAuditDetail] = useState<any | null>(null);
 
@@ -590,7 +603,14 @@ const AdminOrders: React.FC = () => {
                       deliveryMethod: getDeliveryLabel(selectedOrder.delivery_method),
                       notes: selectedOrder.notes,
                       lines,
-                      siteName: 'El Mussolet',
+                      company: {
+                        name: siteSettings?.store_name || 'El Mussolet',
+                        nif: siteSettings?.store_nif || null,
+                        address: siteSettings?.store_address || null,
+                        email: siteSettings?.store_email || null,
+                        phone: siteSettings?.store_phone || null,
+                        logoUrl: siteSettings?.logo_header_url || null,
+                      },
                       labels: {
                         title: t('admin.deliveryNoteTitle', 'Albarà'),
                         order: t('admin.orderNumber', 'Comanda'),
@@ -608,6 +628,9 @@ const AdminOrders: React.FC = () => {
                           'admin.deliveryNoteNoPrices',
                           'Document intern d\'enviament. No conté preus ni informació fiscal.',
                         ),
+                        print: t('admin.print', 'Imprimir'),
+                        downloadPdf: t('admin.downloadPdf', 'Descarregar PDF'),
+                        close: t('admin.close', 'Tancar'),
                       },
                     });
                   }}
