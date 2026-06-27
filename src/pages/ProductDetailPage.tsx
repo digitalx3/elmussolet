@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { notify } from '@/lib/notify';
-import { useProductBySlug, useRelatedProducts } from '@/hooks/useTranslatedProducts';
+import { useProductBySlug, useRelatedProducts, useCrossSellProducts } from '@/hooks/useTranslatedProducts';
 import { useCart } from '@/contexts/CartContext';
 import { computePrice, formatPriceEUR } from '@/lib/pricing';
 
@@ -23,6 +23,7 @@ const ProductDetailPage: React.FC = () => {
   const { addStandardItem, addListItem, requestUpsell } = useCart();
   const { data: product, isLoading, error } = useProductBySlug(slug);
   const { data: relatedProducts = [] } = useRelatedProducts(product?.id);
+  const { data: crossSellProducts = [] } = useCrossSellProducts(product?.id);
 
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
