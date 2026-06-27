@@ -335,6 +335,7 @@ const CheckoutPage: React.FC = () => {
 
   return (
     <div className="container py-8 max-w-2xl mx-auto">
+      <NoIndex />
       {/* Step indicator */}
       <div className="flex items-center justify-center gap-2 mb-8">
         {steps.map((s, i) => (
