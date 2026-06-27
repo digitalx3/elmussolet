@@ -310,37 +310,41 @@ const ProductDetailPage: React.FC = () => {
           </div>
 
           {isDiscontinued && (
-            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3">
-              <p className="text-sm font-semibold text-destructive mb-2">
-                Aquest producte està descatalogat.
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-3">
+              <p className="text-sm font-semibold text-destructive">
+                {product.replacement
+                  ? t('products.discontinuedWithReplacement', { name: product.replacement.name })
+                  : t('products.discontinuedTitle')}
               </p>
               {product.replacement ? (
-                <Link
-                  to={`/producte/${product.replacement.slug}`}
-                  className="flex items-center gap-3 rounded-md border bg-background p-2 hover:border-primary transition-colors"
-                >
+                <div className="flex items-center gap-3 rounded-md border bg-background p-2">
                   {product.replacement.image ? (
                     <img
                       src={product.replacement.image}
                       alt={product.replacement.name}
-                      className="h-12 w-12 rounded object-cover"
+                      className="h-14 w-14 rounded object-cover flex-shrink-0"
                     />
                   ) : (
-                    <div className="h-12 w-12 rounded bg-muted" />
+                    <div className="h-14 w-14 rounded bg-muted flex-shrink-0" />
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                      Producte substitut
+                      {t('products.replacementLabel')}
                     </div>
                     <div className="text-sm font-medium truncate">
                       {product.replacement.name}
                     </div>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </Link>
+                  <Button asChild size="sm" variant="default" className="gap-1 flex-shrink-0">
+                    <Link to={`/producte/${product.replacement.slug}`}>
+                      {t('products.viewReplacement')}
+                      <ChevronRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Contacta'ns per a més informació sobre alternatives.
+                  {t('products.noReplacement')}
                 </p>
               )}
             </div>
