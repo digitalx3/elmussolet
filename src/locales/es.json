@@ -39,7 +39,22 @@
     "updatePassword": "Actualizar contraseña",
     "passwordUpdated": "¡Contraseña actualizada!",
     "redirecting": "Redirigiendo...",
-    "invalidResetLink": "Enlace no válido o caducado. Vuelve a solicitar la recuperación."
+    "invalidResetLink": "Enlace no válido o caducado. Vuelve a solicitar la recuperación.",
+    "passwordRequirementsNotMet": "La contraseña no cumple todos los requisitos.",
+    "passwordStrength": {
+      "label": "Fortaleza de la contraseña",
+      "weak": "Débil",
+      "fair": "Aceptable",
+      "good": "Buena",
+      "strong": "Fuerte"
+    },
+    "passwordRules": {
+      "length": "Al menos 8 caracteres",
+      "uppercase": "Una letra mayúscula (A-Z)",
+      "lowercase": "Una letra minúscula (a-z)",
+      "number": "Un número (0-9)",
+      "special": "Un carácter especial (!@#$...)"
+    }
   },
   "home": {
     "heroTitle": "Tu tienda de puericultura de confianza",
