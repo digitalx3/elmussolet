@@ -112,7 +112,9 @@
     "discontinuedWithReplacement": "Este producto está descatalogado. Ha sido sustituido por {{name}}.",
     "replacementLabel": "Producto sustituto",
     "viewReplacement": "Ver producto sustituto",
-    "noReplacement": "Contáctanos para más información sobre alternativas."
+    "noReplacement": "Contáctanos para más información sobre alternativas.",
+    "relatedProducts": "Productos relacionados...",
+    "crossSellProducts": "Productos que te pueden interesar..."
   },
   "cart": {
     "title": "Cesta",
