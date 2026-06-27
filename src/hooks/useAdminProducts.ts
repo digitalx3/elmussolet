@@ -239,13 +239,23 @@ export function useSaveProduct() {
 
       return productId;
     },
-    onSuccess: () => {
+    onSuccess: (productId) => {
       qc.invalidateQueries({ queryKey: ['admin-products'] });
       qc.invalidateQueries({ queryKey: ['admin-product'] });
       qc.invalidateQueries({ queryKey: ['products'] });
       qc.invalidateQueries({ queryKey: ['featured-products'] });
-      qc.invalidateQueries({ queryKey: ['related-products'] });
-      qc.invalidateQueries({ queryKey: ['cross-sell-products'] });
+      // Invalidate relation caches across all languages for this product
+      qc.invalidateQueries({ queryKey: ['related-products'], exact: false });
+      qc.invalidateQueries({ queryKey: ['cross-sell-products'], exact: false });
+      // Also remove any cached entries scoped to this productId to force a fresh fetch
+      if (productId) {
+        qc.removeQueries({ predicate: (q) => {
+          const k = q.queryKey;
+          return Array.isArray(k)
+            && (k[0] === 'related-products' || k[0] === 'cross-sell-products')
+            && k[1] === productId;
+        }});
+      }
     },
   });
 }
