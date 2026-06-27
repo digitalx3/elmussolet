@@ -9,6 +9,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useListAccess } from '@/contexts/ListAccessContext';
 import CartItemRow from '@/components/cart/CartItemRow';
 import PublicListSteps from '@/components/list/PublicListSteps';
+import NoIndex from '@/components/seo/NoIndex';
 
 
 const CartPage: React.FC = () => {
