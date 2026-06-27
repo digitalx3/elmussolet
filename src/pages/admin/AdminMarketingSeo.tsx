@@ -173,7 +173,7 @@ const AdminMarketingSeo: React.FC = () => {
           <CardDescription>
             {t(
               'admin.seo.regenDesc',
-              'Genera ara mateix robots.txt i tots els sitemaps amb el contingut actual i els puja a Cloud Storage. Els fitxers de l’arrel del domini només es refresquen amb un desplegament; aquests s’actualitzen al moment.',
+              'Genera ara mateix robots.txt i tots els sitemaps amb el contingut actual. Els fitxers de l’arrel del domini només es refresquen amb un desplegament; aquests s’actualitzen al moment.',
             )}
           </CardDescription>
         </CardHeader>

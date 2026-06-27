@@ -11,8 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 const PROVIDERS: { id: AiProvider; label: string; description: string; secretName?: string; secretUrl?: string }[] = [
   {
     id: 'lovable',
-    label: 'Lovable AI (recomanat)',
-    description: "Inclòs amb la plataforma. No requereix configurar cap clau. Accés a models Gemini, GPT i Claude pagant per ús a través de Lovable.",
+    label: 'CIBAI (recomanat)',
+    description: "Inclòs amb la plataforma. No requereix configurar cap clau. Accés a models Gemini, GPT i Claude pagant per ús a través de CIBAI.",
   },
   {
     id: 'openai',
