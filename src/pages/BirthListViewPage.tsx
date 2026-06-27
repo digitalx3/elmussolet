@@ -189,6 +189,7 @@ const BirthListViewPage: React.FC = () => {
 
   return (
     <div className="container py-8 max-w-4xl mx-auto">
+      <NoIndex />
       <PublicListSteps current="view" />
       {/* Header */}
       <motion.div
