@@ -135,6 +135,11 @@ const AdminContactMessages: React.FC = () => {
           {messages.map((m: any) => {
             const isOpen = openId === m.id;
             const replies = (repliesByMsg as any)[m.id] || [];
+            const statusLog = (statusLogByMsg as any)[m.id] || [];
+            const timeline = [
+              ...replies.map((r: any) => ({ kind: 'reply', at: r.created_at, data: r })),
+              ...statusLog.map((s: any) => ({ kind: 'status', at: s.created_at, data: s })),
+            ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
             const status = m.status || 'open';
             const draft = replyDrafts[m.id] ?? '';
             return (
