@@ -81,6 +81,7 @@ const AdminProductForm: React.FC = () => {
     category_id: null, brand_id: null, tax_rate_id: null,
     sale_price_type: null, sale_value: null, sale_starts_at: null, sale_ends_at: null,
     is_featured: false, featured_order: null,
+    replacement_product_id: null,
     translations: {},
     images: [],
     variants: [],
