@@ -201,6 +201,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
             <ShoppingBag className="h-4 w-4" />
           </Button>
         </div>
+        <ReplacementBlock compact />
       </div>
     </Link>
   );
