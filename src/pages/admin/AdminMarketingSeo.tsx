@@ -233,33 +233,22 @@ const AdminMarketingSeo: React.FC = () => {
             )}
           </p>
           {live && (
-            <div className="space-y-3">
+            <div className="space-y-2 rounded-md border p-3 bg-muted/30">
               <p className="text-xs text-muted-foreground">
                 {t('admin.seo.regenAt', 'Última regeneració:')}{' '}
                 {new Date(live.generated_at).toLocaleString()}
               </p>
-              <UrlRow
-                primary
-                title={t('admin.seo.liveIndex', 'Sitemap index (live)')}
-                subtitle="Storage"
-                url={live.sitemapIndex}
-                stampKey="sitemap-index"
-              />
-              {live.sitemaps.map((s) => (
-                <UrlRow
-                  key={s.lang}
-                  title={`Sitemap ${s.lang} (live)`}
-                  subtitle="Storage"
-                  url={s.url}
-                  stampKey={`sitemap-${s.lang}`}
-                />
-              ))}
-              <UrlRow
-                title={t('admin.seo.liveRobots', 'robots.txt (live)')}
-                subtitle="Storage"
-                url={live.robots}
-                stampKey="robots"
-              />
+              <ul className="text-sm space-y-1">
+                {(live.regenerated || []).map((p) => {
+                  const name = p.split('/').pop() || p;
+                  return (
+                    <li key={p} className="flex items-center gap-2">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+                      <span className="font-mono text-xs">{name}</span>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           )}
         </CardContent>
