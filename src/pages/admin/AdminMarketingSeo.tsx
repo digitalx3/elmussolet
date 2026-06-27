@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Copy, ExternalLink, RefreshCw } from 'lucide-react';
+import { Copy, ExternalLink, RefreshCw, Download, FileText } from 'lucide-react';
 import { useLanguages } from '@/hooks/useLanguages';
 import { notify } from '@/lib/notify';
 
