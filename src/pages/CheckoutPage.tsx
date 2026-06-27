@@ -19,6 +19,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useShippingCost } from '@/hooks/useShippingCost';
+import NoIndex from '@/components/seo/NoIndex';
 
 const shippingSchema = z.object({
   fullName: z.string().trim().min(1, 'Required').max(100),
