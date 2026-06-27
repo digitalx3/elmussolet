@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import i18next from 'i18next';
 
 // Re-create the schema here to test the validation logic without UI coupling.
 const shippingSchema = z.object({
@@ -16,7 +15,7 @@ const shippingSchema = z.object({
   if (data.country === 'ES' && !data.province.trim()) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: i18next.t('errors.provinceRequired'),
+      message: 'La província és obligatòria per a Espanya.',
       path: ['province'],
     });
   }
