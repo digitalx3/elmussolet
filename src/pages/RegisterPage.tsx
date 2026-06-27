@@ -154,7 +154,7 @@ const RegisterPage: React.FC = () => {
         </Button>
         <p className="text-center text-sm text-muted-foreground">
           {t('auth.hasAccount')}{' '}
-          <Link to="/login" className="text-primary hover:underline">{t('auth.login')}</Link>
+          <Link to="/login" state={from ? { from: { pathname: from } } : undefined} className="text-primary hover:underline">{t('auth.login')}</Link>
         </p>
       </form>
     </div>
