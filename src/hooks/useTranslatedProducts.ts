@@ -46,6 +46,7 @@ export interface TranslatedProduct {
   description: string;
   primaryImage: string | null;
   createdAt: string;
+  replacement: { id: string; slug: string; name: string; image: string | null } | null;
 }
 
 function mapProduct(p: any, translation: any): TranslatedProduct {
