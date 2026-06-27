@@ -43,6 +43,16 @@ const AdminMarketingSeo: React.FC = () => {
     return `${FUNCTIONS_BASE}?${params.toString()}`;
   };
 
+  const buildIndexUrl = () => {
+    const params = new URLSearchParams({
+      index: '1',
+      host: host.replace(/\/$/, ''),
+      types: activeTypes.join(','),
+      v: String(tick),
+    });
+    return `${FUNCTIONS_BASE}?${params.toString()}`;
+  };
+
   const copy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
