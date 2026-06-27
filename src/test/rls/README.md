@@ -14,6 +14,8 @@ Suite d'integració que valida que cada rol (anon, usuari autenticat, propietari
 bun run test:rls
 ```
 
+Abans d'arrencar Vitest, `pretest:rls` executa `scripts/check-rls-env.ts` i atura la suite ràpidament si falten `VITE_SUPABASE_URL` o `VITE_SUPABASE_PUBLISHABLE_KEY`.
+
 La suite no entra al `bun test` per defecte (afecta dades reals i requereix xarxa).
 
 ## Configuració d'entorn (CI i local consistents)
