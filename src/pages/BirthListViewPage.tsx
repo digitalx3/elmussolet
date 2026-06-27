@@ -12,6 +12,7 @@ import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
 import { notify } from '@/lib/notify';
 import PublicListSteps from '@/components/list/PublicListSteps';
+import NoIndex from '@/components/seo/NoIndex';
 
 interface ListSection {
   id: string;
