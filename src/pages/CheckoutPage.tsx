@@ -91,6 +91,7 @@ const CheckoutPage: React.FC = () => {
       city: profile?.city ?? '',
       postalCode: profile?.postal_code ?? '',
       province: profile?.province ?? '',
+      country: (profile as any)?.country ?? 'ES',
     },
   });
 
