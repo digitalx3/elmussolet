@@ -18,10 +18,11 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
-import { Search, Eye, X, Pencil, Trash2, Plus, Check, Ban, History } from 'lucide-react';
+import { Search, Eye, X, Pencil, Trash2, Plus, Check, Ban, History, Printer } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { format } from 'date-fns';
 import { ca, es } from 'date-fns/locale';
+import { printDeliveryNote } from '@/lib/printDeliveryNote';
 
 const PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'refunded'] as const;
 type PaymentStatus = typeof PAYMENT_STATUSES[number];
