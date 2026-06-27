@@ -376,6 +376,8 @@ function useRelationsByType(productId: string | undefined, relationType: 'upsell
   return useQuery({
     queryKey: [queryKey, productId, lang],
     enabled: !!productId,
+    staleTime: 0,
+    refetchOnMount: 'always',
     queryFn: async () => {
       const { data: rels, error: relErr } = await supabase
         .from('product_relations')
