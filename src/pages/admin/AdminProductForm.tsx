@@ -87,6 +87,7 @@ const AdminProductForm: React.FC = () => {
     images: [],
     variants: [],
     related_product_ids: [],
+    cross_sell_product_ids: [],
   });
 
   const [translationErrors, setTranslationErrors] = useState<TranslationErrors>({});
@@ -209,8 +210,13 @@ const AdminProductForm: React.FC = () => {
         };
       }
 
-      const relatedSorted = ((product as any).product_relations || [])
-        .slice()
+      const allRels = ((product as any).product_relations || []).slice();
+      const relatedSorted = allRels
+        .filter((r: any) => (r.relation_type ?? 'upsell') === 'upsell')
+        .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+        .map((r: any) => r.related_product_id as string);
+      const crossSellSorted = allRels
+        .filter((r: any) => r.relation_type === 'cross_sell')
         .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
         .map((r: any) => r.related_product_id as string);
       setForm({
@@ -243,6 +249,7 @@ const AdminProductForm: React.FC = () => {
           is_active: v.is_active, variant_type_id: v.variant_type_id,
         })),
         related_product_ids: relatedSorted,
+        cross_sell_product_ids: crossSellSorted,
       });
     }
   }, [product, isNew, languages]);
@@ -966,11 +973,22 @@ const AdminProductForm: React.FC = () => {
         )}
       </Card>
 
-      {/* Related products */}
+      {/* Upsell — shown on product page + in cart pop-up */}
       <RelatedProductsEditor
         productId={isNew ? undefined : id}
         value={form.related_product_ids}
         onChange={(ids) => updateField('related_product_ids', ids)}
+        title="Productes UP-SELL (pop-up i fitxa de producte)"
+        description="Es mostraran a la fitxa del producte (bloc 'Productes relacionats...') i en un pop-up quan el client afegeixi aquest producte a la cistella."
+      />
+
+      {/* Cross-sell — shown only on product page */}
+      <RelatedProductsEditor
+        productId={isNew ? undefined : id}
+        value={form.cross_sell_product_ids}
+        onChange={(ids) => updateField('cross_sell_product_ids', ids)}
+        title="Productes CROSS-SELL (només fitxa de producte)"
+        description="Es mostraran només a la fitxa del producte (bloc 'Productes que et poden interessar...'). No apareixen al pop-up."
       />
 
       {/* Bottom actions */}

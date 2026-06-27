@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { notify } from '@/lib/notify';
-import { useProductBySlug, useRelatedProducts } from '@/hooks/useTranslatedProducts';
+import { useProductBySlug, useRelatedProducts, useCrossSellProducts } from '@/hooks/useTranslatedProducts';
 import { useCart } from '@/contexts/CartContext';
 import { computePrice, formatPriceEUR } from '@/lib/pricing';
 
@@ -23,6 +23,7 @@ const ProductDetailPage: React.FC = () => {
   const { addStandardItem, addListItem, requestUpsell } = useCart();
   const { data: product, isLoading, error } = useProductBySlug(slug);
   const { data: relatedProducts = [] } = useRelatedProducts(product?.id);
+  const { data: crossSellProducts = [] } = useCrossSellProducts(product?.id);
 
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
@@ -379,12 +380,10 @@ const ProductDetailPage: React.FC = () => {
         </motion.section>
       )}
 
-      {relatedProducts.length > 0 && (
-        <section className="mt-12 lg:mt-16">
-          <Separator className="mb-6" />
-          <h2 className="font-display text-xl md:text-2xl font-semibold mb-4">També et podria interessar</h2>
+      {(() => {
+        const renderGrid = (items: typeof relatedProducts) => (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {relatedProducts.map(rp => (
+            {items.map(rp => (
               <Link
                 key={rp.id}
                 to={`/producte/${rp.slug}`}
@@ -415,8 +414,32 @@ const ProductDetailPage: React.FC = () => {
               </Link>
             ))}
           </div>
-        </section>
-      )}
+        );
+
+        return (
+          <>
+            {relatedProducts.length > 0 && (
+              <section className="mt-12 lg:mt-16">
+                <Separator className="mb-6" />
+                <h2 className="font-display text-xl md:text-2xl font-semibold mb-4">
+                  {t('products.relatedProducts')}
+                </h2>
+                {renderGrid(relatedProducts)}
+              </section>
+            )}
+
+            {crossSellProducts.length > 0 && (
+              <section className="mt-12 lg:mt-16">
+                <Separator className="mb-6" />
+                <h2 className="font-display text-xl md:text-2xl font-semibold mb-4">
+                  {t('products.crossSellProducts')}
+                </h2>
+                {renderGrid(crossSellProducts)}
+              </section>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 };

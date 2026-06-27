@@ -1679,18 +1679,21 @@ export type Database = {
           position: number
           product_id: string
           related_product_id: string
+          relation_type: string
         }
         Insert: {
           created_at?: string
           position?: number
           product_id: string
           related_product_id: string
+          relation_type?: string
         }
         Update: {
           created_at?: string
           position?: number
           product_id?: string
           related_product_id?: string
+          relation_type?: string
         }
         Relationships: [
           {

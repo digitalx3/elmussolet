@@ -112,7 +112,9 @@
     "discontinuedWithReplacement": "Aquest producte està descatalogat. Ha estat substituït per {{name}}.",
     "replacementLabel": "Producte substitut",
     "viewReplacement": "Veure producte substitut",
-    "noReplacement": "Contacta'ns per a més informació sobre alternatives."
+    "noReplacement": "Contacta'ns per a més informació sobre alternatives.",
+    "relatedProducts": "Productes relacionats...",
+    "crossSellProducts": "Productes que et poden interessar..."
   },
   "cart": {
     "title": "Cistella",
