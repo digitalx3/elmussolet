@@ -95,27 +95,21 @@ Deno.serve(async (req) => {
     // Provision birth list for owner (idempotent by list_code)
     const ACCESS_CODE = "RLS-TEST-LIST";
     const PASSWORD_HASH = "$2a$10$nLkk4QkS9SqLD9rXt6IcOOuMpAjyz9k8N7zLs5w0gPbqUq4j5sgwK"; // bcrypt("rlstest")
-    let listId: string;
-    const { data: existingList } = await admin
-      .from("birth_lists").select("id").eq("list_code", ACCESS_CODE).maybeSingle();
-    if (existingList) {
-      listId = existingList.id;
-    } else {
-      const { data: newList, error: lErr } = await admin
-        .from("birth_lists")
-        .insert({
-          list_code: ACCESS_CODE,
-          baby_name: "RLS Test Baby",
-          expected_date: new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
-          password_hash: PASSWORD_HASH,
-          notes: "RLS test fixture",
-          status: "active",
-          created_by: ids.owner,
-        })
-        .select("id").single();
-      if (lErr) throw lErr;
-      listId = newList.id;
-    }
+    const { data: list, error: lErr } = await admin
+      .from("birth_lists")
+      .upsert({
+        list_code: ACCESS_CODE,
+        baby_name: "RLS Test Baby",
+        expected_date: new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
+        password_hash: PASSWORD_HASH,
+        notes: "RLS test fixture",
+        status: "active",
+        created_by: ids.owner,
+      }, { onConflict: "list_code" })
+      .select("id")
+      .single();
+    if (lErr) throw lErr;
+    const listId = list.id;
 
     const { data: existingOwner, error: ownerLookupErr } = await admin
       .from("list_owners")
