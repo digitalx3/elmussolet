@@ -39,7 +39,11 @@ const LoginPage: React.FC = () => {
       isAdmin = false;
     }
     setLoading(false);
-    navigate(isAdmin ? '/admin' : '/');
+    if (isAdmin) {
+      navigate('/admin');
+    } else {
+      navigate(from && !from.startsWith('/login') ? from : '/', { replace: true });
+    }
   };
 
   return (
