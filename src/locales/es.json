@@ -87,7 +87,12 @@
     "noResults": "No se han encontrado productos",
     "noResultsDesc": "Prueba a cambiar los filtros o la búsqueda.",
     "productCount_one": "{{count}} producto",
-    "productCount_other": "{{count}} productos"
+    "productCount_other": "{{count}} productos",
+    "discontinuedTitle": "Este producto está descatalogado.",
+    "discontinuedWithReplacement": "Este producto está descatalogado. Ha sido sustituido por {{name}}.",
+    "replacementLabel": "Producto sustituto",
+    "viewReplacement": "Ver producto sustituto",
+    "noReplacement": "Contáctanos para más información sobre alternativas."
   },
   "cart": {
     "title": "Cesta",
