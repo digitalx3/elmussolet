@@ -444,8 +444,54 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_message_replies: {
+        Row: {
+          author_id: string | null
+          author_name: string | null
+          body: string
+          created_at: string
+          direction: string
+          email_error: string | null
+          email_sent: boolean
+          id: string
+          message_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          author_name?: string | null
+          body: string
+          created_at?: string
+          direction: string
+          email_error?: string | null
+          email_sent?: boolean
+          id?: string
+          message_id: string
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string | null
+          body?: string
+          created_at?: string
+          direction?: string
+          email_error?: string | null
+          email_sent?: boolean
+          id?: string
+          message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_message_replies_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "contact_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_messages: {
         Row: {
+          closed_at: string | null
+          closed_by: string | null
           created_at: string
           email: string
           id: string
@@ -454,10 +500,13 @@ export type Database = {
           message: string
           name: string
           phone: string | null
+          status: string
           subject: string | null
           updated_at: string
         }
         Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
           created_at?: string
           email: string
           id?: string
@@ -466,10 +515,13 @@ export type Database = {
           message: string
           name: string
           phone?: string | null
+          status?: string
           subject?: string | null
           updated_at?: string
         }
         Update: {
+          closed_at?: string | null
+          closed_by?: string | null
           created_at?: string
           email?: string
           id?: string
@@ -478,6 +530,7 @@ export type Database = {
           message?: string
           name?: string
           phone?: string | null
+          status?: string
           subject?: string | null
           updated_at?: string
         }
