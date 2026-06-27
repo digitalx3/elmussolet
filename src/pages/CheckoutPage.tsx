@@ -23,7 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useShippingCost } from '@/hooks/useShippingCost';
 import NoIndex from '@/components/seo/NoIndex';
 
-const shippingSchema = z.object({
+export const shippingSchema = z.object({
   fullName: z.string().trim().min(1, 'Required').max(100),
   phone: z.string().trim().min(6, 'Required').max(20),
   addressLine1: z.string().trim().min(1, 'Required').max(200),
