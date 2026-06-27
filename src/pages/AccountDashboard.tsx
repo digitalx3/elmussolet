@@ -96,6 +96,7 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
     city: '',
     postal_code: '',
     province: '',
+    country: 'ES',
     preferred_language: 'ca',
     nif: '',
     company_name: '',
