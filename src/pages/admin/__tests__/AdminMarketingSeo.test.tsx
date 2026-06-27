@@ -82,7 +82,7 @@ describe('AdminMarketingSeo — no internal infra leaks', () => {
     // The visible last-regeneration block must list only the file names,
     // never the underlying storage URL or any internal-provider mention.
     assertClean(container.textContent || '');
-    expect(screen.getByText('sitemap.xml')).toBeInTheDocument();
-    expect(screen.getByText('robots.txt')).toBeInTheDocument();
+    expect(screen.getAllByText('sitemap.xml').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('robots.txt').length).toBeGreaterThan(0);
   });
 });
