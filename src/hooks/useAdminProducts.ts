@@ -21,6 +21,7 @@ export interface AdminProduct {
   sale_ends_at: string | null;
   is_featured: boolean;
   featured_order: number | null;
+  replacement_product_id: string | null;
   product_translations: { language: string; name: string; short_description: string | null; description: string; slug: string | null }[];
   product_images: { id: string; image_url: string; alt_text: string | null; is_primary: boolean; sort_order: number }[];
   brands: { name: string } | null;
