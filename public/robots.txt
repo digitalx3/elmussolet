@@ -1,14 +1,68 @@
+# El Mussolet — robots.txt
+# Allow public catalog & content; block private birth-list views, account, admin,
+# checkout and auth flows.
+
 User-agent: Googlebot
 Allow: /
+Disallow: /llista-naixement/
+Disallow: /la-meva-llista
+Disallow: /el-meu-compte
+Disallow: /cistella
+Disallow: /checkout
+Disallow: /login
+Disallow: /registre
+Disallow: /recuperar-contrasenya
+Disallow: /reset-password
+Disallow: /admin
 
 User-agent: Bingbot
 Allow: /
+Disallow: /llista-naixement/
+Disallow: /la-meva-llista
+Disallow: /el-meu-compte
+Disallow: /cistella
+Disallow: /checkout
+Disallow: /login
+Disallow: /registre
+Disallow: /recuperar-contrasenya
+Disallow: /reset-password
+Disallow: /admin
 
 User-agent: Twitterbot
 Allow: /
+Disallow: /llista-naixement/
+Disallow: /la-meva-llista
+Disallow: /el-meu-compte
+Disallow: /cistella
+Disallow: /checkout
+Disallow: /admin
 
 User-agent: facebookexternalhit
 Allow: /
+Disallow: /llista-naixement/
+Disallow: /la-meva-llista
+Disallow: /el-meu-compte
+Disallow: /cistella
+Disallow: /checkout
+Disallow: /admin
 
 User-agent: *
 Allow: /
+# Private birth-list views (code/password protected)
+Disallow: /llista-naixement/
+# Owner-only & authenticated areas
+Disallow: /la-meva-llista
+Disallow: /el-meu-compte
+# Transactional / auth flows
+Disallow: /cistella
+Disallow: /checkout
+Disallow: /login
+Disallow: /registre
+Disallow: /recuperar-contrasenya
+Disallow: /reset-password
+# Backoffice
+Disallow: /admin
+
+# Sitemap index (lists per-language sitemaps automatically)
+Sitemap: https://dembqxfdzvwilckastuj.supabase.co/functions/v1/sitemap?index=1&host=https://elmussolet.lovable.app
+
