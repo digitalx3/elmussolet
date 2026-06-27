@@ -4,11 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "predev": "tsx scripts/generate-seo.ts",
     "dev": "vite",
+    "prebuild": "tsx scripts/generate-seo.ts",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
+    "seo:generate": "tsx scripts/generate-seo.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
