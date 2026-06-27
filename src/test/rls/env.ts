@@ -59,17 +59,19 @@ export function getRlsEnv(): RlsEnv {
   loadRlsEnv();
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const adminEmail = process.env.TEST_ADMIN_EMAIL ?? "admin@elmussolet.com";
-  const adminPassword = process.env.TEST_ADMIN_PASSWORD ?? "Admin2026!Mussolet";
+  const adminEmail = process.env.TEST_ADMIN_EMAIL;
+  const adminPassword = process.env.TEST_ADMIN_PASSWORD;
 
   const missing: string[] = [];
   if (!supabaseUrl) missing.push("VITE_SUPABASE_URL");
   if (!supabaseAnonKey) missing.push("VITE_SUPABASE_PUBLISHABLE_KEY");
+  if (!adminEmail) missing.push("TEST_ADMIN_EMAIL");
+  if (!adminPassword) missing.push("TEST_ADMIN_PASSWORD");
   if (missing.length) {
     throw new Error(
       `[rls-tests] Missing required env vars: ${missing.join(", ")}. ` +
         `Set them in .env / .env.local (local) or as GitHub Actions secrets (CI).`,
     );
   }
-  return { supabaseUrl: supabaseUrl!, supabaseAnonKey: supabaseAnonKey!, adminEmail, adminPassword };
+  return { supabaseUrl: supabaseUrl!, supabaseAnonKey: supabaseAnonKey!, adminEmail: adminEmail!, adminPassword: adminPassword! };
 }
