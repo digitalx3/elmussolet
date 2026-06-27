@@ -11,9 +11,10 @@ interface Props {
 
 const MaintenancePage: React.FC<Props> = ({ showLogo, messageCa, messageEs }) => {
   const { i18n, t } = useTranslation();
-  const { data: settings } = useSiteSettings(['logo_url', 'site_name']);
-  const logoUrl = settings?.logo_url ? resolveMediaUrl(settings.logo_url) : null;
-  const siteName = settings?.site_name || 'El Mussolet';
+  const { data: settings } = useSiteSettings(['logo_header_url', 'logo_footer_url', 'store_name']);
+  const rawLogo = settings?.logo_header_url || settings?.logo_footer_url || '';
+  const logoUrl = rawLogo ? resolveMediaUrl(rawLogo) : null;
+  const siteName = settings?.store_name || 'El Mussolet';
 
   const lang = (i18n.language || 'ca').toLowerCase().startsWith('es') ? 'es' : 'ca';
   const message = lang === 'es' ? messageEs : messageCa;
