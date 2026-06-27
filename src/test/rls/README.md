@@ -16,27 +16,42 @@ bun run test:rls
 
 La suite no entra al `bun test` per defecte (afecta dades reals i requereix xarxa).
 
-## Requisits
+## Configuració d'entorn (CI i local consistents)
 
-1. `.env` amb `VITE_SUPABASE_URL` i `VITE_SUPABASE_PUBLISHABLE_KEY` (ja existents al projecte).
-2. Credencials d'un compte amb rol `admin` o `super_admin` per arrencar el seed:
+`src/test/rls/env.ts` és l'única font d'env. Carrega variables amb aquesta precedència (la més alta guanya):
+
+1. `process.env` real (CI via GitHub Actions, o exports al teu shell)
+2. `.env.local` (gitignorat — overrides personals)
+3. `.env.test`
+4. `.env` (del projecte, ja conté `VITE_SUPABASE_URL` i `VITE_SUPABASE_PUBLISHABLE_KEY`)
+
+Variables requerides:
+
+| Variable | On es defineix per defecte |
+| --- | --- |
+| `VITE_SUPABASE_URL` | `.env` del projecte |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | `.env` del projecte |
+| `TEST_ADMIN_EMAIL` | secret CI / `.env.local` (default: `admin@elmussolet.com`) |
+| `TEST_ADMIN_PASSWORD` | secret CI / `.env.local` (default: `Admin2026!Mussolet`) |
+
+Si falta alguna obligatòria (`VITE_SUPABASE_*`), `getRlsEnv()` llança un error explicant què cal afegir.
+
+### Local
+
+Crea `.env.local` (gitignorat) amb el compte admin que vulguis usar:
 
 ```bash
 TEST_ADMIN_EMAIL=admin@elmussolet.com
-TEST_ADMIN_PASSWORD=...
+TEST_ADMIN_PASSWORD=Admin2026!Mussolet
 ```
 
-Per defecte usa `admin@elmussolet.com` / `Admin2026!Mussolet` (compte de test del projecte).
+### CI (GitHub Actions)
 
-## CI (GitHub Actions)
+`.github/workflows/rls-tests.yml` executa `bun run test:rls` a cada PR i push a `main` (i manualment via `workflow_dispatch`). Configura els secrets al repo (Settings → Secrets and variables → Actions):
 
-El workflow `.github/workflows/rls-tests.yml` executa `bun run test:rls` automàticament a cada PR i push a `main` (i manualment via `workflow_dispatch`).
+- `TEST_ADMIN_EMAIL`, `TEST_ADMIN_PASSWORD` — obligatoris.
+- `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` — opcionals; només si vols apuntar a un backend diferent del del `.env` del repo.
 
-Secrets necessaris al repo (Settings → Secrets and variables → Actions):
-
-- `TEST_ADMIN_EMAIL` — compte admin/super_admin per arrencar el seed.
-- `TEST_ADMIN_PASSWORD` — contrasenya del compte anterior.
-- *(opcional)* `VITE_SUPABASE_URL` i `VITE_SUPABASE_PUBLISHABLE_KEY` si vols apuntar a un backend diferent.
 
 
 ## Què crea el seed
