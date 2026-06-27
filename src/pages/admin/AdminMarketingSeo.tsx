@@ -16,9 +16,18 @@ const DEFAULT_HOST =
 type RegenResult = {
   ok: boolean;
   generated_at: string;
+  regenerated?: string[];
   robots: string;
   sitemapIndex: string;
   sitemaps: { lang: string; url: string }[];
+};
+
+// Map a returned storage path to a stable key used for per-file timestamps.
+const pathToKey = (p: string): string | null => {
+  if (p.endsWith('robots.txt')) return 'robots';
+  if (p.endsWith('sitemap.xml')) return 'sitemap-index';
+  const m = p.match(/sitemap-([a-z-]+)\.xml$/i);
+  return m ? `sitemap-${m[1]}` : null;
 };
 
 const AdminMarketingSeo: React.FC = () => {
@@ -27,6 +36,7 @@ const AdminMarketingSeo: React.FC = () => {
   const [host, setHost] = React.useState<string>(DEFAULT_HOST);
   const [regenBusy, setRegenBusy] = React.useState<string | null>(null);
   const [live, setLive] = React.useState<RegenResult | null>(null);
+  const [stamps, setStamps] = React.useState<Record<string, string>>({});
 
   const base = host.replace(/\/$/, '');
   const robotsUrl = `${base}/robots.txt`;
@@ -50,7 +60,17 @@ const AdminMarketingSeo: React.FC = () => {
         body: targets ? { host: base, targets } : { host: base },
       });
       if (error || !data?.ok) throw new Error(error?.message || 'failed');
-      setLive(data as RegenResult);
+      const result = data as RegenResult;
+      setLive(result);
+      const ts = result.generated_at;
+      setStamps((prev) => {
+        const next = { ...prev };
+        for (const p of result.regenerated || []) {
+          const k = pathToKey(p);
+          if (k) next[k] = ts;
+        }
+        return next;
+      });
       notify.success(t('admin.seo.regenerated', 'Fitxers regenerats correctament'));
     } catch (e: any) {
       notify.error(e?.message || t('common.error', 'Error'));
@@ -61,40 +81,50 @@ const AdminMarketingSeo: React.FC = () => {
   const regenerating = regenBusy !== null;
 
 
-  const UrlRow: React.FC<{ title: string; subtitle?: string; url: string; primary?: boolean }> = ({
-    title,
-    subtitle,
-    url,
-    primary,
-  }) => (
-    <div
-      className={`rounded-md p-3 space-y-2 ${
-        primary ? 'border-2 border-primary/40 bg-primary/5' : 'border'
-      }`}
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <div className="font-medium text-sm">{title}</div>
-          {subtitle && <div className="text-xs text-muted-foreground">{subtitle}</div>}
+  const UrlRow: React.FC<{
+    title: string;
+    subtitle?: string;
+    url: string;
+    primary?: boolean;
+    stampKey?: string;
+  }> = ({ title, subtitle, url, primary, stampKey }) => {
+    const stamp = stampKey ? stamps[stampKey] : undefined;
+    return (
+      <div
+        className={`rounded-md p-3 space-y-2 ${
+          primary ? 'border-2 border-primary/40 bg-primary/5' : 'border'
+        }`}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div className="font-medium text-sm">{title}</div>
+            {subtitle && <div className="text-xs text-muted-foreground">{subtitle}</div>}
+            {stamp && (
+              <div className="text-[11px] text-muted-foreground mt-0.5">
+                {t('admin.seo.regenAt', 'Última regeneració:')}{' '}
+                {new Date(stamp).toLocaleString()}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => copy(url)} className="gap-1">
+              <Copy className="h-4 w-4" />
+              {t('admin.seo.copy', 'Copiar')}
+            </Button>
+            <Button size="sm" variant="outline" asChild className="gap-1">
+              <a href={url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4" />
+                {t('admin.seo.open', 'Obrir')}
+              </a>
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => copy(url)} className="gap-1">
-            <Copy className="h-4 w-4" />
-            {t('admin.seo.copy', 'Copiar')}
-          </Button>
-          <Button size="sm" variant="outline" asChild className="gap-1">
-            <a href={url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4" />
-              {t('admin.seo.open', 'Obrir')}
-            </a>
-          </Button>
+        <div className={`text-xs ${primary ? 'bg-background' : 'bg-muted'} p-2 rounded font-mono break-all`}>
+          {url}
         </div>
       </div>
-      <div className={`text-xs ${primary ? 'bg-background' : 'bg-muted'} p-2 rounded font-mono break-all`}>
-        {url}
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -213,6 +243,7 @@ const AdminMarketingSeo: React.FC = () => {
                 title={t('admin.seo.liveIndex', 'Sitemap index (live)')}
                 subtitle="Storage"
                 url={live.sitemapIndex}
+                stampKey="sitemap-index"
               />
               {live.sitemaps.map((s) => (
                 <UrlRow
@@ -220,12 +251,14 @@ const AdminMarketingSeo: React.FC = () => {
                   title={`Sitemap ${s.lang} (live)`}
                   subtitle="Storage"
                   url={s.url}
+                  stampKey={`sitemap-${s.lang}`}
                 />
               ))}
               <UrlRow
                 title={t('admin.seo.liveRobots', 'robots.txt (live)')}
                 subtitle="Storage"
                 url={live.robots}
+                stampKey="robots"
               />
             </div>
           )}
