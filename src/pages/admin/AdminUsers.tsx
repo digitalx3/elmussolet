@@ -531,11 +531,14 @@ const AdminUsers: React.FC = () => {
                 <CountryProvinceSelect
                   country={form.country}
                   province={form.province}
-                  onCountryChange={(v) => setForm({ ...form, country: v })}
-                  onProvinceChange={(v) => setForm({ ...form, province: v })}
+                  onCountryChange={(v) => { setForm({ ...form, country: v }); setProvinceError(false); }}
+                  onProvinceChange={(v) => { setForm({ ...form, province: v }); setProvinceError(false); }}
                   countryLabel="País"
                   provinceLabel="Província"
                 />
+                {provinceError && (
+                  <p className="text-sm font-medium text-destructive">{t('errors.provinceRequired')}</p>
+                )}
 
               </div>
             </div>
