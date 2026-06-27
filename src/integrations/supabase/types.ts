@@ -1810,6 +1810,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_featured: boolean
+          replacement_product_id: string | null
           sale_ends_at: string | null
           sale_price_type: string | null
           sale_starts_at: string | null
@@ -1834,6 +1835,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_featured?: boolean
+          replacement_product_id?: string | null
           sale_ends_at?: string | null
           sale_price_type?: string | null
           sale_starts_at?: string | null
@@ -1858,6 +1860,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_featured?: boolean
+          replacement_product_id?: string | null
           sale_ends_at?: string | null
           sale_price_type?: string | null
           sale_starts_at?: string | null
@@ -1884,6 +1887,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_replacement_product_id_fkey"
+            columns: ["replacement_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
