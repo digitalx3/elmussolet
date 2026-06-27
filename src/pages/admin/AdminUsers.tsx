@@ -84,6 +84,7 @@ const AdminUsers: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<UserFormState>(emptyForm);
   const [editMode, setEditMode] = useState(false);
+  const [provinceError, setProvinceError] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteMode, setDeleteMode] = useState<'soft' | 'hard' | null>(null);
   const [restoreId, setRestoreId] = useState<string | null>(null);
@@ -162,6 +163,11 @@ const AdminUsers: React.FC = () => {
       if (form.password && form.password.length < 6) {
         throw new Error("La contrasenya ha de tenir almenys 6 caràcters");
       }
+      if (form.country === 'ES' && !form.province?.trim()) {
+        setProvinceError(true);
+        throw new Error(t('errors.provinceRequired'));
+      }
+      setProvinceError(false);
       const body: any = {
         action,
         full_name: form.full_name,
@@ -240,12 +246,14 @@ const AdminUsers: React.FC = () => {
   const openCreate = () => {
     setEditMode(false);
     setForm(emptyForm);
+    setProvinceError(false);
     setFormOpen(true);
   };
 
   const openEdit = async (u: Profile) => {
     setEditMode(true);
     setForm({ ...emptyForm, id: u.id, full_name: u.full_name || '', phone: u.phone || '', role: u.role, preferred_language: u.preferred_language });
+    setProvinceError(false);
     setFormOpen(true);
     try {
       const { data, error } = await supabase.functions.invoke('admin-manage-users', {
@@ -523,11 +531,14 @@ const AdminUsers: React.FC = () => {
                 <CountryProvinceSelect
                   country={form.country}
                   province={form.province}
-                  onCountryChange={(v) => setForm({ ...form, country: v })}
-                  onProvinceChange={(v) => setForm({ ...form, province: v })}
+                  onCountryChange={(v) => { setForm({ ...form, country: v }); setProvinceError(false); }}
+                  onProvinceChange={(v) => { setForm({ ...form, province: v }); setProvinceError(false); }}
                   countryLabel="País"
                   provinceLabel="Província"
                 />
+                {provinceError && (
+                  <p className="text-sm font-medium text-destructive">{t('errors.provinceRequired')}</p>
+                )}
 
               </div>
             </div>
