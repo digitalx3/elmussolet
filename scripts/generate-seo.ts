@@ -140,9 +140,8 @@ async function main() {
     language: string;
     slug: string | null;
   }>('category_translations?select=category_id,language,slug');
-  const brands = await sb<{ slug: string; updated_at: string }>(
-    'brands?select=slug,updated_at,is_active&is_active=eq.true',
-  );
+  // Brands intentionally not added: schema has no slug; catalog filters them
+  // via name. Skip to keep sitemap clean.
 
   const today = new Date().toISOString().slice(0, 10);
   const indexItems: { loc: string; lastmod: string }[] = [];
