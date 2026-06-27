@@ -60,7 +60,17 @@ const AdminMarketingSeo: React.FC = () => {
         body: targets ? { host: base, targets } : { host: base },
       });
       if (error || !data?.ok) throw new Error(error?.message || 'failed');
-      setLive(data as RegenResult);
+      const result = data as RegenResult;
+      setLive(result);
+      const ts = result.generated_at;
+      setStamps((prev) => {
+        const next = { ...prev };
+        for (const p of result.regenerated || []) {
+          const k = pathToKey(p);
+          if (k) next[k] = ts;
+        }
+        return next;
+      });
       notify.success(t('admin.seo.regenerated', 'Fitxers regenerats correctament'));
     } catch (e: any) {
       notify.error(e?.message || t('common.error', 'Error'));
