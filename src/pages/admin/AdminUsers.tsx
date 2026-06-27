@@ -172,6 +172,7 @@ const AdminUsers: React.FC = () => {
         city: form.city,
         postal_code: form.postal_code,
         province: form.province,
+        country: form.country,
         nif: form.nif,
         company_name: form.company_name,
       };
