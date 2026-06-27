@@ -439,6 +439,32 @@ const AdminProductForm: React.FC = () => {
       }
     }
 
+    // Replacement product validation (only when discontinued)
+    if (form.stock_status === 'discontinued' && form.replacement_product_id) {
+      if (form.replacement_product_id === id) {
+        notify.error('El producte substitut no pot ser el mateix producte.');
+        return;
+      }
+      const { data: repl, error: replErr } = await supabase
+        .from('products')
+        .select('id, is_active, stock_status')
+        .eq('id', form.replacement_product_id)
+        .maybeSingle();
+      if (replErr || !repl) {
+        notify.error('El producte substitut seleccionat no existeix.');
+        return;
+      }
+      if (!repl.is_active) {
+        notify.error('El producte substitut no està actiu.');
+        return;
+      }
+      if (repl.stock_status === 'discontinued') {
+        notify.error('El producte substitut també està descatalogat. Tria un altre.');
+        return;
+      }
+    }
+
+
     try {
       await saveProduct.mutateAsync({ id: isNew ? undefined : id, data: form });
       notify.success(isNew ? 'Producte creat' : 'Producte actualitzat');
