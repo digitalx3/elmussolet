@@ -235,19 +235,26 @@ const ProductDetailPage: React.FC = () => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {!effectiveOutOfStock && currentStock === 1 && (
-              <Badge variant="secondary" className="bg-last-unit text-last-unit-foreground">{t('products.lastUnit')}</Badge>
-            )}
-            {!effectiveOutOfStock && currentStock !== 1 && product.stockStatus !== 'on_order' && (
-              <Badge variant="secondary" className="bg-sage text-sage-foreground">{t('products.inStock')}</Badge>
-            )}
-            {!effectiveOutOfStock && product.stockStatus === 'on_order' && (
-              <Badge variant="secondary" className="bg-warm text-warm-foreground">{t('products.onOrder')}</Badge>
-            )}
-            {effectiveOutOfStock && (
-              <Badge variant="destructive">{t('products.outOfStock')}</Badge>
+            {isDiscontinued ? (
+              <Badge variant="destructive">Descatalogat</Badge>
+            ) : (
+              <>
+                {!effectiveOutOfStock && currentStock === 1 && (
+                  <Badge variant="secondary" className="bg-last-unit text-last-unit-foreground">{t('products.lastUnit')}</Badge>
+                )}
+                {!effectiveOutOfStock && currentStock !== 1 && product.stockStatus !== 'on_order' && (
+                  <Badge variant="secondary" className="bg-sage text-sage-foreground">{t('products.inStock')}</Badge>
+                )}
+                {!effectiveOutOfStock && product.stockStatus === 'on_order' && (
+                  <Badge variant="secondary" className="bg-warm text-warm-foreground">{t('products.onOrder')}</Badge>
+                )}
+                {effectiveOutOfStock && (
+                  <Badge variant="destructive">{t('products.outOfStock')}</Badge>
+                )}
+              </>
             )}
           </div>
+
 
           {product.shortDescription && (
             <div
