@@ -253,6 +253,7 @@ const AdminUsers: React.FC = () => {
   const openEdit = async (u: Profile) => {
     setEditMode(true);
     setForm({ ...emptyForm, id: u.id, full_name: u.full_name || '', phone: u.phone || '', role: u.role, preferred_language: u.preferred_language });
+    setProvinceError(false);
     setFormOpen(true);
     try {
       const { data, error } = await supabase.functions.invoke('admin-manage-users', {
