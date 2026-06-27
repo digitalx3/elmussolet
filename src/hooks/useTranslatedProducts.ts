@@ -259,6 +259,22 @@ export function useProductBySlug(slug: string | undefined) {
         (data as any).sale_ends_at,
       );
 
+      const rep = (data as any).replacement;
+      let replacement: { id: string; slug: string; name: string; image: string | null } | null = null;
+      if (rep) {
+        const rTrs = rep.product_translations || [];
+        const rTr = rTrs.find((x: any) => x.language === lang) || rTrs[0];
+        const rImgs = (rep.product_images || []).slice().sort((a: any, b: any) => a.sort_order - b.sort_order);
+        const rPrimary = rImgs.find((i: any) => i.is_primary) || rImgs[0];
+        const localizedSlug = (rTr as any)?.slug || rep.slug;
+        replacement = {
+          id: rep.id,
+          slug: localizedSlug,
+          name: rTr?.name || rep.slug,
+          image: rPrimary?.image_url || null,
+        };
+      }
+
       return {
         id: data.id,
         slug: data.slug,
@@ -286,7 +302,9 @@ export function useProductBySlug(slug: string | undefined) {
         description: t?.description ?? '',
         images,
         variants,
+        replacement,
       };
+
     },
   });
 }
