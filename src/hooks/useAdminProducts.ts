@@ -21,6 +21,7 @@ export interface AdminProduct {
   sale_ends_at: string | null;
   is_featured: boolean;
   featured_order: number | null;
+  replacement_product_id: string | null;
   product_translations: { language: string; name: string; short_description: string | null; description: string; slug: string | null }[];
   product_images: { id: string; image_url: string; alt_text: string | null; is_primary: boolean; sort_order: number }[];
   brands: { name: string } | null;
@@ -95,6 +96,7 @@ export interface ProductFormData {
   sale_ends_at: string | null;
   is_featured: boolean;
   featured_order: number | null;
+  replacement_product_id: string | null;
   translations: Record<string, { name: string; short_description: string; description: string; slug?: string }>;
   images: { id?: string; image_url: string; alt_text: string; is_primary: boolean; sort_order: number }[];
   variants: {
@@ -136,6 +138,7 @@ export function useSaveProduct() {
         sale_ends_at: data.sale_ends_at || null,
         is_featured: !!data.is_featured,
         featured_order: data.featured_order ?? null,
+        replacement_product_id: data.stock_status === 'discontinued' ? (data.replacement_product_id || null) : null,
       };
 
 

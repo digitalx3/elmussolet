@@ -24,6 +24,7 @@ import LanguageTabs from '@/components/admin/LanguageTabs';
 import { useAiProvider, isAiReady } from '@/hooks/useAiProvider';
 import RichTextEditor from '@/components/ui/rich-text-editor';
 import RelatedProductsEditor from '@/components/admin/RelatedProductsEditor';
+import ReplacementProductPicker from '@/components/admin/ReplacementProductPicker';
 import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
 import { checkBaseSlugDuplicate, checkTranslationSlugDuplicate } from '@/lib/checkSlugDuplicate';
 import { useDuplicateSlugErrors, hasAnySlugError } from '@/hooks/useDuplicateSlugErrors';
@@ -81,6 +82,7 @@ const AdminProductForm: React.FC = () => {
     category_id: null, brand_id: null, tax_rate_id: null,
     sale_price_type: null, sale_value: null, sale_starts_at: null, sale_ends_at: null,
     is_featured: false, featured_order: null,
+    replacement_product_id: null,
     translations: {},
     images: [],
     variants: [],
@@ -229,6 +231,7 @@ const AdminProductForm: React.FC = () => {
         sale_ends_at: (product as any).sale_ends_at ?? null,
         is_featured: !!(product as any).is_featured,
         featured_order: (product as any).featured_order ?? null,
+        replacement_product_id: (product as any).replacement_product_id ?? null,
         translations,
         images: (product.product_images || []).sort((a, b) => a.sort_order - b.sort_order).map(img => ({
           id: img.id, image_url: img.image_url, alt_text: img.alt_text || '', is_primary: img.is_primary, sort_order: img.sort_order,
@@ -712,8 +715,19 @@ const AdminProductForm: React.FC = () => {
               <option value="in_stock">{t('products.inStock')}</option>
               <option value="on_order">{t('products.onOrder')}</option>
               <option value="out_of_stock">{t('products.outOfStock')}</option>
+              <option value="discontinued">Descatalogat</option>
             </select>
+            {form.stock_status === 'discontinued' && (
+              <div className="mt-3">
+                <ReplacementProductPicker
+                  excludeId={id}
+                  value={form.replacement_product_id}
+                  onChange={(rid) => updateField('replacement_product_id', rid)}
+                />
+              </div>
+            )}
           </div>
+
           <div className="flex items-center gap-3 sm:col-span-2">
             <Switch checked={form.is_active} onCheckedChange={v => updateField('is_active', v)} />
             <Label>Producte actiu</Label>

@@ -59,14 +59,16 @@ const ProductDetailPage: React.FC = () => {
   const basePriceWithTax = pricing.base * (1 + taxPct / 100);
   const finalPriceWithTax = pricing.final * (1 + taxPct / 100);
 
+  const isDiscontinued = product?.stockStatus === 'discontinued';
   const variantStockTotal = (product?.variants ?? []).reduce((s, v) => s + (v.stockQuantity ?? 0), 0);
   const hasUsableVariants = !!product?.hasVariants && variantGroups.length > 0;
-  const effectiveOutOfStock = hasUsableVariants
+  const effectiveOutOfStock = isDiscontinued || (hasUsableVariants
     ? variantStockTotal === 0
-    : product?.stockStatus === 'out_of_stock';
+    : product?.stockStatus === 'out_of_stock');
   const currentStock = selectedVariant
     ? selectedVariant.stockQuantity
     : (hasUsableVariants ? variantStockTotal : (product?.stockQuantity ?? 0));
+
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -233,19 +235,26 @@ const ProductDetailPage: React.FC = () => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {!effectiveOutOfStock && currentStock === 1 && (
-              <Badge variant="secondary" className="bg-last-unit text-last-unit-foreground">{t('products.lastUnit')}</Badge>
-            )}
-            {!effectiveOutOfStock && currentStock !== 1 && product.stockStatus !== 'on_order' && (
-              <Badge variant="secondary" className="bg-sage text-sage-foreground">{t('products.inStock')}</Badge>
-            )}
-            {!effectiveOutOfStock && product.stockStatus === 'on_order' && (
-              <Badge variant="secondary" className="bg-warm text-warm-foreground">{t('products.onOrder')}</Badge>
-            )}
-            {effectiveOutOfStock && (
-              <Badge variant="destructive">{t('products.outOfStock')}</Badge>
+            {isDiscontinued ? (
+              <Badge variant="destructive">Descatalogat</Badge>
+            ) : (
+              <>
+                {!effectiveOutOfStock && currentStock === 1 && (
+                  <Badge variant="secondary" className="bg-last-unit text-last-unit-foreground">{t('products.lastUnit')}</Badge>
+                )}
+                {!effectiveOutOfStock && currentStock !== 1 && product.stockStatus !== 'on_order' && (
+                  <Badge variant="secondary" className="bg-sage text-sage-foreground">{t('products.inStock')}</Badge>
+                )}
+                {!effectiveOutOfStock && product.stockStatus === 'on_order' && (
+                  <Badge variant="secondary" className="bg-warm text-warm-foreground">{t('products.onOrder')}</Badge>
+                )}
+                {effectiveOutOfStock && (
+                  <Badge variant="destructive">{t('products.outOfStock')}</Badge>
+                )}
+              </>
             )}
           </div>
+
 
           {product.shortDescription && (
             <div
@@ -299,6 +308,45 @@ const ProductDetailPage: React.FC = () => {
               {t('products.addToCart')}
             </Button>
           </div>
+
+          {isDiscontinued && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3">
+              <p className="text-sm font-semibold text-destructive mb-2">
+                Aquest producte està descatalogat.
+              </p>
+              {product.replacement ? (
+                <Link
+                  to={`/producte/${product.replacement.slug}`}
+                  className="flex items-center gap-3 rounded-md border bg-background p-2 hover:border-primary transition-colors"
+                >
+                  {product.replacement.image ? (
+                    <img
+                      src={product.replacement.image}
+                      alt={product.replacement.name}
+                      className="h-12 w-12 rounded object-cover"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded bg-muted" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Producte substitut
+                    </div>
+                    <div className="text-sm font-medium truncate">
+                      {product.replacement.name}
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Contacta'ns per a més informació sobre alternatives.
+                </p>
+              )}
+            </div>
+          )}
+
+
 
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="gap-1" onClick={handleShare}>
