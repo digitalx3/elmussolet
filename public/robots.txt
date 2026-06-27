@@ -64,4 +64,5 @@ Disallow: /reset-password
 Disallow: /admin
 
 # Sitemap index (lists per-language sitemaps automatically)
-Sitemap: https://elmussolet.lovable.app/sitemap.xml
+Sitemap: https://dembqxfdzvwilckastuj.supabase.co/functions/v1/sitemap?index=1&host=https://elmussolet.lovable.app
+
