@@ -32,7 +32,7 @@ export interface AdminProduct {
     variant_type_id: string;
     variant_types: { slug: string } | null;
   }[];
-  product_relations?: { related_product_id: string; position: number }[];
+  product_relations?: { related_product_id: string; position: number; relation_type: string }[];
 }
 
 export function useAdminProducts() {
@@ -68,7 +68,7 @@ export function useAdminProduct(id: string | undefined) {
           product_translations(id, language, name, short_description, description, slug),
           product_images(id, image_url, alt_text, is_primary, sort_order),
           product_variants(id, value, price_override, price_modifier, stock_quantity, sku_suffix, is_active, variant_type_id, variant_types(id, slug)),
-          product_relations!product_relations_product_id_fkey(related_product_id, position)
+          product_relations!product_relations_product_id_fkey(related_product_id, position, relation_type)
         `)
         .eq('id', id!)
         .single();
@@ -104,7 +104,8 @@ export interface ProductFormData {
     stock_quantity: number; sku_suffix: string; is_active: boolean;
     variant_type_id: string;
   }[];
-  related_product_ids: string[]; // ordered
+  related_product_ids: string[]; // ordered upsell
+  cross_sell_product_ids: string[]; // ordered cross-sell
 }
 
 export function useSaveProduct() {
@@ -218,20 +219,22 @@ export function useSaveProduct() {
         await supabase.from('product_variants').delete().eq('product_id', productId!);
       }
 
-      // Related products — replace
+      // Related products — replace both upsell and cross-sell
       await supabase.from('product_relations').delete().eq('product_id', productId!);
-      if (data.related_product_ids.length > 0) {
-        const relPayload = data.related_product_ids
-          .filter(rid => rid && rid !== productId)
-          .map((rid, i) => ({
-            product_id: productId!,
-            related_product_id: rid,
-            position: i,
-          }));
-        if (relPayload.length > 0) {
-          const { error } = await supabase.from('product_relations').insert(relPayload);
-          if (error) throw error;
-        }
+      const relPayload: { product_id: string; related_product_id: string; position: number; relation_type: string }[] = [];
+      data.related_product_ids
+        .filter(rid => rid && rid !== productId)
+        .forEach((rid, i) => relPayload.push({
+          product_id: productId!, related_product_id: rid, position: i, relation_type: 'upsell',
+        }));
+      data.cross_sell_product_ids
+        .filter(rid => rid && rid !== productId)
+        .forEach((rid, i) => relPayload.push({
+          product_id: productId!, related_product_id: rid, position: i, relation_type: 'cross_sell',
+        }));
+      if (relPayload.length > 0) {
+        const { error } = await supabase.from('product_relations').insert(relPayload);
+        if (error) throw error;
       }
 
       return productId;
@@ -242,6 +245,7 @@ export function useSaveProduct() {
       qc.invalidateQueries({ queryKey: ['products'] });
       qc.invalidateQueries({ queryKey: ['featured-products'] });
       qc.invalidateQueries({ queryKey: ['related-products'] });
+      qc.invalidateQueries({ queryKey: ['cross-sell-products'] });
     },
   });
 }
