@@ -16,9 +16,18 @@ const DEFAULT_HOST =
 type RegenResult = {
   ok: boolean;
   generated_at: string;
+  regenerated?: string[];
   robots: string;
   sitemapIndex: string;
   sitemaps: { lang: string; url: string }[];
+};
+
+// Map a returned storage path to a stable key used for per-file timestamps.
+const pathToKey = (p: string): string | null => {
+  if (p.endsWith('robots.txt')) return 'robots';
+  if (p.endsWith('sitemap.xml')) return 'sitemap-index';
+  const m = p.match(/sitemap-([a-z-]+)\.xml$/i);
+  return m ? `sitemap-${m[1]}` : null;
 };
 
 const AdminMarketingSeo: React.FC = () => {
