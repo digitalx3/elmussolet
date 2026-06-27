@@ -28,6 +28,17 @@ TEST_ADMIN_PASSWORD=...
 
 Per defecte usa `admin@elmussolet.com` / `Admin2026!Mussolet` (compte de test del projecte).
 
+## CI (GitHub Actions)
+
+El workflow `.github/workflows/rls-tests.yml` executa `bun run test:rls` automàticament a cada PR i push a `main` (i manualment via `workflow_dispatch`).
+
+Secrets necessaris al repo (Settings → Secrets and variables → Actions):
+
+- `TEST_ADMIN_EMAIL` — compte admin/super_admin per arrencar el seed.
+- `TEST_ADMIN_PASSWORD` — contrasenya del compte anterior.
+- *(opcional)* `VITE_SUPABASE_URL` i `VITE_SUPABASE_PUBLISHABLE_KEY` si vols apuntar a un backend diferent.
+
+
 ## Què crea el seed
 
 L'edge function `rls-test-setup` (idempotent, només invocable per admins) provisiona:
