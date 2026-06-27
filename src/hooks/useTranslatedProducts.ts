@@ -346,7 +346,12 @@ export function useFeaturedProducts(limit: number = 8) {
           product_translations!inner(name, short_description, description, language),
           product_images(image_url, is_primary, sort_order),
           brands(name, logo_url),
-          tax_rates(id, name, percentage)
+          tax_rates(id, name, percentage),
+          replacement:replacement_product_id (
+            id, slug,
+            product_translations(name, language, slug),
+            product_images(image_url, is_primary, sort_order)
+          )
         `)
         .eq('is_active', true)
         .eq('is_featured', true)
@@ -357,7 +362,7 @@ export function useFeaturedProducts(limit: number = 8) {
       if (error) throw error;
       return ((data || []) as any[]).map(p => {
         const tr = Array.isArray(p.product_translations) ? p.product_translations[0] : p.product_translations;
-        return mapProduct(p, tr);
+        return mapProduct(p, tr, lang);
       });
     },
   });
