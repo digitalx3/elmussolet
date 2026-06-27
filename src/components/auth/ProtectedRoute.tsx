@@ -23,8 +23,9 @@ const Forbidden: React.FC<{ message?: string }> = ({ message }) => (
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
   if (isLoading) return <Loading />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
   return <>{children}</>;
 };
 
