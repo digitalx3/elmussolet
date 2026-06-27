@@ -488,6 +488,44 @@ export type Database = {
           },
         ]
       }
+      contact_message_status_log: {
+        Row: {
+          actor_id: string | null
+          actor_name: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          message_id: string
+          to_status: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          message_id: string
+          to_status: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          message_id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_message_status_log_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "contact_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_messages: {
         Row: {
           closed_at: string | null
