@@ -14,6 +14,7 @@ import { notify } from '@/lib/notify';
 import { formatPrice } from '@/hooks/useTaxRates';
 import { Package, ChevronDown, ChevronUp, User, ShoppingBag, Heart } from 'lucide-react';
 import MyBirthListPage from './MyBirthListPage';
+import CountryProvinceSelect from '@/components/CountryProvinceSelect';
 
 interface OrderItem {
   id: string;
