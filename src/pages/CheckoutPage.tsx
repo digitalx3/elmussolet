@@ -138,7 +138,7 @@ const CheckoutPage: React.FC = () => {
         <h1 className="font-display text-2xl font-bold mb-4">{t('checkout.title')}</h1>
         <p className="text-muted-foreground mb-6">{t('errors.loginRequired')}</p>
         <Button asChild>
-          <Link to="/login">{t('auth.login')}</Link>
+          <Link to="/login" state={{ from: { pathname: '/checkout' } }}>{t('auth.login')}</Link>
         </Button>
       </div>
     );
