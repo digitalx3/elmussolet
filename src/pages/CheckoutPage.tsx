@@ -201,6 +201,7 @@ const CheckoutPage: React.FC = () => {
                 city: shippingAddress.city,
                 postal_code: shippingAddress.postal_code,
                 province: shippingAddress.province,
+                country: shippingAddress.country,
               })
               .eq('id', existing.id);
           }
