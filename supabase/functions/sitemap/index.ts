@@ -47,6 +47,9 @@ Deno.serve(async (req) => {
     const lang = (url.searchParams.get("lang") || "ca").toLowerCase();
     const hostParam = url.searchParams.get("host");
     const host = (hostParam || `${url.protocol}//${url.host}`).replace(/\/$/, "");
+    const isIndex = ["1", "true", "yes"].includes(
+      (url.searchParams.get("index") || "").toLowerCase(),
+    );
     const types = (url.searchParams.get("types") || "static,products,pages,categories,brands")
       .split(",")
       .map((s) => s.trim())
@@ -55,6 +58,38 @@ Deno.serve(async (req) => {
     const sb = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+
+    // Sitemap index: list one <sitemap> per enabled language pointing back to this function.
+    if (isIndex) {
+      const { data: langs } = await sb
+        .from("languages")
+        .select("code, is_enabled")
+        .eq("is_enabled", true)
+        .order("sort_order", { ascending: true });
+      const codes = (langs || []).map((l: any) => l.code).filter(Boolean);
+      const fallback = codes.length ? codes : ["ca", "es"];
+      const selfUrl = new URL(req.url);
+      const lastmod = new Date().toISOString().slice(0, 10);
+      const items = fallback
+        .map((code) => {
+          const child = new URL(selfUrl.toString());
+          child.searchParams.delete("index");
+          child.searchParams.set("lang", code);
+          child.searchParams.set("host", host);
+          child.searchParams.set("types", types.join(","));
+          return `  <sitemap>\n    <loc>${xmlEscape(child.toString())}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </sitemap>`;
+        })
+        .join("\n");
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${items}\n</sitemapindex>\n`;
+      return new Response(xml, {
+        status: 200,
+        headers: {
+          ...cors,
+          "Content-Type": "application/xml; charset=utf-8",
+          "Cache-Control": "public, max-age=600",
+        },
+      });
+    }
 
     const entries: { loc: string; lastmod?: string | null }[] = [];
 

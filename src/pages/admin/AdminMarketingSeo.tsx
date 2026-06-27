@@ -43,6 +43,16 @@ const AdminMarketingSeo: React.FC = () => {
     return `${FUNCTIONS_BASE}?${params.toString()}`;
   };
 
+  const buildIndexUrl = () => {
+    const params = new URLSearchParams({
+      index: '1',
+      host: host.replace(/\/$/, ''),
+      types: activeTypes.join(','),
+      v: String(tick),
+    });
+    return `${FUNCTIONS_BASE}?${params.toString()}`;
+  };
+
   const copy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -125,6 +135,39 @@ const AdminMarketingSeo: React.FC = () => {
               {t('admin.seo.noTypes', 'Selecciona almenys un tipus de contingut.')}
             </p>
           )}
+          {activeTypes.length > 0 && (() => {
+            const indexUrl = buildIndexUrl();
+            return (
+              <div className="rounded-md border-2 border-primary/40 bg-primary/5 p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="font-medium text-sm">
+                      {t('admin.seo.indexTitle', 'Sitemap index (recomanat)')}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {t(
+                        'admin.seo.indexDesc',
+                        'Un únic enllaç que llista tots els sitemaps per idioma. Puja només aquest a Google Search Console.',
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" onClick={() => copy(indexUrl)} className="gap-1">
+                      <Copy className="h-4 w-4" />
+                      {t('admin.seo.copy', 'Copiar')}
+                    </Button>
+                    <Button size="sm" variant="outline" asChild className="gap-1">
+                      <a href={indexUrl} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                        {t('admin.seo.open', 'Obrir')}
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+                <div className="text-xs bg-background p-2 rounded font-mono break-all">{indexUrl}</div>
+              </div>
+            );
+          })()}
           {activeTypes.length > 0 &&
             languages.map((lng) => {
               const url = buildUrl(lng.code);
