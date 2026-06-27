@@ -41,6 +41,8 @@
     "redirecting": "Redirigiendo...",
     "invalidResetLink": "Enlace no válido o caducado. Vuelve a solicitar la recuperación.",
     "passwordRequirementsNotMet": "La contraseña no cumple todos los requisitos.",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
     "passwordStrength": {
       "label": "Fortaleza de la contraseña",
       "weak": "Débil",

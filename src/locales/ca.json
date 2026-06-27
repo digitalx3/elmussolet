@@ -41,6 +41,8 @@
     "redirecting": "Redirigint...",
     "invalidResetLink": "Enllaç no vàlid o caducat. Torna a sol·licitar la recuperació.",
     "passwordRequirementsNotMet": "La contrasenya no compleix tots els requisits.",
+    "showPassword": "Mostrar contrasenya",
+    "hidePassword": "Amagar contrasenya",
     "passwordStrength": {
       "label": "Fortalesa de la contrasenya",
       "weak": "Feble",
