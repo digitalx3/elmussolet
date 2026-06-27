@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
@@ -24,7 +24,7 @@ const stockBadge = (status: string, quantity: number, t: (k: string) => string) 
     case 'out_of_stock':
       return <Badge variant="destructive">{t('products.outOfStock')}</Badge>;
     case 'discontinued':
-      return <Badge variant="destructive">Descatalogat</Badge>;
+      return <Badge variant="destructive">{t('products.discontinued') || 'Descatalogat'}</Badge>;
     default:
       return null;
   }
@@ -74,6 +74,37 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
     requestUpsell(product.id);
   };
 
+  const isDiscontinued = product.stockStatus === 'discontinued';
+  const replacement = product.replacement;
+
+  const ReplacementBlock = ({ compact = false }: { compact?: boolean }) =>
+    isDiscontinued && replacement ? (
+      <Link
+        to={`/producte/${replacement.slug}`}
+        onClick={(e) => e.stopPropagation()}
+        className="mt-2 flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 hover:border-primary transition-colors"
+      >
+        {replacement.image ? (
+          <img src={replacement.image} alt={replacement.name} className="h-9 w-9 rounded object-cover flex-shrink-0" />
+        ) : (
+          <div className="h-9 w-9 rounded bg-muted flex-shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground leading-none">
+            {t('products.replacementLabel')}
+          </div>
+          <div className={`${compact ? 'text-xs' : 'text-sm'} font-medium truncate text-foreground`}>
+            {replacement.name}
+          </div>
+        </div>
+        <span className="text-[11px] font-medium text-primary inline-flex items-center gap-0.5 flex-shrink-0">
+          {t('products.viewReplacement')}
+          <ChevronRight className="h-3 w-3" />
+        </span>
+      </Link>
+    ) : null;
+
+
   if (view === 'list') {
     return (
       <Link
@@ -117,6 +148,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
               {t('products.addToCart')}
             </Button>
           </div>
+          <ReplacementBlock />
         </div>
       </Link>
     );
@@ -169,6 +201,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
             <ShoppingBag className="h-4 w-4" />
           </Button>
         </div>
+        <ReplacementBlock compact />
       </div>
     </Link>
   );

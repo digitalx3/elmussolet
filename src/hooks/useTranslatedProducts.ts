@@ -46,9 +46,10 @@ export interface TranslatedProduct {
   description: string;
   primaryImage: string | null;
   createdAt: string;
+  replacement: { id: string; slug: string; name: string; image: string | null } | null;
 }
 
-function mapProduct(p: any, translation: any): TranslatedProduct {
+function mapProduct(p: any, translation: any, lang: string = 'ca'): TranslatedProduct {
   const images = p.product_images || [];
   const primaryImg = images.find((i: any) => i.is_primary) || images.sort((a: any, b: any) => a.sort_order - b.sort_order)[0];
 
@@ -63,6 +64,21 @@ function mapProduct(p: any, translation: any): TranslatedProduct {
     saleStartsAt: p.sale_starts_at,
     saleEndsAt: p.sale_ends_at,
   });
+
+  const rep = p.replacement;
+  let replacement: TranslatedProduct['replacement'] = null;
+  if (rep) {
+    const rTrs = rep.product_translations || [];
+    const rTr = rTrs.find((x: any) => x.language === lang) || rTrs[0];
+    const rImgs = (rep.product_images || []).slice().sort((a: any, b: any) => a.sort_order - b.sort_order);
+    const rPrimary = rImgs.find((i: any) => i.is_primary) || rImgs[0];
+    replacement = {
+      id: rep.id,
+      slug: (rTr as any)?.slug || rep.slug,
+      name: rTr?.name || rep.slug,
+      image: rPrimary?.image_url || null,
+    };
+  }
 
   return {
     id: p.id,
@@ -95,6 +111,7 @@ function mapProduct(p: any, translation: any): TranslatedProduct {
     description: translation?.description ?? '',
     primaryImage: primaryImg?.image_url ?? null,
     createdAt: p.created_at,
+    replacement,
   };
 }
 
@@ -114,7 +131,12 @@ export function useTranslatedProducts(filters: ProductFilters = {}) {
           product_translations!inner(name, short_description, description, language),
           product_images(image_url, is_primary, sort_order),
           brands(name, logo_url),
-          tax_rates(id, name, percentage)
+          tax_rates(id, name, percentage),
+          replacement:replacement_product_id (
+            id, slug,
+            product_translations(name, language, slug),
+            product_images(image_url, is_primary, sort_order)
+          )
         `)
         .eq('is_active', true)
         .eq('product_translations.language', lang);
@@ -138,7 +160,7 @@ export function useTranslatedProducts(filters: ProductFilters = {}) {
 
       let products: TranslatedProduct[] = (data || []).map((p: any) => {
         const tr = Array.isArray(p.product_translations) ? p.product_translations[0] : p.product_translations;
-        return mapProduct(p, tr);
+        return mapProduct(p, tr, lang);
       });
 
       if (filters.search) {
@@ -324,7 +346,12 @@ export function useFeaturedProducts(limit: number = 8) {
           product_translations!inner(name, short_description, description, language),
           product_images(image_url, is_primary, sort_order),
           brands(name, logo_url),
-          tax_rates(id, name, percentage)
+          tax_rates(id, name, percentage),
+          replacement:replacement_product_id (
+            id, slug,
+            product_translations(name, language, slug),
+            product_images(image_url, is_primary, sort_order)
+          )
         `)
         .eq('is_active', true)
         .eq('is_featured', true)
@@ -335,7 +362,7 @@ export function useFeaturedProducts(limit: number = 8) {
       if (error) throw error;
       return ((data || []) as any[]).map(p => {
         const tr = Array.isArray(p.product_translations) ? p.product_translations[0] : p.product_translations;
-        return mapProduct(p, tr);
+        return mapProduct(p, tr, lang);
       });
     },
   });
@@ -366,7 +393,12 @@ export function useRelatedProducts(productId: string | undefined) {
           product_translations!inner(name, short_description, description, language),
           product_images(image_url, is_primary, sort_order),
           brands(name, logo_url),
-          tax_rates(id, name, percentage)
+          tax_rates(id, name, percentage),
+          replacement:replacement_product_id (
+            id, slug,
+            product_translations(name, language, slug),
+            product_images(image_url, is_primary, sort_order)
+          )
         `)
         .in('id', ids)
         .eq('is_active', true)
@@ -376,7 +408,7 @@ export function useRelatedProducts(productId: string | undefined) {
       const byId = new Map<string, TranslatedProduct>();
       (data || []).forEach((p: any) => {
         const tr = Array.isArray(p.product_translations) ? p.product_translations[0] : p.product_translations;
-        byId.set(p.id, mapProduct(p, tr));
+        byId.set(p.id, mapProduct(p, tr, lang));
       });
       // Preserve admin-defined order
       return ids.map(id => byId.get(id)).filter(Boolean) as TranslatedProduct[];
