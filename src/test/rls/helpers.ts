@@ -40,8 +40,9 @@ export async function ensureFixture(): Promise<Fixture> {
   });
   if (signErr || !signIn.session) {
     throw new Error(
-      `Cannot bootstrap RLS suite: failed to log in as ${ADMIN_EMAIL}. ` +
-        `Set TEST_ADMIN_EMAIL / TEST_ADMIN_PASSWORD env vars to a super_admin account. Error: ${signErr?.message}`,
+      `Cannot bootstrap RLS suite: admin login failed. ` +
+        `Set TEST_ADMIN_EMAIL / TEST_ADMIN_PASSWORD env vars to a super_admin account. ` +
+        `Error code: ${signErr?.status ?? "unknown"}`,
     );
   }
   const { data, error } = await bootstrap.functions.invoke("rls-test-setup", { body: {} });

@@ -39,12 +39,18 @@ jobs:
       - name: Fetch admin credentials via GitHub OIDC
         id: bootstrap
         run: |
+          set +x
           set -euo pipefail
+          # Never echo the OIDC token or the bootstrap response in clear:
+          # mask any non-empty value we extract from them before any other step
+          # has a chance to print it.
           OIDC_TOKEN=$(curl -sSL \
             -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=lovable-rls-ci" \
             | jq -r .value)
-          if [ -z "$OIDC_TOKEN" ] || [ "$OIDC_TOKEN" = "null" ]; then
+          if [ -n "$OIDC_TOKEN" ] && [ "$OIDC_TOKEN" != "null" ]; then
+            echo "::add-mask::$OIDC_TOKEN"
+          else
             echo "::error::Failed to obtain GitHub OIDC token"
             exit 1
           fi
@@ -52,17 +58,21 @@ jobs:
             -H "Content-Type: application/json" \
             -H "apikey: $VITE_SUPABASE_PUBLISHABLE_KEY" \
             -d "{\"token\":\"$OIDC_TOKEN\"}")
-          EMAIL=$(echo "$RESPONSE" | jq -r .email)
-          PASSWORD=$(echo "$RESPONSE" | jq -r .password)
-          if [ -z "$EMAIL" ] || [ "$EMAIL" = "null" ]; then
-            echo "::error::Bootstrap failed: $RESPONSE"
+          # The response body may contain the email+password, so mask the raw
+          # payload before we ever risk echoing it (e.g. in error branches).
+          echo "::add-mask::$RESPONSE"
+          EMAIL=$(echo "$RESPONSE" | jq -r '.email // empty')
+          PASSWORD=$(echo "$RESPONSE" | jq -r '.password // empty')
+          if [ -n "$EMAIL" ]; then echo "::add-mask::$EMAIL"; fi
+          if [ -n "$PASSWORD" ]; then echo "::add-mask::$PASSWORD"; fi
+          if [ -z "$EMAIL" ] || [ -z "$PASSWORD" ]; then
+            ERR=$(echo "$RESPONSE" | jq -r '.error // "unknown error"')
+            echo "::error::Bootstrap failed: $ERR"
             exit 1
           fi
-          # Mask before exporting so logs never reveal them.
-          echo "::add-mask::$EMAIL"
-          echo "::add-mask::$PASSWORD"
           echo "TEST_ADMIN_EMAIL=$EMAIL" >> "$GITHUB_ENV"
           echo "TEST_ADMIN_PASSWORD=$PASSWORD" >> "$GITHUB_ENV"
+          echo "Credentials fetched OK (values masked)."
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
