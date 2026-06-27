@@ -17,7 +17,6 @@ export default defineConfig({
     include: ["src/test/rls/**/*.test.ts"],
     testTimeout: 60_000,
     hookTimeout: 90_000,
-    fileParallel: false,
   },
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
