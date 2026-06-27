@@ -56,7 +56,10 @@
       "lowercase": "Una letra minúscula (a-z)",
       "number": "Un número (0-9)",
       "special": "Un carácter especial (!@#$...)"
-    }
+    },
+    "weakPasswordIntro": "La contraseña no cumple:",
+    "emailAlreadyRegistered": "Este correo ya está registrado.",
+    "invalidEmail": "Correo electrónico no válido."
   },
   "home": {
     "heroTitle": "Tu tienda de puericultura de confianza",

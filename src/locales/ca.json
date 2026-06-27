@@ -56,7 +56,10 @@
       "lowercase": "Una lletra minúscula (a-z)",
       "number": "Un número (0-9)",
       "special": "Un caràcter especial (!@#$...)"
-    }
+    },
+    "weakPasswordIntro": "La contrasenya no compleix:",
+    "emailAlreadyRegistered": "Aquest correu ja està registrat.",
+    "invalidEmail": "Correu electrònic no vàlid."
   },
   "home": {
     "heroTitle": "La teva botiga de puericultura de confiança",
