@@ -230,6 +230,7 @@ const AdminProductForm: React.FC = () => {
         sale_ends_at: (product as any).sale_ends_at ?? null,
         is_featured: !!(product as any).is_featured,
         featured_order: (product as any).featured_order ?? null,
+        replacement_product_id: (product as any).replacement_product_id ?? null,
         translations,
         images: (product.product_images || []).sort((a, b) => a.sort_order - b.sort_order).map(img => ({
           id: img.id, image_url: img.image_url, alt_text: img.alt_text || '', is_primary: img.is_primary, sort_order: img.sort_order,
