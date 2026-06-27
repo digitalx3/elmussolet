@@ -50,6 +50,7 @@ const CartPage: React.FC = () => {
 
   return (
     <div className="container py-8 max-w-3xl mx-auto">
+      <NoIndex />
       {hasList && <PublicListSteps current="buy" />}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="font-display text-3xl font-bold mb-6">{t('cart.title')}</h1>
