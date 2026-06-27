@@ -138,6 +138,7 @@ export function useSaveProduct() {
         sale_ends_at: data.sale_ends_at || null,
         is_featured: !!data.is_featured,
         featured_order: data.featured_order ?? null,
+        replacement_product_id: data.stock_status === 'discontinued' ? (data.replacement_product_id || null) : null,
       };
 
 
