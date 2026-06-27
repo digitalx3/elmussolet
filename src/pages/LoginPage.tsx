@@ -23,7 +23,7 @@ const LoginPage: React.FC = () => {
     if (error) {
       notify.error(t('auth.loginError'));
     } else {
-      navigate('/el-meu-compte');
+      navigate('/');
     }
   };
 
