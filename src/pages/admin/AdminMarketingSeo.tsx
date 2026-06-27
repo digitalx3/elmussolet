@@ -148,12 +148,60 @@ const AdminMarketingSeo: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button onClick={regenerate} disabled={regenerating} className="gap-2">
-            <RefreshCw className={`h-4 w-4 ${regenerating ? 'animate-spin' : ''}`} />
-            {regenerating
-              ? t('admin.seo.regenerating', 'Regenerant…')
-              : t('admin.seo.regenerateNow', 'Regenerar ara')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => regenerate('all')}
+              disabled={regenerating}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${regenBusy === 'all' ? 'animate-spin' : ''}`} />
+              {regenBusy === 'all'
+                ? t('admin.seo.regenerating', 'Regenerant…')
+                : t('admin.seo.regenerateAll', 'Regenerar-ho tot')}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => regenerate('sitemaps', { sitemapIndex: true, langs: 'all' })}
+              disabled={regenerating}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${regenBusy === 'sitemaps' ? 'animate-spin' : ''}`} />
+              {t('admin.seo.regenerateSitemaps', 'Només sitemaps (tots)')}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => regenerate('sitemap-index', { sitemapIndex: true, langs: [] })}
+              disabled={regenerating}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${regenBusy === 'sitemap-index' ? 'animate-spin' : ''}`} />
+              {t('admin.seo.regenerateIndex', 'Només sitemap index')}
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {languages.map((lng) => {
+              const key = `sitemap-${lng.code}`;
+              return (
+                <Button
+                  key={lng.code}
+                  size="sm"
+                  variant="outline"
+                  disabled={regenerating}
+                  onClick={() => regenerate(key, { langs: [lng.code] })}
+                  className="gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${regenBusy === key ? 'animate-spin' : ''}`} />
+                  {t('admin.seo.regenerateSitemapLang', 'Sitemap')} · {lng.code}
+                </Button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t(
+              'admin.seo.regenSelectiveHelp',
+              'Pots regenerar només els sitemaps (global o per idioma) sense tocar el robots.txt.',
+            )}
+          </p>
           {live && (
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">
