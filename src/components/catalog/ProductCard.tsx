@@ -61,7 +61,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (product.stockStatus === 'out_of_stock') return;
+    if ((product.stockStatus === 'out_of_stock' || product.stockStatus === 'discontinued')) return;
     addStandardItem({
       productId: product.id,
       name: product.name,
@@ -111,7 +111,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
               variant="outline"
               className="gap-1"
               onClick={handleAddToCart}
-              disabled={product.stockStatus === 'out_of_stock'}
+              disabled={(product.stockStatus === 'out_of_stock' || product.stockStatus === 'discontinued')}
             >
               <ShoppingBag className="h-3.5 w-3.5" />
               {t('products.addToCart')}
@@ -164,7 +164,7 @@ const ProductCard: React.FC<Props> = ({ product, view }) => {
             variant="ghost"
             className="h-8 w-8 flex-shrink-0"
             onClick={handleAddToCart}
-            disabled={product.stockStatus === 'out_of_stock'}
+            disabled={(product.stockStatus === 'out_of_stock' || product.stockStatus === 'discontinued')}
           >
             <ShoppingBag className="h-4 w-4" />
           </Button>
