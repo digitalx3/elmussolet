@@ -265,6 +265,7 @@ const AdminUsers: React.FC = () => {
         city: p.city || '',
         postal_code: p.postal_code || '',
         province: p.province || '',
+        country: p.country || 'ES',
         nif: p.nif || '',
         company_name: p.company_name || '',
         send_welcome_email: false,
