@@ -24,7 +24,7 @@ const stockBadge = (status: string, quantity: number, t: (k: string) => string) 
     case 'out_of_stock':
       return <Badge variant="destructive">{t('products.outOfStock')}</Badge>;
     case 'discontinued':
-      return <Badge variant="destructive">Descatalogat</Badge>;
+      return <Badge variant="destructive">{t('products.discontinued') || 'Descatalogat'}</Badge>;
     default:
       return null;
   }
