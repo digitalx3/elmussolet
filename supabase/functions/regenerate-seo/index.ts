@@ -115,6 +115,23 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const host = String(body.host || "https://elmussolet.lovable.app").replace(/\/$/, "");
 
+    // Selective targets. If not provided, regenerate everything (back-compat).
+    const targets = (body.targets || {}) as {
+      robots?: boolean;
+      sitemapIndex?: boolean;
+      langs?: string[] | "all";
+    };
+    const hasTargets = body.targets && typeof body.targets === "object";
+    const doRobots = hasTargets ? !!targets.robots : true;
+    const doIndex = hasTargets ? !!targets.sitemapIndex : true;
+    const langFilter: string[] | "all" = hasTargets
+      ? targets.langs === "all"
+        ? "all"
+        : Array.isArray(targets.langs)
+          ? targets.langs
+          : []
+      : "all";
+
     // Languages
     const { data: langRows } = await sb
       .from("languages")
