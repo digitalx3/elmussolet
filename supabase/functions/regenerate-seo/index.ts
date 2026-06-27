@@ -115,6 +115,23 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const host = String(body.host || "https://elmussolet.lovable.app").replace(/\/$/, "");
 
+    // Selective targets. If not provided, regenerate everything (back-compat).
+    const targets = (body.targets || {}) as {
+      robots?: boolean;
+      sitemapIndex?: boolean;
+      langs?: string[] | "all";
+    };
+    const hasTargets = body.targets && typeof body.targets === "object";
+    const doRobots = hasTargets ? !!targets.robots : true;
+    const doIndex = hasTargets ? !!targets.sitemapIndex : true;
+    const langFilter: string[] | "all" = hasTargets
+      ? targets.langs === "all"
+        ? "all"
+        : Array.isArray(targets.langs)
+          ? targets.langs
+          : []
+      : "all";
+
     // Languages
     const { data: langRows } = await sb
       .from("languages")
@@ -147,6 +164,9 @@ Deno.serve(async (req) => {
     const indexItems: { loc: string; lastmod: string }[] = [];
     const uploaded: { path: string; content: string; type: string }[] = [];
 
+    const wantsLang = (code: string) =>
+      langFilter === "all" ? true : (langFilter as string[]).includes(code);
+
     for (const lang of langs) {
       const entries: { loc: string; lastmod?: string | null }[] = [];
       for (const r of STATIC_ROUTES[lang] || STATIC_ROUTES.ca)
@@ -174,28 +194,37 @@ Deno.serve(async (req) => {
         entries.push({ loc: `${host}/cataleg/${slug}`, lastmod: (c as any).updated_at });
       }
 
-      uploaded.push({
-        path: `seo/sitemap-${lang}.xml`,
-        content: buildUrlset(entries),
-        type: "application/xml; charset=utf-8",
-      });
+      // Index always references every language sitemap.
       indexItems.push({
         loc: `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/seo/sitemap-${lang}.xml`,
         lastmod: today,
       });
+
+      if (wantsLang(lang)) {
+        uploaded.push({
+          path: `seo/sitemap-${lang}.xml`,
+          content: buildUrlset(entries),
+          type: "application/xml; charset=utf-8",
+        });
+      }
     }
 
     const sitemapIndexPublicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/seo/sitemap.xml`;
-    uploaded.push({
-      path: "seo/sitemap.xml",
-      content: buildSitemapIndex(indexItems),
-      type: "application/xml; charset=utf-8",
-    });
-    uploaded.push({
-      path: "seo/robots.txt",
-      content: buildRobots(host, sitemapIndexPublicUrl),
-      type: "text/plain; charset=utf-8",
-    });
+    if (doIndex) {
+      uploaded.push({
+        path: "seo/sitemap.xml",
+        content: buildSitemapIndex(indexItems),
+        type: "application/xml; charset=utf-8",
+      });
+    }
+    if (doRobots) {
+      uploaded.push({
+        path: "seo/robots.txt",
+        content: buildRobots(host, sitemapIndexPublicUrl),
+        type: "text/plain; charset=utf-8",
+      });
+    }
+
 
     // Upload all
     for (const f of uploaded) {
@@ -217,6 +246,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         ok: true,
         generated_at: new Date().toISOString(),
+        regenerated: uploaded.map((u) => u.path),
         robots: `${base}/robots.txt`,
         sitemapIndex: `${base}/sitemap.xml`,
         sitemaps: langs.map((c) => ({ lang: c, url: `${base}/sitemap-${c}.xml` })),
