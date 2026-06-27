@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { z } from 'zod';
@@ -22,15 +23,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { useShippingCost } from '@/hooks/useShippingCost';
 import NoIndex from '@/components/seo/NoIndex';
 
-const shippingSchema = z.object({
+export const shippingSchema = z.object({
   fullName: z.string().trim().min(1, 'Required').max(100),
   phone: z.string().trim().min(6, 'Required').max(20),
   addressLine1: z.string().trim().min(1, 'Required').max(200),
   addressLine2: z.string().max(200).optional().default(''),
   city: z.string().trim().min(1, 'Required').max(100),
   postalCode: z.string().trim().min(4, 'Required').max(10),
-  province: z.string().trim().min(1, 'Required').max(100),
+  province: z.string().trim().max(100).optional().default(''),
   country: z.string().trim().min(2, 'Required').max(2),
+}).superRefine((data, ctx) => {
+  if (data.country === 'ES' && !data.province.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: i18next.t('errors.provinceRequired'),
+      path: ['province'],
+    });
+  }
 });
 
 type ShippingForm = z.infer<typeof shippingSchema>;

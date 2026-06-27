@@ -628,6 +628,7 @@
     "notFound": "Página no encontrada",
     "notFoundDesc": "La página que buscas no existe.",
     "unauthorized": "No tienes permiso para acceder a esta página.",
-    "loginRequired": "Debes iniciar sesión para continuar."
+    "loginRequired": "Debes iniciar sesión para continuar.",
+    "provinceRequired": "La provincia es obligatoria para España."
   }
 }

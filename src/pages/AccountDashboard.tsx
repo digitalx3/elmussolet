@@ -103,6 +103,13 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
     company_name: '',
   });
   const [saving, setSaving] = useState(false);
+  const [provinceError, setProvinceError] = useState(false);
+
+  const validateProvince = () => {
+    const required = form.country === 'ES' && !form.province?.trim();
+    setProvinceError(required);
+    return !required;
+  };
 
   // Auth credentials state
   const [currentEmail, setCurrentEmail] = useState('');
@@ -160,6 +167,10 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
 
   const handleSave = async () => {
     if (!profile) return;
+    if (!validateProvince()) {
+      notify.error(t('errors.provinceRequired'));
+      return;
+    }
     setSaving(true);
     const { error } = await supabase.from('profiles').update(form).eq('id', profile.id);
     setSaving(false);
@@ -266,11 +277,14 @@ function ProfileTab({ profile, refreshProfile }: { profile: any; refreshProfile:
             <CountryProvinceSelect
               country={form.country}
               province={form.province}
-              onCountryChange={(v) => update('country', v)}
-              onProvinceChange={(v) => update('province', v)}
+              onCountryChange={(v) => { update('country', v); setProvinceError(false); }}
+              onProvinceChange={(v) => { update('province', v); setProvinceError(false); }}
               countryLabel={t('account.country')}
               provinceLabel={t('account.province')}
             />
+            {provinceError && (
+              <p className="text-sm font-medium text-destructive">{t('errors.provinceRequired')}</p>
+            )}
           </div>
         </div>
 

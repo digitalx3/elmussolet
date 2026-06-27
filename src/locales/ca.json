@@ -628,6 +628,7 @@
     "notFound": "Pàgina no trobada",
     "notFoundDesc": "La pàgina que busques no existeix.",
     "unauthorized": "No tens permís per accedir a aquesta pàgina.",
-    "loginRequired": "Has d'iniciar sessió per continuar."
+    "loginRequired": "Has d'iniciar sessió per continuar.",
+    "provinceRequired": "La província és obligatòria per a Espanya."
   }
 }
