@@ -47,7 +47,19 @@ export async function ensureFixture(): Promise<Fixture> {
   }
   const { data, error } = await bootstrap.functions.invoke("rls-test-setup", { body: {} });
   await bootstrap.auth.signOut();
-  if (error) throw new Error(`rls-test-setup failed: ${error.message}`);
+  if (error) {
+    let details = "";
+    const context = (error as any)?.context;
+    if (context && typeof context.json === "function") {
+      try {
+        const body = await context.json();
+        details = typeof body?.error === "string" ? ` (${body.error})` : "";
+      } catch {
+        details = "";
+      }
+    }
+    throw new Error(`rls-test-setup failed: ${error.message}${details}`);
+  }
   fixture = data as Fixture;
   return fixture;
 }

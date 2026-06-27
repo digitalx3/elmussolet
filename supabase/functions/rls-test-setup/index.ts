@@ -22,6 +22,12 @@ const USERS = [
   { key: "super", email: "test-super@rlstest.local", full_name: "RLS Test Super", role: "super_admin" as const },
 ];
 
+function assertNoError(error: unknown, context: string) {
+  if (!error) return;
+  const message = error instanceof Error ? error.message : JSON.stringify(error);
+  throw new Error(`${context}: ${message}`);
+}
+
 async function ensureUser(admin: ReturnType<typeof createClient>, email: string, full_name: string) {
   // Find existing
   // @ts-ignore admin API
@@ -70,28 +76,41 @@ Deno.serve(async (req) => {
     for (const u of USERS) {
       const id = await ensureUser(admin, u.email, u.full_name);
       ids[u.key] = id;
+
+      const { error: profileErr } = await admin.from("profiles").upsert({
+        id,
+        full_name: u.full_name,
+        preferred_language: "ca",
+        role: u.role ? "admin" : "customer",
+      });
+      assertNoError(profileErr, `profile upsert failed for ${u.key}`);
+
       if (u.role) {
-        await admin.from("user_roles").upsert({ user_id: id, role: u.role }, { onConflict: "user_id,role" });
+        const { error: roleUpsertErr } = await admin
+          .from("user_roles")
+          .upsert({ user_id: id, role: u.role }, { onConflict: "user_id,role" });
+        assertNoError(roleUpsertErr, `role upsert failed for ${u.key}`);
       }
     }
 
-    // Provision birth list for owner (idempotent by access_code)
+    // Provision birth list for owner (idempotent by list_code)
     const ACCESS_CODE = "RLS-TEST-LIST";
     const PASSWORD_HASH = "$2a$10$nLkk4QkS9SqLD9rXt6IcOOuMpAjyz9k8N7zLs5w0gPbqUq4j5sgwK"; // bcrypt("rlstest")
     let listId: string;
     const { data: existingList } = await admin
-      .from("birth_lists").select("id").eq("access_code", ACCESS_CODE).maybeSingle();
+      .from("birth_lists").select("id").eq("list_code", ACCESS_CODE).maybeSingle();
     if (existingList) {
       listId = existingList.id;
     } else {
       const { data: newList, error: lErr } = await admin
         .from("birth_lists")
         .insert({
-          access_code: ACCESS_CODE,
+          list_code: ACCESS_CODE,
           baby_name: "RLS Test Baby",
-          due_date: new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
+          expected_date: new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
           password_hash: PASSWORD_HASH,
-          welcome_message: "RLS test fixture",
+          notes: "RLS test fixture",
+          status: "active",
           created_by: ids.owner,
         })
         .select("id").single();
@@ -99,19 +118,38 @@ Deno.serve(async (req) => {
       listId = newList.id;
     }
 
-    await admin.from("list_owners").upsert(
-      { list_id: listId, user_id: ids.owner, full_name: "RLS Test Owner", email: "test-owner@rlstest.local" },
-      { onConflict: "list_id,user_id" } as any,
-    );
+    const { data: existingOwner, error: ownerLookupErr } = await admin
+      .from("list_owners")
+      .select("id")
+      .eq("list_id", listId)
+      .eq("user_id", ids.owner)
+      .maybeSingle();
+    assertNoError(ownerLookupErr, "list owner lookup failed");
+
+    const ownerPayload = {
+      list_id: listId,
+      user_id: ids.owner,
+      first_name: "RLS Test",
+      last_name: "Owner",
+      email: "test-owner@rlstest.local",
+      is_primary: true,
+    };
+    const ownerResult = existingOwner
+      ? await admin.from("list_owners").update(ownerPayload).eq("id", existingOwner.id)
+      : await admin.from("list_owners").insert(ownerPayload);
+    assertNoError(ownerResult.error, "list owner provision failed");
 
     let sectionId: string;
     const { data: existingSection } = await admin
-      .from("list_sections").select("id").eq("list_id", listId).eq("name", "RLS Section").maybeSingle();
+      .from("list_sections").select("id").eq("list_id", listId).eq("name_ca", "Secció RLS").maybeSingle();
     if (existingSection) {
       sectionId = existingSection.id;
     } else {
       const { data: sec, error: sErr } = await admin
-        .from("list_sections").insert({ list_id: listId, name: "RLS Section", sort_order: 0 }).select("id").single();
+        .from("list_sections")
+        .insert({ list_id: listId, name_ca: "Secció RLS", name_es: "Sección RLS", sort_order: 0 })
+        .select("id")
+        .single();
       if (sErr) throw sErr;
       sectionId = sec.id;
     }
