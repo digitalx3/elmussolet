@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { notify } from '@/lib/notify';
+import PasswordStrength, { getPasswordRules, getPasswordScore } from '@/components/auth/PasswordStrength';
 
 const RegisterPage: React.FC = () => {
   const { t } = useTranslation();
@@ -17,10 +18,14 @@ const RegisterPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const rules = getPasswordRules(t);
+  const passwordScore = getPasswordScore(password, rules);
+  const passwordValid = passwordScore === rules.length;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 8) {
-      notify.error(t('auth.passwordMinLength'));
+    if (!passwordValid) {
+      notify.error(t('auth.passwordRequirementsNotMet'));
       return;
     }
     if (password !== confirmPassword) {
@@ -53,12 +58,16 @@ const RegisterPage: React.FC = () => {
         <div>
           <Label htmlFor="password">{t('auth.password')}</Label>
           <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+          <PasswordStrength password={password} />
         </div>
         <div>
           <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
           <Input id="confirmPassword" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+          {confirmPassword && confirmPassword !== password && (
+            <p className="mt-1 text-xs text-destructive">{t('auth.passwordMismatch')}</p>
+          )}
         </div>
-        <Button type="submit" className="w-full" disabled={loading}>
+        <Button type="submit" className="w-full" disabled={loading || !passwordValid || password !== confirmPassword}>
           {loading ? t('common.loading') : t('auth.register')}
         </Button>
         <p className="text-center text-sm text-muted-foreground">
