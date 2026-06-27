@@ -414,7 +414,7 @@ const CheckoutPage: React.FC = () => {
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="city" render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('account.city')}</FormLabel>
@@ -429,14 +429,24 @@ const CheckoutPage: React.FC = () => {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={form.control} name="province" render={({ field }) => (
-                      <FormItem className="col-span-2 sm:col-span-1">
-                        <FormLabel>{t('account.province')}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
+                  </div>
+                  <FormField control={form.control} name="country" render={({ field: cField }) => (
+                    <FormField control={form.control} name="province" render={({ field: pField }) => (
+                      <FormItem>
+                        <FormLabel>{t('account.country')} / {t('account.province')}</FormLabel>
+                        <FormControl>
+                          <CountryProvinceSelect
+                            country={cField.value}
+                            province={pField.value}
+                            onCountryChange={cField.onChange}
+                            onProvinceChange={pField.onChange}
+                            hideLabels
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
-                  </div>
+                  )} />
                 </div>
               </Form>
             )}
