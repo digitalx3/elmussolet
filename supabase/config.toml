@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.send-contact-email]
 verify_jwt = false
+
+[functions.secure-signup]
+verify_jwt = false
