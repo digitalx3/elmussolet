@@ -246,6 +246,7 @@ const AdminUsers: React.FC = () => {
   const openCreate = () => {
     setEditMode(false);
     setForm(emptyForm);
+    setProvinceError(false);
     setFormOpen(true);
   };
 
