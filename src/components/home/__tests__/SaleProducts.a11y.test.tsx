@@ -68,7 +68,8 @@ describe('SaleProducts — accessibility', () => {
       const { container } = renderComp();
       const list = container.querySelector('ul');
       expect(list).not.toBeNull();
-      expect(list!.querySelectorAll(':scope > li').length).toBe(8);
+      const items = Array.from(list!.children).filter((c) => c.tagName === 'LI');
+      expect(items.length).toBe(8);
     });
 
     it('renders the pagination as a labelled group with prev/next having accessible names and aria-controls', () => {
