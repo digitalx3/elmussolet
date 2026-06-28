@@ -17,6 +17,7 @@ import {
 import { Plus, Pencil, Trash2, Upload, X } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { optimizeImage } from '@/lib/optimizeImage';
+import { validateImageFile } from '@/lib/validateImageFile';
 import LanguageTabs from '@/components/admin/LanguageTabs';
 import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
 import { useLanguages } from '@/hooks/useLanguages';
