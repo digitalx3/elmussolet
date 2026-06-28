@@ -82,16 +82,17 @@ describe('SaleProducts carousel', () => {
     expect(screen.getByText('2 / 2')).toBeInTheDocument();
   });
 
-  it('renders the sale label with the discount percentage and the struck-through original price', () => {
+  it('renders the sale label with the discount percentage and the semantic struck-through original price', () => {
     useSaleProductsMock.mockReturnValue({
       data: [makeProduct(1, { priceWithTax: 50, finalPriceWithTax: 35, discountPct: 30 })],
       isLoading: false,
     });
-    renderComp();
+    const { container } = renderComp();
     const card = screen.getByRole('link');
     expect(within(card).getByText(/Oferta -30%/i)).toBeInTheDocument();
-    // Original price visible and struck through
-    const original = within(card).getByText(/50,00/);
-    expect(original.className).toMatch(/line-through/);
+    // Original price marked with semantic <s>
+    const original = container.querySelector('s');
+    expect(original).not.toBeNull();
+    expect(original!.textContent).toMatch(/50,00/);
   });
 });

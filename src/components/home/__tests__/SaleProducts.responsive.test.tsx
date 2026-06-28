@@ -60,19 +60,25 @@ const renderComp = () =>
   );
 
 const assertCardOrder = (card: HTMLElement) => {
-  const label = within(card).getByText(/Oferta -25%/i);
-  const original = within(card).getByText(/100,00/);
-  const final = within(card).getByText(/75,00/);
+  // Visible sale label (decorative span with destructive bg).
+  const label = card.querySelector('span.bg-destructive') as HTMLElement | null;
+  expect(label).not.toBeNull();
+  expect(label!.textContent).toMatch(/Oferta -25%/);
 
-  // Sale label exists with destructive background and is positioned before prices in DOM.
-  expect(label.className).toMatch(/bg-destructive/);
-  expect(original.className).toMatch(/line-through/);
-  expect(final.className).toMatch(/text-destructive/);
+  // Original price uses the semantic <s> element.
+  const original = card.querySelector('s') as HTMLElement | null;
+  expect(original).not.toBeNull();
+  expect(original!.textContent).toMatch(/100,00/);
 
-  const pos = (el: HTMLElement) =>
-    Array.from(card.querySelectorAll('*')).indexOf(el);
-  expect(pos(label)).toBeLessThan(pos(original));
-  expect(pos(original)).toBeLessThan(pos(final));
+  // Final sale price highlighted with text-destructive (not the label, not <s>).
+  const final = Array.from(card.querySelectorAll('span.text-destructive')).find(
+    (el) => /75,00/.test(el.textContent || ''),
+  ) as HTMLElement | undefined;
+  expect(final).toBeDefined();
+
+  const pos = (el: HTMLElement) => Array.from(card.querySelectorAll('*')).indexOf(el);
+  expect(pos(label!)).toBeLessThan(pos(original!));
+  expect(pos(original!)).toBeLessThan(pos(final!));
 };
 
 describe('SaleProducts — responsive render of label, struck price and sale price', () => {
@@ -102,7 +108,7 @@ describe('SaleProducts — responsive render of label, struck price and sale pri
   it('uses a responsive grid that scales columns across breakpoints', () => {
     setViewport(1440);
     const { container } = renderComp();
-    const grid = container.querySelector('div.grid');
+    const grid = container.querySelector('ul.grid');
     expect(grid).not.toBeNull();
     // Mobile-first 2 cols, then sm:3, then lg:4
     expect(grid!.className).toMatch(/grid-cols-2/);
