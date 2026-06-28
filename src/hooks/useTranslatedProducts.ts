@@ -368,6 +368,49 @@ export function useFeaturedProducts(limit: number = 8) {
   });
 }
 
+// Active sale products for the home page (translated, ordered by discount).
+export function useSaleProducts(limit: number = 24) {
+  const { i18n } = useTranslation();
+  const lang = i18n.language === 'es' ? 'es' : 'ca';
+
+  return useQuery({
+    queryKey: ['sale-products', lang, limit],
+    queryFn: async () => {
+      const nowIso = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          *,
+          product_translations!inner(name, short_description, description, language),
+          product_images(image_url, is_primary, sort_order),
+          brands(name, logo_url),
+          tax_rates(id, name, percentage),
+          replacement:replacement_product_id (
+            id, slug,
+            product_translations(name, language, slug),
+            product_images(image_url, is_primary, sort_order)
+          )
+        `)
+        .eq('is_active', true)
+        .not('sale_price_type', 'is', null)
+        .not('sale_value', 'is', null)
+        .gt('sale_value', 0)
+        .or(`sale_starts_at.is.null,sale_starts_at.lte.${nowIso}`)
+        .or(`sale_ends_at.is.null,sale_ends_at.gte.${nowIso}`)
+        .eq('product_translations.language', lang)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      const mapped = ((data || []) as any[]).map(p => {
+        const tr = Array.isArray(p.product_translations) ? p.product_translations[0] : p.product_translations;
+        return mapProduct(p, tr, lang);
+      });
+      // Defensive: only keep those whose sale is actually active.
+      return mapped.filter(p => p.onSale).sort((a, b) => b.discountPct - a.discountPct);
+    },
+  });
+}
+
 // Internal: fetch related products by relation type, preserving admin-defined order.
 function useRelationsByType(productId: string | undefined, relationType: 'upsell' | 'cross_sell', queryKey: string) {
   const { i18n } = useTranslation();

@@ -22,7 +22,7 @@ const CatalogPage: React.FC = () => {
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState(searchParams.get('q') ?? '');
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
-  const [selectedBrand, setSelectedBrand] = useState<string | undefined>(undefined);
+  const [selectedBrand, setSelectedBrand] = useState<string | undefined>(searchParams.get('brand') ?? undefined);
   const [selectedAvailability, setSelectedAvailability] = useState<string | undefined>(undefined);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, MAX_PRICE_DEFAULT]);
   const [sortBy, setSortBy] = useState<ProductFilters['sortBy']>('newest');
