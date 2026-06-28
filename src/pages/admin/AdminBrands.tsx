@@ -17,6 +17,7 @@ import {
 import { Plus, Pencil, Trash2, Upload, X } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { optimizeImage } from '@/lib/optimizeImage';
+import { validateImageFile } from '@/lib/validateImageFile';
 import LanguageTabs from '@/components/admin/LanguageTabs';
 import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
 import { useLanguages } from '@/hooks/useLanguages';
@@ -157,9 +158,22 @@ const AdminBrands: React.FC = () => {
     setDialogOpen(true);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setPreviewFile(file);
+    if (!file) return;
+    const err = await validateImageFile(file, {
+      maxSizeBytes: 2 * 1024 * 1024,
+      minWidth: 64,
+      minHeight: 64,
+      maxWidth: 4000,
+      maxHeight: 4000,
+    });
+    if (err) {
+      notify.error(err);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    setPreviewFile(file);
   };
 
   const removeLogo = () => {
