@@ -392,6 +392,7 @@ export function useSaleProducts(limit: number = 24) {
           )
         `)
         .eq('is_active', true)
+        .eq('is_featured', false)
         .not('sale_price_type', 'is', null)
         .not('sale_value', 'is', null)
         .gt('sale_value', 0)
