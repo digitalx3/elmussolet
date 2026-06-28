@@ -108,7 +108,7 @@ describe('SaleProducts — responsive render of label, struck price and sale pri
   it('uses a responsive grid that scales columns across breakpoints', () => {
     setViewport(1440);
     const { container } = renderComp();
-    const grid = container.querySelector('div.grid');
+    const grid = container.querySelector('ul.grid');
     expect(grid).not.toBeNull();
     // Mobile-first 2 cols, then sm:3, then lg:4
     expect(grid!.className).toMatch(/grid-cols-2/);
