@@ -65,7 +65,15 @@ const CatalogPage: React.FC = () => {
     setPriceRange([0, MAX_PRICE_DEFAULT]);
     setSearch('');
     setPage(1);
+    if (searchParams.has('brand') || searchParams.has('q')) {
+      setSearchParams({}, { replace: true });
+    }
   };
+
+  const currentBrandName = useMemo(
+    () => (selectedBrand ? brands.find(b => b.id === selectedBrand)?.name : undefined),
+    [selectedBrand, brands]
+  );
 
   const currentCategoryName = useMemo(() => {
     if (resolvedCategoryId) {
@@ -176,8 +184,16 @@ const CatalogPage: React.FC = () => {
             </div>
           ) : !data?.products.length ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <p className="text-lg font-medium text-foreground mb-1">{t('products.noResults')}</p>
-              <p className="text-sm text-muted-foreground">{t('products.noResultsDesc')}</p>
+              <p className="text-lg font-medium text-foreground mb-1">
+                {currentBrandName
+                  ? t('products.noResultsForBrand', { brand: currentBrandName, defaultValue: `Cap producte de {{brand}}` })
+                  : t('products.noResults')}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {currentBrandName
+                  ? t('products.noResultsForBrandDesc', 'Encara no hi ha productes actius per a aquest fabricant.')
+                  : t('products.noResultsDesc')}
+              </p>
               {hasActiveFilters && (
                 <Button variant="outline" size="sm" className="mt-4" onClick={clearFilters}>
                   {t('products.clearFilters')}
