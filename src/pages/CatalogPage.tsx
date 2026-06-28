@@ -65,7 +65,15 @@ const CatalogPage: React.FC = () => {
     setPriceRange([0, MAX_PRICE_DEFAULT]);
     setSearch('');
     setPage(1);
+    if (searchParams.has('brand') || searchParams.has('q')) {
+      setSearchParams({}, { replace: true });
+    }
   };
+
+  const currentBrandName = useMemo(
+    () => (selectedBrand ? brands.find(b => b.id === selectedBrand)?.name : undefined),
+    [selectedBrand, brands]
+  );
 
   const currentCategoryName = useMemo(() => {
     if (resolvedCategoryId) {
