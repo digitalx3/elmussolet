@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { LayoutGrid, List, SlidersHorizontal, X } from 'lucide-react';
+import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import { LayoutGrid, List, SlidersHorizontal, X, PackageX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -139,6 +140,12 @@ const CatalogPage: React.FC = () => {
     }
   };
 
+  const resolvedBrand = useMemo(
+    () => (brandSlug ? brands.find(b => b.slug === brandSlug) : undefined),
+    [brandSlug, brands]
+  );
+  const brandNotFound = !!brandSlug && brands.length > 0 && !resolvedBrand;
+
   const currentBrandName = useMemo(
     () => (selectedBrandIds.length === 1 ? brands.find(b => b.id === selectedBrandIds[0])?.name : undefined),
     [selectedBrandIds, brands]
@@ -150,6 +157,27 @@ const CatalogPage: React.FC = () => {
     }
     return undefined;
   }, [resolvedCategoryId, categories]);
+
+  // Per-route SEO head
+  const siteOrigin = 'https://elmussolet.com';
+  const seoTitle = resolvedBrand
+    ? `${resolvedBrand.name} — ${t('products.catalog')} | El Mussolet`
+    : currentCategoryName
+      ? `${currentCategoryName} | El Mussolet`
+      : `${t('products.catalog')} | El Mussolet`;
+  const seoDescription = resolvedBrand
+    ? (resolvedBrand.description?.trim() ||
+        t('products.brandSeoDescription', {
+          brand: resolvedBrand.name,
+          defaultValue: `Descobreix tots els productes de {{brand}} a El Mussolet.`,
+        }))
+    : t('products.catalogSeoDescription', 'Catàleg de productes per a nadons i infants a El Mussolet.');
+  const seoCanonical = resolvedBrand
+    ? `${siteOrigin}/marca/${resolvedBrand.slug}`
+    : categorySlug
+      ? `${siteOrigin}/cataleg/${categorySlug}`
+      : `${siteOrigin}/cataleg`;
+
 
   const filtersComponent = (
     <CatalogFilters
@@ -171,13 +199,58 @@ const CatalogPage: React.FC = () => {
     />
   );
 
+  if (brandNotFound) {
+    const notFoundTitle = t('products.brandNotFoundTitle', 'Marca no trobada');
+    const notFoundDesc = t('products.brandNotFoundDesc', {
+      slug: brandSlug,
+      defaultValue: `No hem trobat cap marca amb l'identificador "{{slug}}".`,
+    });
+    return (
+      <div className="container py-16">
+        <Helmet>
+          <title>{`${notFoundTitle} | El Mussolet`}</title>
+          <meta name="description" content={notFoundDesc} />
+          <meta name="robots" content="noindex,follow" />
+          <link rel="canonical" href={`${siteOrigin}/cataleg`} />
+          <meta property="og:title" content={notFoundTitle} />
+          <meta property="og:url" content={`${siteOrigin}/cataleg`} />
+          <meta property="og:type" content="website" />
+        </Helmet>
+        <div className="mx-auto max-w-xl text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+            <PackageX className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+          </div>
+          <h1 className="font-display text-3xl font-bold mb-2">{notFoundTitle}</h1>
+          <p className="text-muted-foreground mb-6">{notFoundDesc}</p>
+          <div className="flex justify-center gap-2">
+            <Button asChild>
+              <Link to="/cataleg">{t('products.backToCatalog', 'Tornar al catàleg')}</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/">{t('common.backHome', 'Inici')}</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container py-6">
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+        <link rel="canonical" href={seoCanonical} />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:url" content={seoCanonical} />
+        <meta property="og:type" content="website" />
+      </Helmet>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="font-display text-3xl font-bold">
-            {currentCategoryName ?? t('products.catalog')}
+            {resolvedBrand?.name ?? currentCategoryName ?? t('products.catalog')}
           </h1>
           {data && (
             <p className="text-sm text-muted-foreground mt-1">
