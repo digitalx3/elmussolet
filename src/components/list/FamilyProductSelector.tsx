@@ -130,7 +130,7 @@ const FamilyBlock: React.FC<{
       <h3 className={cn('font-display text-lg font-semibold', muted && 'text-muted-foreground')}>{title}</h3>
       <Badge variant="secondary">{products.length}</Badge>
     </header>
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
       {products.map(p => (
         <ProductTile key={p.id} product={p} lang={lang} selected={selectedIds.has(p.id)} onToggle={onToggle} />
       ))}
@@ -177,24 +177,19 @@ const ProductTile: React.FC<{
       className={cn(
         'group relative rounded-lg border bg-card overflow-hidden text-left transition-all',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        selected ? 'border-primary ring-2 ring-primary/40 shadow-md' : 'border-border hover:border-primary/40 hover:shadow-sm',
+        selected
+          ? 'border-emerald-500 ring-2 ring-emerald-500/40 shadow-md'
+          : 'border-border hover:border-primary/40 hover:shadow-sm',
         disabled && 'opacity-60 cursor-not-allowed grayscale',
         !disabled && 'cursor-pointer',
       )}
     >
-      <div className="absolute top-2 left-2 z-10">
-        <Checkbox
-          checked={selected}
-          disabled={disabled}
-          aria-label={selected ? `Treure ${name}` : `Afegir ${name}`}
-          onCheckedChange={(v) => !disabled && onToggle(p, !!v)}
-          onClick={(e) => e.stopPropagation()}
-          className="h-5 w-5 bg-background border-2 shadow"
-        />
-      </div>
       {selected && (
-        <div className="absolute top-2 right-2 z-10 rounded-full bg-primary text-primary-foreground p-1 shadow">
-          <Check className="h-3.5 w-3.5" aria-hidden="true" />
+        <div
+          className="absolute top-2 right-2 z-10 rounded-full bg-emerald-500 text-white p-1 shadow"
+          aria-hidden="true"
+        >
+          <Check className="h-3.5 w-3.5" />
         </div>
       )}
       <div className="aspect-square bg-muted">
@@ -202,7 +197,7 @@ const ProductTile: React.FC<{
       </div>
       <div className="p-2.5 space-y-1">
         <p className="text-sm font-medium line-clamp-2 leading-tight">{name}</p>
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <span className="text-sm font-semibold">{formatPrice(p.base_price)}</span>
           {onOrder && (
             <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-400 gap-1 text-[10px]">
@@ -221,5 +216,6 @@ const ProductTile: React.FC<{
     </div>
   );
 };
+
 
 export default FamilyProductSelector;
