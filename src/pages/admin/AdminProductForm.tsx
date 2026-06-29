@@ -572,7 +572,7 @@ const AdminProductForm: React.FC = () => {
           <Button type="button" variant="outline" onClick={() => navigate('/admin/productes')}>
             {t('common.cancel')}
           </Button>
-          <Button type="submit" disabled={saveProduct.isPending}>
+          <Button type="submit" disabled={saveProduct.isPending || hasStockErrors}>
             {saveProduct.isPending ? t('common.loading') : t('common.save')}
           </Button>
         </div>
@@ -1107,7 +1107,7 @@ const AdminProductForm: React.FC = () => {
         <Button type="button" variant="outline" onClick={() => navigate('/admin/productes')}>
           {t('common.cancel')}
         </Button>
-        <Button type="submit" disabled={saveProduct.isPending}>
+        <Button type="submit" disabled={saveProduct.isPending || hasStockErrors}>
           {saveProduct.isPending ? t('common.loading') : t('common.save')}
         </Button>
       </div>
