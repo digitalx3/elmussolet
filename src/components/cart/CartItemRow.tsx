@@ -54,7 +54,7 @@ const CartItemRow: React.FC<CartItemRowProps> = ({ item, onUpdateQuantity, onRem
           size="icon"
           className="h-7 w-7"
           onClick={() => onUpdateQuantity(item.productId, item.quantity + 1, item.variantId)}
-          disabled={item.maxQuantity !== undefined && item.quantity >= item.maxQuantity}
+          disabled={item.maxQuantity !== undefined && item.maxQuantity !== -1 && item.quantity >= item.maxQuantity}
         >
           <Plus className="h-3 w-3" />
         </Button>
