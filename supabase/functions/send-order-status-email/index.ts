@@ -131,22 +131,39 @@ Deno.serve(async (req) => {
     const subject = replaceVars(emailTemplate.subject);
     const body = replaceVars(emailTemplate.body_html);
 
-    // Log the email (actual sending requires email service integration)
-    console.log(`[ORDER EMAIL] To: ${customerEmail}, Subject: ${subject}`);
-    console.log(`[ORDER EMAIL] Body: ${body}`);
+    // Send via SMTP (logs to smtp_send_log automatically)
+    const { data: sendData, error: sendError } = await adminClient.functions.invoke('send-smtp-email', {
+      body: {
+        to: customerEmail,
+        subject,
+        html: body,
+      },
+    });
 
-    // TODO: Integrate with email sending service (Resend, etc.)
-    // For now, log that the email would be sent
+    if (sendError) {
+      console.error('[ORDER EMAIL] SMTP send failed:', sendError);
+      return new Response(JSON.stringify({
+        success: false,
+        error: sendError.message || 'SMTP send failed',
+      }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`[ORDER EMAIL] Sent to ${customerEmail} (status=${new_status}, order=${order.order_number})`);
 
     return new Response(JSON.stringify({
       success: true,
-      message: 'Email notification processed',
+      message: 'Email sent and logged',
       to: customerEmail,
       subject,
+      smtp: sendData,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
 
   } catch (error) {
     console.error('Error in send-order-status-email:', error);
