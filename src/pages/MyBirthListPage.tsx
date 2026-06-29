@@ -923,9 +923,6 @@ const MyBirthListPage: React.FC = () => {
     resetEditor();
     setEditingListId(null);
     setSelectedTemplateId('');
-    setCustomBabyName('');
-    setCustomSectionCa('');
-    setCustomSectionEs('');
     setView('create-choice');
   };
 
