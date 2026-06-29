@@ -259,7 +259,11 @@ const CatalogPage: React.FC = () => {
         <meta property="og:description" content={seoDescription} />
         <meta property="og:url" content={seoCanonical} />
         <meta property="og:type" content="website" />
+        {breadcrumbJsonLd && (
+          <script type="application/ld+json">{JSON.stringify(breadcrumbJsonLd)}</script>
+        )}
       </Helmet>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
