@@ -49,7 +49,7 @@ const UpsellDialog: React.FC = () => {
       taxPercentage: p.taxPercentage ?? 0,
       quantity: 1,
     });
-    notify.success(`${p.name} afegit a la cistella`);
+    // CartContext.addStandardItem already triggers the unified toast — do not duplicate it here.
     // Close after adding to avoid recursion
     handleClose();
   };
