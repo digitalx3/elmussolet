@@ -45,8 +45,8 @@ if [ -z "$USER_ID" ]; then
   exit 2
 fi
 
-ORDER_A=$(psql -qtAX -c "INSERT INTO public.orders (order_number, user_id, subtotal, total, status, payment_status) VALUES ('TEST-STK-${TS}-A', '${USER_ID}', 1, 1, 'pending', 'pending') RETURNING id;")
-ORDER_B=$(psql -qtAX -c "INSERT INTO public.orders (order_number, user_id, subtotal, total, status, payment_status) VALUES ('TEST-STK-${TS}-B', '${USER_ID}', 1, 1, 'pending', 'pending') RETURNING id;")
+ORDER_A=$(psql -qtAX -c "INSERT INTO public.orders (order_number, user_id, subtotal, total, status) VALUES ('TEST-STK-${TS}-A', '${USER_ID}', 1, 1, 'pending') RETURNING id;")
+ORDER_B=$(psql -qtAX -c "INSERT INTO public.orders (order_number, user_id, subtotal, total, status) VALUES ('TEST-STK-${TS}-B', '${USER_ID}', 1, 1, 'pending') RETURNING id;")
 echo "order_a=$ORDER_A"
 echo "order_b=$ORDER_B"
 

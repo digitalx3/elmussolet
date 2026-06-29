@@ -406,7 +406,7 @@ const AdminOrders: React.FC = () => {
     return found?.color || '#6b7280';
   };
 
-  const getPaymentLabel = (status: string) => t(`admin.payment_${status}`);
+  
 
   const getDeliveryLabel = (method: string | null) => {
     if (!method) return '—';

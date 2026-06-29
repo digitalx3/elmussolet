@@ -35,7 +35,7 @@ interface Order {
   order_number: string;
   created_at: string;
   status: string | null;
-  payment_status: string | null;
+  
   subtotal: number;
   shipping_cost: number | null;
   tax_amount: number | null;
