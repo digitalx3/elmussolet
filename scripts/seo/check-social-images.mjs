@@ -30,7 +30,7 @@ import asyncio, json, sys
 from playwright.async_api import async_playwright
 
 BASE = ${JSON.stringify(BASE)}
-ROUTES = ${JSON.stringify(ROUTES)}
+ROUTES = json.loads(${JSON.stringify(JSON.stringify(ROUTES))})
 
 async def inspect(page, route):
     await page.goto(BASE + route["path"], wait_until="networkidle")
