@@ -130,7 +130,7 @@ const FamilyBlock: React.FC<{
       <h3 className={cn('font-display text-lg font-semibold', muted && 'text-muted-foreground')}>{title}</h3>
       <Badge variant="secondary">{products.length}</Badge>
     </header>
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
       {products.map(p => (
         <ProductTile key={p.id} product={p} lang={lang} selected={selectedIds.has(p.id)} onToggle={onToggle} />
       ))}
