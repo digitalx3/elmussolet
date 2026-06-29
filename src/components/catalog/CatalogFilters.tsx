@@ -246,16 +246,6 @@ const CatalogFilters: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Clear filters */}
-      {hasActiveFilters && (
-        <>
-          <Separator />
-          <Button variant="outline" size="sm" className="w-full" onClick={onClearFilters}>
-            <X className="h-4 w-4 mr-1" />
-            {t('products.clearFilters')}
-          </Button>
-        </>
-      )}
     </aside>
   );
 };
