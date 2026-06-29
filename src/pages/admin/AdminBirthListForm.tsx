@@ -1125,6 +1125,24 @@ const AdminBirthListForm: React.FC = () => {
             </Button>
           </CardHeader>
           <CardContent className="space-y-5">
+            {/* Quick selector by family — same UX as customer view */}
+            <div className="rounded-lg border bg-card p-3 sm:p-4">
+              <div className="mb-3">
+                <h3 className="font-display text-lg font-semibold">
+                  {lang === 'es' ? 'Selección rápida por familias' : 'Selecció ràpida per famílies'}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {lang === 'es'
+                    ? 'Marca los productos a incluir. Se agruparán automáticamente por familia. Los productos sin stock no se pueden marcar; los "bajo pedido" sí.'
+                    : 'Marca els productes a incloure. S\'agruparan automàticament per família. Els productes sense estoc no es poden marcar; els "sota comanda" sí.'}
+                </p>
+              </div>
+              <FamilyProductSelector
+                selectedIds={selectedProductIds}
+                onToggle={toggleProductFromFamily}
+              />
+            </div>
+
             {/* Sections strip */}
             {sections.length > 0 && (
               <div className="space-y-2">
