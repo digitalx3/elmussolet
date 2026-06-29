@@ -1159,56 +1159,8 @@ const AdminBirthListForm: React.FC = () => {
               />
             </div>
 
-            {/* Sections strip */}
-            {sections.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-xs">{lang === 'es' ? 'Familias' : 'Famílies'}</Label>
-                <div className="flex flex-wrap gap-2">
-                  {sections.map((s, idx) => {
-                    const isActive = activeSectionTempId === s.temp_id;
-                    const count = form.items.filter(it => it.section_temp_id === s.temp_id).length;
-                    return (
-                      <div
-                        key={s.temp_id}
-                        className={`group flex items-center gap-1 pl-2 pr-1 py-1 rounded-md border text-xs transition-colors ${
-                          isActive ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background hover:border-primary/40'
-                        }`}
-                      >
-                        <button type="button" onClick={() => setActiveSectionTempId(s.temp_id)} className="flex items-center gap-1.5">
-                          <FolderOpen className="h-3.5 w-3.5" />
-                          <span className="font-medium">{(lang === 'es' ? s.name_es : s.name_ca) || s.name_ca || s.name_es}</span>
-                          <Badge variant="outline" className="text-[10px] h-4 px-1">{count}</Badge>
-                        </button>
-                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" disabled={idx === 0} onClick={() => moveSection(s.temp_id, 'up')}>
-                          <ChevronUp className="h-3 w-3" />
-                        </Button>
-                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" disabled={idx === sections.length - 1} onClick={() => moveSection(s.temp_id, 'down')}>
-                          <ChevronDown className="h-3 w-3" />
-                        </Button>
-                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" title={lang === 'es' ? 'Traducciones' : 'Traduccions'} onClick={() => setTranslatingTempId(s.temp_id)}>
-                          <Globe className="h-3 w-3" />
-                        </Button>
-                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" onClick={() => removeSection(s.temp_id)}>
-                          <Trash2 className="h-3 w-3 text-destructive" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                  <button
-                    type="button"
-                    onClick={() => setActiveSectionTempId(null)}
-                    className={`px-2 py-1 rounded-md border text-xs ${activeSectionTempId === null ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background hover:border-primary/40'}`}
-                  >
-                    {lang === 'es' ? 'Sin familia' : 'Sense família'}
-                  </button>
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  {lang === 'es'
-                    ? 'Selecciona una familia y haz clic en un producto del catálogo para añadirlo a esa familia.'
-                    : 'Selecciona una família i fes clic en un producte del catàleg per afegir-lo a aquesta família.'}
-                </p>
-              </div>
-            )}
+
+
 
           </CardContent>
         </Card>
