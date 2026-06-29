@@ -374,21 +374,6 @@ const MyBirthListPage: React.FC = () => {
     return product?.stock_quantity || 0;
   };
 
-  const handleProductSearch = async (query: string) => {
-    setProductSearch(query);
-    if (query.trim().length < 2) { setSearchResults([]); return; }
-    const { data } = await supabase
-      .from('products')
-      .select(`id, base_price, slug, stock_quantity, has_variants, product_translations(language, name), product_images(image_url, is_primary, sort_order), product_variants(stock_quantity, is_active)`)
-      .eq('is_active', true)
-      .limit(20);
-    const filtered = (data || []).filter(p => {
-      const tr = (p as any).product_translations?.find((t: any) => t.language === lang)
-        || (p as any).product_translations?.[0];
-      return tr?.name?.toLowerCase().includes(query.toLowerCase());
-    });
-    setSearchResults(filtered);
-  };
 
   const pickProductImage = (product: any): string | null => {
     const imgs = (product?.product_images || []).slice().sort((a: any, b: any) =>
