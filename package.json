@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:rls": "vitest run --config vitest.rls.config.ts",
-    "pretest:rls": "tsx scripts/check-rls-env.ts"
+    "pretest:rls": "tsx scripts/check-rls-env.ts",
+    "test:seo": "node scripts/seo/check-social-images.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
