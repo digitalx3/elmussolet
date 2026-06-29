@@ -659,9 +659,9 @@ const AdminOrders: React.FC = () => {
 
               {(() => {
                 const status = selectedOrder.status || 'pending';
-                const payment = selectedOrder.payment_status || 'pending';
-                const canRelease = status !== 'cancelled' && (payment === 'pending' || payment === 'failed' || payment === 'refunded');
+                const canRelease = status !== 'cancelled' && isOrderPendingPayment(status);
                 if (!canRelease) return null;
+
                 return (
                   <div className="rounded-md border border-amber-200 bg-amber-50 p-3 flex items-start justify-between gap-3">
                     <div className="text-xs text-amber-900">
@@ -756,12 +756,13 @@ const AdminOrders: React.FC = () => {
                       {editing ? <><Check className="h-3.5 w-3.5" />{t('common.done', 'Fet')}</> : <><Pencil className="h-3.5 w-3.5" />{t('common.edit')}</>}
                     </Button>
                   ) : (
-                    selectedOrder.payment_status === 'paid' && (
+                    isOrderPaid(selectedOrder.status) && (
                       <span className="text-xs text-muted-foreground italic">
                         {t('admin.orderPaidNoEdit', 'Comanda pagada · per modificar, crea una comanda nova')}
                       </span>
                     )
                   )}
+
                 </div>
                 <Table>
                   <TableHeader>
@@ -778,9 +779,8 @@ const AdminOrders: React.FC = () => {
                   <TableBody>
                     {orderItems.map(item => {
                       const orderStatus = selectedOrder.status || 'pending';
-                      const paymentStatus = selectedOrder.payment_status || 'pending';
                       const isBlocking = orderStatus !== 'cancelled';
-                      const isPendingPayment = paymentStatus === 'pending' || paymentStatus === 'failed';
+                      const isPendingPayment = isOrderPendingPayment(orderStatus);
                       const blockReason = isBlocking
                         ? (isPendingPayment
                             ? t('admin.stockBlockedPendingPayment', 'Estoc bloquejat per comanda pendent de pagament')
@@ -804,10 +804,9 @@ const AdminOrders: React.FC = () => {
                               </Badge>
                               <span className="text-[10px] text-muted-foreground">
                                 {t('admin.orderStatusLabel', 'Estat')}: <span className="font-medium" style={{ color: getStatusColor(orderStatus) }}>{getStatusName(orderStatus)}</span>
-                                {' · '}
-                                {t('admin.paymentStatus')}: <span className="font-medium">{getPaymentLabel(paymentStatus)}</span>
                               </span>
                             </div>
+
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
