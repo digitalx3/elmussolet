@@ -22,6 +22,7 @@ import { notify } from '@/lib/notify';
 import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
 import { useLanguages } from '@/hooks/useLanguages';
 import LanguageTabs from '@/components/admin/LanguageTabs';
+import FamilyProductSelector from '@/components/list/FamilyProductSelector';
 
 interface Owner {
   id?: string;
