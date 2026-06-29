@@ -42,24 +42,32 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
 
   const grouped = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const filter = (p: FamilyProduct) => {
-      // Hard exclude: must have a list family AND be available (in_stock or on_order).
-      if (!p.default_section_id) return false;
-      if (!productIsAvailable(p)) return false;
+    const matchesSearch = (p: FamilyProduct) => {
       if (!q) return true;
       const n = pickProductName(p, lang).toLowerCase();
       return n.includes(q) || p.sku.toLowerCase().includes(q);
     };
-    const visible = products.filter(filter);
+
+    const assigned = products.filter(p => !!p.default_section_id);
+    const visible = assigned.filter(p => productIsAvailable(p) && matchesSearch(p));
 
     const bySection = new Map<string, FamilyProduct[]>();
-    for (const s of sections) bySection.set(s.id, []);
+    const assignedBySection = new Map<string, FamilyProduct[]>();
+    for (const s of sections) {
+      bySection.set(s.id, []);
+      assignedBySection.set(s.id, []);
+    }
+    for (const p of assigned) {
+      if (p.default_section_id && assignedBySection.has(p.default_section_id)) {
+        assignedBySection.get(p.default_section_id)!.push(p);
+      }
+    }
     for (const p of visible) {
       if (p.default_section_id && bySection.has(p.default_section_id)) {
         bySection.get(p.default_section_id)!.push(p);
       }
     }
-    return { bySection };
+    return { bySection, assignedBySection, searchActive: q.length > 0 };
   }, [products, sections, search, lang]);
 
   if (loadingSections || loadingProducts) {
@@ -88,15 +96,18 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
 
       {sections.map(section => {
         const list = grouped.bySection.get(section.id) || [];
-        if (hideEmptyFamilies && list.length === 0) return null;
+        const assigned = grouped.assignedBySection.get(section.id) || [];
+        // Always show the family so the status message is visible, even when it has no products.
         return (
           <FamilyBlock
             key={section.id}
             title={pickSectionName(section, lang)}
             products={list}
+            assigned={assigned}
             lang={lang}
             selectedIds={selectedIds}
             onToggle={onToggle}
+            searchActive={grouped.searchActive}
           />
         );
       })}
