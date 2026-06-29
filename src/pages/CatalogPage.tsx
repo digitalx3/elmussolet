@@ -61,7 +61,7 @@ const CatalogPage: React.FC = () => {
 
   const { data, isLoading } = useTranslatedProducts(filters);
 
-  const hasActiveFilters = !!(selectedCategory || selectedBrandIds.length > 0 || selectedAvailability || search || priceRange[0] > 0 || priceRange[1] < MAX_PRICE_DEFAULT);
+  const hasActiveFilters = !!(categorySlug || selectedCategory || selectedBrandIds.length > 0 || selectedAvailability || search || priceRange[0] > 0 || priceRange[1] < MAX_PRICE_DEFAULT);
 
   const clearFilters = () => {
     setSelectedCategory(undefined);
@@ -70,8 +70,19 @@ const CatalogPage: React.FC = () => {
     setPriceRange([0, MAX_PRICE_DEFAULT]);
     setSearch('');
     setPage(1);
-    if (searchParams.has('brand') || searchParams.has('q')) {
+    if (categorySlug) {
+      navigate('/catalog', { replace: true });
+    } else if (searchParams.has('brand') || searchParams.has('q')) {
       setSearchParams({}, { replace: true });
+    }
+  };
+
+  const handleCategoryChange = (id: string | undefined) => {
+    if (!id && categorySlug) {
+      navigate('/catalog', { replace: true });
+    } else {
+      setSelectedCategory(id);
+      setPage(1);
     }
   };
 
