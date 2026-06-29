@@ -35,6 +35,7 @@ import CookieBanner from "@/components/cookies/CookieBanner";
 import CookiePreferencesDialog from "@/components/cookies/CookiePreferencesDialog";
 import GoogleAnalyticsLoader from "@/components/cookies/GoogleAnalyticsLoader";
 import CookiePolicyPage from "@/pages/CookiePolicyPage";
+import ScrollToTop from "@/components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +53,7 @@ const App = () => (
               <LanguageReconciler />
               <GoogleAnalyticsLoader />
               <BrowserRouter>
+                <ScrollToTop />
                 <UpsellDialog />
                 <CookieBanner />
                 <CookiePreferencesDialog />

@@ -6,6 +6,7 @@ import { computePrice, isSaleActive, type SalePriceType } from '@/lib/pricing';
 export interface ProductFilters {
   categoryId?: string;
   brandId?: string;
+  brandIds?: string[];
   search?: string;
   minPrice?: number;
   maxPrice?: number;
@@ -142,7 +143,11 @@ export function useTranslatedProducts(filters: ProductFilters = {}) {
         .eq('product_translations.language', lang);
 
       if (filters.categoryId) query = query.eq('category_id', filters.categoryId);
-      if (filters.brandId) query = query.eq('brand_id', filters.brandId);
+      if (filters.brandIds && filters.brandIds.length > 0) {
+        query = query.in('brand_id', filters.brandIds);
+      } else if (filters.brandId) {
+        query = query.eq('brand_id', filters.brandId);
+      }
       if (filters.availability) query = query.eq('stock_status', filters.availability);
 
       switch (filters.sortBy) {
