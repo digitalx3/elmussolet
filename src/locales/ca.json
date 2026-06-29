@@ -212,7 +212,8 @@
     "noSection": "Sense secció",
     "familyNoProducts": "No hi ha productes assignats a aquesta família.",
     "familyAllOutOfStock": "Tots els productes d'aquesta família estan fora d'estoc.",
-    "familyNoSearchResults": "No hi ha productes que coincideixin amb la cerca."
+    "familyNoSearchResults": "No hi ha productes que coincideixin amb la cerca.",
+    "myLists": "Les meves llistes",
     "createNew": "Crear nova llista",
     "backToLists": "Tornar a les meves llistes",
     "editList": "Editar",
