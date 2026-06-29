@@ -34,12 +34,20 @@ ROUTES = json.loads(${JSON.stringify(JSON.stringify(ROUTES))})
 
 async def inspect(page, route):
     await page.goto(BASE + route["path"], wait_until="networkidle")
-    # Give Helmet a tick to flush mutations.
-    await page.wait_for_timeout(400)
+    # Wait for React Query brand fetch + Helmet flush on /marca/:slug.
+    if route.get("requireBrandImage"):
+        try:
+            await page.wait_for_function(
+                "() => document.title && document.title !== 'El Mussolet'",
+                timeout=8000,
+            )
+        except Exception:
+            pass
+    await page.wait_for_timeout(1200)
     data = await page.evaluate("""() => {
         const og = Array.from(document.querySelectorAll('meta[property="og:image"]')).map(m => m.content);
         const tw = Array.from(document.querySelectorAll('meta[name="twitter:image"]')).map(m => m.content);
-        return { og, tw };
+        return { og, tw, title: document.title };
     }""")
     return data
 
