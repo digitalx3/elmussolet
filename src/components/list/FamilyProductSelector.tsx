@@ -37,7 +37,10 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
   const [search, setSearch] = useState('');
 
   const { data: sections = [], isLoading: loadingSections } = useDefaultListSections({ onlyActive: true });
+  // DB-filtered: only active products assigned to a family with stock_status in ('in_stock','on_order').
   const { data: products = [], isLoading: loadingProducts } = useFamilyProducts();
+  // DB-aggregated: total assignments per section (any stock status) — drives the empty-state messaging.
+  const { data: assignmentCounts } = useFamilyAssignmentCounts();
 
   const grouped = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -47,26 +50,16 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
       return n.includes(q) || p.sku.toLowerCase().includes(q);
     };
 
-    const assigned = products.filter(p => !!p.default_section_id);
-    const visible = assigned.filter(p => productIsAvailable(p) && matchesSearch(p));
+    const visible = products.filter(p => productIsAvailable(p) && matchesSearch(p));
 
     const bySection = new Map<string, FamilyProduct[]>();
-    const assignedBySection = new Map<string, FamilyProduct[]>();
-    for (const s of sections) {
-      bySection.set(s.id, []);
-      assignedBySection.set(s.id, []);
-    }
-    for (const p of assigned) {
-      if (p.default_section_id && assignedBySection.has(p.default_section_id)) {
-        assignedBySection.get(p.default_section_id)!.push(p);
-      }
-    }
+    for (const s of sections) bySection.set(s.id, []);
     for (const p of visible) {
       if (p.default_section_id && bySection.has(p.default_section_id)) {
         bySection.get(p.default_section_id)!.push(p);
       }
     }
-    return { bySection, assignedBySection, searchActive: q.length > 0 };
+    return { bySection, searchActive: q.length > 0 };
   }, [products, sections, search, lang]);
 
   if (loadingSections || loadingProducts) {
