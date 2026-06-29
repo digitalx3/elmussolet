@@ -108,7 +108,7 @@ const CatalogPage: React.FC = () => {
       priceRange={priceRange}
       maxPrice={MAX_PRICE_DEFAULT}
       search={search}
-      onCategoryChange={(id) => { setSelectedCategory(id); setPage(1); }}
+      onCategoryChange={handleCategoryChange}
       onBrandIdsChange={(ids) => { setSelectedBrandIds(ids); setPage(1); }}
       onAvailabilityChange={(val) => { setSelectedAvailability(val); setPage(1); }}
       onPriceRangeChange={(range) => { setPriceRange(range); setPage(1); }}
