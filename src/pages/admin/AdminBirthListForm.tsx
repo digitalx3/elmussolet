@@ -918,7 +918,8 @@ const AdminBirthListForm: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-7xl mx-auto w-full">
+
       <div className="flex items-center gap-3 mb-6">
         <Button variant="ghost" size="sm" onClick={() => navigate('/admin/llistes')}>
           <ArrowLeft className="h-4 w-4 mr-1" /> {t('common.back')}
