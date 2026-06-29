@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider, Helmet } from "react-helmet-async";
 import mussoletLogo from "@/assets/mussolet-logo-square.png.asset.json";
+import { toAbsoluteUrl } from "@/lib/absoluteUrl";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { ListAccessProvider } from "@/contexts/ListAccessContext";
@@ -43,8 +44,8 @@ const queryClient = new QueryClient();
 const App = () => (
   <HelmetProvider>
     <Helmet>
-      <meta property="og:image" content={`https://elmussolet.com${mussoletLogo.url}`} />
-      <meta name="twitter:image" content={`https://elmussolet.com${mussoletLogo.url}`} />
+      <meta property="og:image" content={toAbsoluteUrl(mussoletLogo.url)} />
+      <meta name="twitter:image" content={toAbsoluteUrl(mussoletLogo.url)} />
     </Helmet>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
