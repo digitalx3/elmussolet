@@ -113,6 +113,28 @@ const AdminProductForm: React.FC = () => {
   const [activeLang, setActiveLang] = useState<string | undefined>(undefined);
   const [seoGenerating, setSeoGenerating] = useState<string | null>(null);
   const { data: aiStatus } = useAiProvider();
+
+  // Stock input raw state (allows temporary "-" while typing; validated visually).
+  const [stockRaw, setStockRaw] = useState<string>('0');
+  const [variantStockRaw, setVariantStockRaw] = useState<Record<number, string>>({});
+
+  const isValidStockValue = (raw: string): boolean => {
+    if (raw === '' || raw === '-') return false;
+    if (!/^-?\d+$/.test(raw)) return false;
+    const n = parseInt(raw, 10);
+    return Number.isInteger(n) && n >= -1;
+  };
+  const stockError = !isValidStockValue(stockRaw)
+    ? "L'estoc ha de ser un enter ≥ -1 (-1 = il·limitat)."
+    : null;
+  const variantStockErrors: Record<number, string | null> = {};
+  Object.keys(variantStockRaw).forEach(k => {
+    const i = Number(k);
+    variantStockErrors[i] = !isValidStockValue(variantStockRaw[i])
+      ? "Enter ≥ -1"
+      : null;
+  });
+  const hasStockErrors = !!stockError || Object.values(variantStockErrors).some(Boolean);
   const aiReady = isAiReady(aiStatus);
 
   // Live duplicate-slug detection (base + per language)
@@ -271,6 +293,10 @@ const AdminProductForm: React.FC = () => {
         related_product_ids: relatedSorted,
         cross_sell_product_ids: crossSellSorted,
       });
+      setStockRaw(String(product.stock_quantity ?? 0));
+      setVariantStockRaw(
+        Object.fromEntries((product.product_variants || []).map((v, i) => [i, String(v.stock_quantity ?? 0)]))
+      );
     }
   }, [product, isNew, languages]);
 
@@ -361,14 +387,15 @@ const AdminProductForm: React.FC = () => {
 
   // Variants
   const addVariant = () => {
-    setForm(prev => ({
-      ...prev,
-      variants: [...prev.variants, {
+    setForm(prev => {
+      const next = [...prev.variants, {
         value: '', price_override: null, price_modifier: 0, stock_quantity: 0,
         sku_suffix: '', is_active: true,
         variant_type_id: variantTypes[0]?.id || '',
-      }],
-    }));
+      }];
+      setVariantStockRaw(r => ({ ...r, [next.length - 1]: '0' }));
+      return { ...prev, variants: next };
+    });
   };
 
 
@@ -381,10 +408,23 @@ const AdminProductForm: React.FC = () => {
 
   const removeVariant = (index: number) => {
     setForm(prev => ({ ...prev, variants: prev.variants.filter((_, i) => i !== index) }));
+    setVariantStockRaw(prev => {
+      const next: Record<number, string> = {};
+      Object.keys(prev).map(Number).filter(k => k !== index).forEach((k, newIdx) => {
+        next[newIdx] = prev[k];
+      });
+      return next;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (hasStockErrors) {
+      notify.error("L'estoc no és vàlid. Ha de ser un enter ≥ -1 (-1 = il·limitat).");
+      return;
+    }
+
 
     // Validate each enabled language
     const newErrors: TranslationErrors = {};
@@ -532,7 +572,7 @@ const AdminProductForm: React.FC = () => {
           <Button type="button" variant="outline" onClick={() => navigate('/admin/productes')}>
             {t('common.cancel')}
           </Button>
-          <Button type="submit" disabled={saveProduct.isPending}>
+          <Button type="submit" disabled={saveProduct.isPending || hasStockErrors}>
             {saveProduct.isPending ? t('common.loading') : t('common.save')}
           </Button>
         </div>
@@ -763,22 +803,33 @@ const AdminProductForm: React.FC = () => {
             <p className="text-xs text-muted-foreground mt-1">Determina a quina família apareixerà aquest producte quan es creïn llistes de naixement.</p>
           </div>
           <div>
-            <Label>Estoc</Label>
+            <Label htmlFor="stock-input">Estoc</Label>
             <Input
-              type="number"
-              min="-1"
-              step="1"
-              value={form.stock_quantity}
+              id="stock-input"
+              type="text"
+              inputMode="numeric"
+              pattern="-?\d+"
+              value={stockRaw}
+              aria-invalid={!!stockError}
+              className={stockError ? 'border-destructive focus-visible:ring-destructive' : ''}
               onChange={e => {
                 const raw = e.target.value;
-                if (raw === '' || raw === '-') { updateField('stock_quantity', 0); return; }
-                const n = parseInt(raw, 10);
-                updateField('stock_quantity', Number.isNaN(n) ? 0 : n);
+                setStockRaw(raw);
+                if (isValidStockValue(raw)) {
+                  updateField('stock_quantity', parseInt(raw, 10));
+                }
+              }}
+              onBlur={() => {
+                if (!isValidStockValue(stockRaw)) setStockRaw(String(form.stock_quantity ?? 0));
               }}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Posa <code>-1</code> per indicar estoc il·limitat (només té efecte amb estat "En stock, sota comanda").
-            </p>
+            {stockError ? (
+              <p className="text-xs text-destructive mt-1">{stockError}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">
+                Posa <code>-1</code> per indicar estoc il·limitat (només té efecte amb estat "En stock, sota comanda").
+              </p>
+            )}
           </div>
           <div>
             <Label>Estat d'estoc</Label>
@@ -991,15 +1042,29 @@ const AdminProductForm: React.FC = () => {
                   <div>
                     <Label className="text-xs">Estoc</Label>
                     <Input
-                      type="number" min="-1" step="1"
-                      value={v.stock_quantity}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="-?\d+"
+                      value={variantStockRaw[i] ?? String(v.stock_quantity ?? 0)}
+                      aria-invalid={!!variantStockErrors[i]}
+                      className={variantStockErrors[i] ? 'border-destructive focus-visible:ring-destructive' : ''}
                       onChange={e => {
                         const raw = e.target.value;
-                        if (raw === '' || raw === '-') { updateVariant(i, 'stock_quantity', 0); return; }
-                        const n = parseInt(raw, 10);
-                        updateVariant(i, 'stock_quantity', Number.isNaN(n) ? 0 : n);
+                        setVariantStockRaw(prev => ({ ...prev, [i]: raw }));
+                        if (isValidStockValue(raw)) {
+                          updateVariant(i, 'stock_quantity', parseInt(raw, 10));
+                        }
+                      }}
+                      onBlur={() => {
+                        const raw = variantStockRaw[i] ?? '';
+                        if (!isValidStockValue(raw)) {
+                          setVariantStockRaw(prev => ({ ...prev, [i]: String(v.stock_quantity ?? 0) }));
+                        }
                       }}
                     />
+                    {variantStockErrors[i] && (
+                      <p className="text-xs text-destructive mt-1">{variantStockErrors[i]}</p>
+                    )}
                   </div>
                   <div>
                     <Label className="text-xs">Sufix SKU</Label>
@@ -1042,7 +1107,7 @@ const AdminProductForm: React.FC = () => {
         <Button type="button" variant="outline" onClick={() => navigate('/admin/productes')}>
           {t('common.cancel')}
         </Button>
-        <Button type="submit" disabled={saveProduct.isPending}>
+        <Button type="submit" disabled={saveProduct.isPending || hasStockErrors}>
           {saveProduct.isPending ? t('common.loading') : t('common.save')}
         </Button>
       </div>
