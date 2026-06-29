@@ -298,7 +298,15 @@ const ProductDetailPage: React.FC = () => {
                 <Minus className="h-4 w-4" />
               </button>
               <span className="px-4 text-sm font-medium min-w-[2rem] text-center">{quantity}</span>
-              <button onClick={() => setQuantity(q => q + 1)} className="p-2 hover:bg-muted transition-colors">
+              <button
+                onClick={() => setQuantity(q => {
+                  const unlimited = isUnlimitedProduct || (selectedVariant ? selectedVariant.stockQuantity === -1 : hasUnlimitedVariant);
+                  if (unlimited) return q + 1;
+                  const cap = currentStock > 0 ? currentStock : 1;
+                  return Math.min(cap, q + 1);
+                })}
+                className="p-2 hover:bg-muted transition-colors"
+              >
                 <Plus className="h-4 w-4" />
               </button>
             </div>
