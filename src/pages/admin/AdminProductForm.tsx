@@ -113,6 +113,28 @@ const AdminProductForm: React.FC = () => {
   const [activeLang, setActiveLang] = useState<string | undefined>(undefined);
   const [seoGenerating, setSeoGenerating] = useState<string | null>(null);
   const { data: aiStatus } = useAiProvider();
+
+  // Stock input raw state (allows temporary "-" while typing; validated visually).
+  const [stockRaw, setStockRaw] = useState<string>('0');
+  const [variantStockRaw, setVariantStockRaw] = useState<Record<number, string>>({});
+
+  const isValidStockValue = (raw: string): boolean => {
+    if (raw === '' || raw === '-') return false;
+    if (!/^-?\d+$/.test(raw)) return false;
+    const n = parseInt(raw, 10);
+    return Number.isInteger(n) && n >= -1;
+  };
+  const stockError = !isValidStockValue(stockRaw)
+    ? "L'estoc ha de ser un enter ≥ -1 (-1 = il·limitat)."
+    : null;
+  const variantStockErrors: Record<number, string | null> = {};
+  Object.keys(variantStockRaw).forEach(k => {
+    const i = Number(k);
+    variantStockErrors[i] = !isValidStockValue(variantStockRaw[i])
+      ? "Enter ≥ -1"
+      : null;
+  });
+  const hasStockErrors = !!stockError || Object.values(variantStockErrors).some(Boolean);
   const aiReady = isAiReady(aiStatus);
 
   // Live duplicate-slug detection (base + per language)
