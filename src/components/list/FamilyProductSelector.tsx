@@ -118,28 +118,40 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
 const FamilyBlock: React.FC<{
   title: string;
   products: FamilyProduct[];
+  assigned: FamilyProduct[];
   lang: string;
   selectedIds: Set<string>;
   onToggle: (p: FamilyProduct, checked: boolean) => void;
   muted?: boolean;
-}> = ({ title, products, lang, selectedIds, onToggle, muted }) => (
-  <section aria-label={title}>
-    <header className="flex items-center gap-2 mb-3">
-      <h3 className={cn('font-display text-lg font-semibold', muted && 'text-muted-foreground')}>{title}</h3>
-      <Badge variant="secondary">{products.length}</Badge>
-    </header>
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-      {products.map(p => (
-        <ProductTile key={p.id} product={p} lang={lang} selected={selectedIds.has(p.id)} onToggle={onToggle} />
-      ))}
-      {products.length === 0 && (
-        <p className="col-span-full text-sm text-muted-foreground py-4 text-center bg-muted/30 rounded">
-          {lang === 'es' ? 'Sin productos en esta familia' : 'Sense productes en aquesta família'}
-        </p>
-      )}
-    </div>
-  </section>
-);
+  searchActive?: boolean;
+}> = ({ title, products, assigned, lang, selectedIds, onToggle, muted, searchActive }) => {
+  const { t } = useTranslation();
+  const hasAssigned = assigned.length > 0;
+  const hasVisible = products.length > 0;
+
+  return (
+    <section aria-label={title}>
+      <header className="flex items-center gap-2 mb-3">
+        <h3 className={cn('font-display text-lg font-semibold', muted && 'text-muted-foreground')}>{title}</h3>
+        <Badge variant="secondary">{products.length}</Badge>
+      </header>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        {products.map(p => (
+          <ProductTile key={p.id} product={p} lang={lang} selected={selectedIds.has(p.id)} onToggle={onToggle} />
+        ))}
+        {!hasVisible && (
+          <p className="col-span-full text-sm text-muted-foreground py-4 text-center bg-muted/30 rounded">
+            {searchActive
+              ? t('list.familyNoSearchResults')
+              : hasAssigned
+                ? t('list.familyAllOutOfStock')
+                : t('list.familyNoProducts')}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+};
 
 const ProductTile: React.FC<{
   product: FamilyProduct;
