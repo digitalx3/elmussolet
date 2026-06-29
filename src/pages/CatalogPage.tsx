@@ -178,6 +178,20 @@ const CatalogPage: React.FC = () => {
       ? `${siteOrigin}/cataleg/${categorySlug}`
       : `${siteOrigin}/cataleg`;
 
+  const breadcrumbJsonLd = resolvedBrand
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: t('common.backHome', 'Inici'), item: `${siteOrigin}/` },
+          { '@type': 'ListItem', position: 2, name: t('products.catalog'), item: `${siteOrigin}/cataleg` },
+          { '@type': 'ListItem', position: 3, name: resolvedBrand.name, item: `${siteOrigin}/marca/${resolvedBrand.slug}` },
+        ],
+      }
+    : null;
+
+
+
 
   const filtersComponent = (
     <CatalogFilters
@@ -245,7 +259,11 @@ const CatalogPage: React.FC = () => {
         <meta property="og:description" content={seoDescription} />
         <meta property="og:url" content={seoCanonical} />
         <meta property="og:type" content="website" />
+        {breadcrumbJsonLd && (
+          <script type="application/ld+json">{JSON.stringify(breadcrumbJsonLd)}</script>
+        )}
       </Helmet>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
