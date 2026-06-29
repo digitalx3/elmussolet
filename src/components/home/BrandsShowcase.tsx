@@ -31,7 +31,7 @@ const BrandsShowcase: React.FC = () => {
             {brands.map((brand) => (
               <Link
                 key={brand.id}
-                to={`/cataleg?brand=${brand.id}`}
+                to={`/marca/${brand.slug}`}
                 title={brand.name}
                 aria-label={brand.name}
                 className="group flex aspect-[4/3] items-center justify-center rounded-lg border border-border bg-card p-4 transition-all hover:shadow-card hover:border-primary/40"
