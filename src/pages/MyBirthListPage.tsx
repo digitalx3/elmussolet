@@ -426,16 +426,6 @@ const MyBirthListPage: React.FC = () => {
     setSearchResults([]);
   };
 
-  const removeItem = (idx: number) => {
-    setForm(prev => ({ ...prev, items: prev.items.filter((_, i) => i !== idx) }));
-  };
-
-  const updateItem = (idx: number, field: string, value: any) => {
-    setForm(prev => ({
-      ...prev,
-      items: prev.items.map((it, i) => i === idx ? { ...it, [field]: value } : it),
-    }));
-  };
 
   const loadTemplate = async (templateIdArg?: string) => {
     const tplId = templateIdArg || selectedTemplateId;
