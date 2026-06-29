@@ -140,6 +140,21 @@ const AdminOrders: React.FC = () => {
     },
   });
 
+  const { data: statusLog = [] } = useQuery({
+    queryKey: ['admin-order-status-log', selectedOrder?.id],
+    enabled: !!selectedOrder,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('order_status_log')
+        .select('id, created_at, from_status, to_status, actor_id, actor_email')
+        .eq('order_id', selectedOrder!.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+
   const { data: auditLog = [], isLoading: auditLoading } = useQuery({
     queryKey: ['admin-order-deletion-audit'],
     enabled: auditOpen,
