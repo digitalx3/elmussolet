@@ -2510,6 +2510,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _slugify_brand: { Args: { input: string }; Returns: string }
       apply_order_item_stock_delta: {
         Args: {
           _delta: number
@@ -2593,6 +2594,7 @@ export type Database = {
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_permissions_enforced: { Args: never; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      unaccent: { Args: { "": string }; Returns: string }
       user_owns_list: {
         Args: { _list_id: string; _user_id: string }
         Returns: boolean

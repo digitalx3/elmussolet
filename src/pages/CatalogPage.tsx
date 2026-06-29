@@ -25,7 +25,7 @@ const parseBrandsParam = (sp: URLSearchParams): string[] => {
 
 const CatalogPage: React.FC = () => {
   const { t } = useTranslation();
-  const { categorySlug } = useParams<{ categorySlug?: string }>();
+  const { categorySlug, brandSlug } = useParams<{ categorySlug?: string; brandSlug?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -86,9 +86,21 @@ const CatalogPage: React.FC = () => {
     queueMicrotask(() => { isSyncingFromUrl.current = false; });
   }, [searchParams]);
 
-  // Sync state → URL whenever filters change
+  // When visiting /marca/:brandSlug, resolve slug → brand id and set as selected
+  useEffect(() => {
+    if (!brandSlug || brands.length === 0) return;
+    const found = brands.find(b => b.slug === brandSlug);
+    if (found) {
+      setSelectedBrandIds(prev =>
+        prev.length === 1 && prev[0] === found.id ? prev : [found.id]
+      );
+    }
+  }, [brandSlug, brands]);
+
+  // Sync state → URL whenever filters change (skip when on brand slug route)
   useEffect(() => {
     if (isSyncingFromUrl.current) return;
+    if (brandSlug) return;
     const next = new URLSearchParams(searchParams);
     // brands
     next.delete('brand');
@@ -102,7 +114,7 @@ const CatalogPage: React.FC = () => {
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, [selectedBrandIds, selectedAvailability, search, searchParams, setSearchParams]);
+  }, [brandSlug, selectedBrandIds, selectedAvailability, search, searchParams, setSearchParams]);
 
   const clearFilters = () => {
     setSelectedCategory(undefined);
@@ -111,8 +123,8 @@ const CatalogPage: React.FC = () => {
     setPriceRange([0, MAX_PRICE_DEFAULT]);
     setSearch('');
     setPage(1);
-    if (categorySlug) {
-      navigate('/catalog', { replace: true });
+    if (categorySlug || brandSlug) {
+      navigate('/cataleg', { replace: true });
     } else {
       setSearchParams({}, { replace: true });
     }
