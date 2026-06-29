@@ -1262,12 +1262,13 @@ const AdminBirthListForm: React.FC = () => {
                     <AlertDialogFooter>
                       <AlertDialogCancel disabled={deleting}>{t('common.cancel')}</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={performDelete}
+                        onClick={(e) => { e.preventDefault(); performDelete(); }}
                         disabled={deleting || !canConfirmDelete}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
                         {deleting ? t('common.loading') : t('common.delete')}
                       </AlertDialogAction>
+
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
