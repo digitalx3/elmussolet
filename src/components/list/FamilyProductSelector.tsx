@@ -109,15 +109,15 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
 const FamilyBlock: React.FC<{
   title: string;
   products: FamilyProduct[];
-  assigned: FamilyProduct[];
+  assignedCount: number;
   lang: string;
   selectedIds: Set<string>;
   onToggle: (p: FamilyProduct, checked: boolean) => void;
   muted?: boolean;
   searchActive?: boolean;
-}> = ({ title, products, assigned, lang, selectedIds, onToggle, muted, searchActive }) => {
+}> = ({ title, products, assignedCount, lang, selectedIds, onToggle, muted, searchActive }) => {
   const { t } = useTranslation();
-  const hasAssigned = assigned.length > 0;
+  const hasAssigned = assignedCount > 0;
   const hasVisible = products.length > 0;
 
   return (
