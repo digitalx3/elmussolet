@@ -159,10 +159,22 @@ const AdminOrders: React.FC = () => {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      // Read current status first to avoid no-op updates that would
+      // re-trigger the status email.
+      const { data: current, error: readErr } = await supabase
+        .from('orders')
+        .select('status')
+        .eq('id', id)
+        .single();
+      if (readErr) throw readErr;
+      if (current?.status === status) {
+        return { skipped: true as const };
+      }
+
       const { error } = await supabase.from('orders').update({ status }).eq('id', id);
       if (error) throw error;
 
-      // Trigger email notification
+      // Trigger email notification (only when status actually changed)
       try {
         await supabase.functions.invoke('send-order-status-email', {
           body: { order_id: id, new_status: status },
@@ -170,7 +182,9 @@ const AdminOrders: React.FC = () => {
       } catch (e) {
         console.warn('Email notification failed:', e);
       }
+      return { skipped: false as const };
     },
+
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-orders'] });
       notify.success(t('admin.orderStatusUpdated'));
