@@ -1028,15 +1028,29 @@ const AdminProductForm: React.FC = () => {
                   <div>
                     <Label className="text-xs">Estoc</Label>
                     <Input
-                      type="number" min="-1" step="1"
-                      value={v.stock_quantity}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="-?\d+"
+                      value={variantStockRaw[i] ?? String(v.stock_quantity ?? 0)}
+                      aria-invalid={!!variantStockErrors[i]}
+                      className={variantStockErrors[i] ? 'border-destructive focus-visible:ring-destructive' : ''}
                       onChange={e => {
                         const raw = e.target.value;
-                        if (raw === '' || raw === '-') { updateVariant(i, 'stock_quantity', 0); return; }
-                        const n = parseInt(raw, 10);
-                        updateVariant(i, 'stock_quantity', Number.isNaN(n) ? 0 : n);
+                        setVariantStockRaw(prev => ({ ...prev, [i]: raw }));
+                        if (isValidStockValue(raw)) {
+                          updateVariant(i, 'stock_quantity', parseInt(raw, 10));
+                        }
+                      }}
+                      onBlur={() => {
+                        const raw = variantStockRaw[i] ?? '';
+                        if (!isValidStockValue(raw)) {
+                          setVariantStockRaw(prev => ({ ...prev, [i]: String(v.stock_quantity ?? 0) }));
+                        }
                       }}
                     />
+                    {variantStockErrors[i] && (
+                      <p className="text-xs text-destructive mt-1">{variantStockErrors[i]}</p>
+                    )}
                   </div>
                   <div>
                     <Label className="text-xs">Sufix SKU</Label>
