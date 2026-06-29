@@ -90,6 +90,19 @@ const CatalogFilters: React.FC<Props> = ({
         )}
       </div>
 
+      {/* Clear all filters */}
+      {hasActiveFilters && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full gap-1"
+          onClick={onClearFilters}
+        >
+          <X className="h-4 w-4" />
+          {t('products.clearFilters')}
+        </Button>
+      )}
+
       {/* Categories */}
       <div>
         <Label className="text-sm font-semibold mb-2 block">{t('products.category')}</Label>
