@@ -690,6 +690,37 @@ const MyBirthListPage: React.FC = () => {
     }));
   };
 
+  /** Quick selector: toggle a product on/off by clicking its tile in the family grid. */
+  const toggleProductFromFamily = (product: any, checked: boolean) => {
+    if (!checked) {
+      setForm(prev => ({ ...prev, items: prev.items.filter(it => it.product_id !== product.id) }));
+      return;
+    }
+    if (form.items.some(i => i.product_id === product.id)) return;
+    let targetTempId: string | null = null;
+    if (product.default_section_id) {
+      targetTempId = `def-${product.default_section_id}`;
+      // Ensure a PendingSection exists with this temp_id
+      if (!sections.some(s => s.temp_id === targetTempId)) {
+        const def = defaultSectionsData.find(d => d.id === product.default_section_id);
+        const nameCa = def?.translations.find(tr => tr.language === 'ca')?.name || def?.slug || 'Família';
+        const nameEs = def?.translations.find(tr => tr.language === 'es')?.name || nameCa;
+        setSections(prev => [
+          ...prev,
+          { temp_id: targetTempId!, name_ca: nameCa, name_es: nameEs, sort_order: prev.length },
+        ]);
+      }
+    }
+    addProductToSection(product, targetTempId);
+  };
+
+  /** Set of product ids currently selected in this list. */
+  const selectedProductIds = useMemo(
+    () => new Set(form.items.map(i => i.product_id)),
+    [form.items],
+  );
+
+
 
 
   const handleSave = async () => {
