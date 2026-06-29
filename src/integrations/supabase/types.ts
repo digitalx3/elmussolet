@@ -1458,7 +1458,6 @@ export type Database = {
           order_number: string | null
           order_snapshot: Json | null
           order_status: string | null
-          payment_status: string | null
           stock_movements_created: number
           total: number | null
           user_id: string | null
@@ -1476,7 +1475,6 @@ export type Database = {
           order_number?: string | null
           order_snapshot?: Json | null
           order_status?: string | null
-          payment_status?: string | null
           stock_movements_created?: number
           total?: number | null
           user_id?: string | null
@@ -1494,7 +1492,6 @@ export type Database = {
           order_number?: string | null
           order_snapshot?: Json | null
           order_status?: string | null
-          payment_status?: string | null
           stock_movements_created?: number
           total?: number | null
           user_id?: string | null
@@ -1668,7 +1665,6 @@ export type Database = {
           order_number: string
           payment_method: string | null
           payment_reference: string | null
-          payment_status: string | null
           shipping_address: Json | null
           shipping_cost: number | null
           status: string | null
@@ -1687,7 +1683,6 @@ export type Database = {
           order_number: string
           payment_method?: string | null
           payment_reference?: string | null
-          payment_status?: string | null
           shipping_address?: Json | null
           shipping_cost?: number | null
           status?: string | null
@@ -1706,7 +1701,6 @@ export type Database = {
           order_number?: string
           payment_method?: string | null
           payment_reference?: string | null
-          payment_status?: string | null
           shipping_address?: Json | null
           shipping_cost?: number | null
           status?: string | null

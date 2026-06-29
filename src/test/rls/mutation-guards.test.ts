@@ -81,7 +81,7 @@ describe("RLS mutation guards", () => {
     const c = await clientAs("anon");
     const { error } = await c.from("orders").insert({
       order_number: "RLS-TEST-FAKE",
-      total: 1, subtotal: 1, status: "pending", payment_status: "pending",
+      total: 1, subtotal: 1, status: "pending",
     } as any);
     expect(error).not.toBeNull();
   });

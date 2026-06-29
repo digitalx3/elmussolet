@@ -253,8 +253,8 @@ const CheckoutPage: React.FC = () => {
           total,
           notes: notes.trim() || null,
           status: 'pending',
-          payment_status: 'pending',
         } as any)
+
         .select('id')
         .single();
 
