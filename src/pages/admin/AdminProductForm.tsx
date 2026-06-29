@@ -764,8 +764,21 @@ const AdminProductForm: React.FC = () => {
           </div>
           <div>
             <Label>Estoc</Label>
-            <Input type="number" min="0" value={form.stock_quantity}
-              onChange={e => updateField('stock_quantity', parseInt(e.target.value) || 0)} />
+            <Input
+              type="number"
+              min="-1"
+              step="1"
+              value={form.stock_quantity}
+              onChange={e => {
+                const raw = e.target.value;
+                if (raw === '' || raw === '-') { updateField('stock_quantity', 0); return; }
+                const n = parseInt(raw, 10);
+                updateField('stock_quantity', Number.isNaN(n) ? 0 : n);
+              }}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Posa <code>-1</code> per indicar estoc il·limitat (només té efecte amb estat "En stock, sota comanda").
+            </p>
           </div>
           <div>
             <Label>Estat d'estoc</Label>
@@ -977,8 +990,16 @@ const AdminProductForm: React.FC = () => {
                   </div>
                   <div>
                     <Label className="text-xs">Estoc</Label>
-                    <Input type="number" min="0" value={v.stock_quantity}
-                      onChange={e => updateVariant(i, 'stock_quantity', parseInt(e.target.value) || 0)} />
+                    <Input
+                      type="number" min="-1" step="1"
+                      value={v.stock_quantity}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        if (raw === '' || raw === '-') { updateVariant(i, 'stock_quantity', 0); return; }
+                        const n = parseInt(raw, 10);
+                        updateVariant(i, 'stock_quantity', Number.isNaN(n) ? 0 : n);
+                      }}
+                    />
                   </div>
                   <div>
                     <Label className="text-xs">Sufix SKU</Label>
