@@ -1177,7 +1177,7 @@ const AdminBirthListForm: React.FC = () => {
                 </Button>
 
                 {/* Step 1 (with orders): warn that orders will be deleted */}
-                <AlertDialog open={deleteStep === 'orders'} onOpenChange={(o) => { if (!o && !deleting) setDeleteStep('idle'); }}>
+                <AlertDialog open={deleteStep === 'orders'} onOpenChange={(o) => { if (!o && !deleting && deleteStep === 'orders') setDeleteStep('idle'); }}>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>{t('admin.deleteListWithOrdersTitle')}</AlertDialogTitle>
@@ -1195,7 +1195,10 @@ const AdminBirthListForm: React.FC = () => {
                     </div>
                     <AlertDialogFooter>
                       <AlertDialogCancel disabled={deleting}>{t('common.cancel')}</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => setDeleteStep('final')} disabled={deleting}>
+                      <AlertDialogAction
+                        onClick={(e) => { e.preventDefault(); setDeleteStep('final'); }}
+                        disabled={deleting}
+                      >
                         {t('admin.deleteListWithOrdersConfirm')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
@@ -1203,7 +1206,8 @@ const AdminBirthListForm: React.FC = () => {
                 </AlertDialog>
 
                 {/* Final step: double confirmation (checkbox + typed phrase) */}
-                <AlertDialog open={deleteStep === 'final'} onOpenChange={(o) => { if (!o && !deleting) setDeleteStep('idle'); }}>
+                <AlertDialog open={deleteStep === 'final'} onOpenChange={(o) => { if (!o && !deleting && deleteStep === 'final') setDeleteStep('idle'); }}>
+
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>{t('admin.deleteListFinalTitle')}</AlertDialogTitle>
@@ -1258,12 +1262,13 @@ const AdminBirthListForm: React.FC = () => {
                     <AlertDialogFooter>
                       <AlertDialogCancel disabled={deleting}>{t('common.cancel')}</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={performDelete}
+                        onClick={(e) => { e.preventDefault(); performDelete(); }}
                         disabled={deleting || !canConfirmDelete}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
                         {deleting ? t('common.loading') : t('common.delete')}
                       </AlertDialogAction>
+
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
