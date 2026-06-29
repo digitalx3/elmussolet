@@ -396,35 +396,6 @@ const MyBirthListPage: React.FC = () => {
     return imgs[0]?.image_url || null;
   };
 
-  const addProduct = (product: any) => {
-    if (form.items.some(i => i.product_id === product.id)) {
-      notify.info(t('list.productAlreadyAdded'));
-      return;
-    }
-    if (getEffectiveStock(product) <= 0) {
-      notify.error(lang === 'es'
-        ? 'Este producto no tiene stock. Busca uno similar.'
-        : 'Aquest producte no té estoc. Busca\'n un de similar.');
-      return;
-    }
-    const tr = product.product_translations?.find((t: any) => t.language === lang)
-      || product.product_translations?.[0];
-    setForm(prev => ({
-      ...prev,
-      items: [...prev.items, {
-        product_id: product.id,
-        variant_id: null,
-        quantity_desired: 1,
-        priority: 'medium',
-        sort_order: prev.items.length,
-        productName: tr?.name || product.slug,
-        price: product.base_price,
-        image_url: pickProductImage(product),
-      }],
-    }));
-    setProductSearch('');
-    setSearchResults([]);
-  };
 
 
   const loadTemplate = async (templateIdArg?: string) => {
