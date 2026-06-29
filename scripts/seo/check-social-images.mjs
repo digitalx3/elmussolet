@@ -56,12 +56,21 @@ async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         ctx = await browser.new_context(viewport={"width": 1280, "height": 1200})
-        # Bypass maintenance gate (cached state with bypass=true).
+        # Bypass maintenance gate: seed cache AND mock the edge function so
+        # the post-mount fetch can't flip the UI back to MaintenancePage.
         bypass_state = (
             "window.sessionStorage.setItem('maintenance.state.v1',"
             "JSON.stringify({ts:Date.now(),state:{enabled:false,bypass:true,show_logo:true,message_ca:'',message_es:''}}))"
         )
         await ctx.add_init_script(bypass_state)
+        await ctx.route(
+            "**/functions/v1/check-maintenance-access",
+            lambda r: r.fulfill(
+                status=200,
+                content_type="application/json",
+                body='{"enabled":false,"bypass":true,"show_logo":true,"message_ca":"","message_es":""}',
+            ),
+        )
         page = await ctx.new_page()
         for r in ROUTES:
             data = await inspect(page, r)
