@@ -507,37 +507,6 @@ const MyBirthListPage: React.FC = () => {
     }
   };
 
-  const assignItemSection = (idx: number, sectionTempId: string | null) => {
-    setForm(prev => ({
-      ...prev,
-      items: prev.items.map((it, i) => i === idx ? { ...it, section_temp_id: sectionTempId } : it),
-    }));
-  };
-
-  const handleAddSection = () => {
-    const ca = newSectionCa.trim();
-    const es = newSectionEs.trim();
-    if (!ca && !es) {
-      notify.error(lang === 'es' ? 'Indica un nombre para la sección' : 'Indica un nom per a la secció');
-      return;
-    }
-    setSections(prev => [...prev, {
-      temp_id: `new-${Date.now()}-${prev.length}`,
-      name_ca: ca || es,
-      name_es: es || ca,
-      sort_order: prev.length,
-    }]);
-    setNewSectionCa('');
-    setNewSectionEs('');
-  };
-
-  const removeSection = (tempId: string) => {
-    setSections(prev => prev.filter(s => s.temp_id !== tempId).map((x, i) => ({ ...x, sort_order: i })));
-    setForm(prev => ({
-      ...prev,
-      items: prev.items.map(it => it.section_temp_id === tempId ? { ...it, section_temp_id: null } : it),
-    }));
-  };
 
 
 
