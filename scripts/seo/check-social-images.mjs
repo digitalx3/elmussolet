@@ -16,7 +16,7 @@
 import { spawnSync } from "node:child_process";
 
 const BASE = process.env.SEO_CHECK_BASE_URL ?? "http://localhost:8080";
-const BRAND_SLUG = process.argv[2] ?? "aeromoov";
+const BRAND_SLUG = process.argv[2] ?? "ikid";
 
 const ROUTES = [
   { path: "/", name: "home" },
