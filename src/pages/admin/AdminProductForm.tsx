@@ -789,22 +789,33 @@ const AdminProductForm: React.FC = () => {
             <p className="text-xs text-muted-foreground mt-1">Determina a quina família apareixerà aquest producte quan es creïn llistes de naixement.</p>
           </div>
           <div>
-            <Label>Estoc</Label>
+            <Label htmlFor="stock-input">Estoc</Label>
             <Input
-              type="number"
-              min="-1"
-              step="1"
-              value={form.stock_quantity}
+              id="stock-input"
+              type="text"
+              inputMode="numeric"
+              pattern="-?\d+"
+              value={stockRaw}
+              aria-invalid={!!stockError}
+              className={stockError ? 'border-destructive focus-visible:ring-destructive' : ''}
               onChange={e => {
                 const raw = e.target.value;
-                if (raw === '' || raw === '-') { updateField('stock_quantity', 0); return; }
-                const n = parseInt(raw, 10);
-                updateField('stock_quantity', Number.isNaN(n) ? 0 : n);
+                setStockRaw(raw);
+                if (isValidStockValue(raw)) {
+                  updateField('stock_quantity', parseInt(raw, 10));
+                }
+              }}
+              onBlur={() => {
+                if (!isValidStockValue(stockRaw)) setStockRaw(String(form.stock_quantity ?? 0));
               }}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Posa <code>-1</code> per indicar estoc il·limitat (només té efecte amb estat "En stock, sota comanda").
-            </p>
+            {stockError ? (
+              <p className="text-xs text-destructive mt-1">{stockError}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">
+                Posa <code>-1</code> per indicar estoc il·limitat (només té efecte amb estat "En stock, sota comanda").
+              </p>
+            )}
           </div>
           <div>
             <Label>Estat d'estoc</Label>
