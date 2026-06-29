@@ -1129,8 +1129,10 @@ const AdminBirthListForm: React.FC = () => {
             ))}
           </CardContent>
         </Card>
+        </div>
 
         {/* Products + Sections */}
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{t('admin.listProducts')}</CardTitle>
