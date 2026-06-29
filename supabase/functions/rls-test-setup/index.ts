@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
       .select("id")
       .eq("list_id", listId)
       .eq("user_id", ids.owner)
-      .order("created_at", { ascending: true });
+      .order("id", { ascending: true });
     assertNoError(ownerLookupErr, "list owner lookup failed");
     const existingOwner = (existingOwners && existingOwners.length > 0) ? existingOwners[0] : null;
     // Clean up any accidental duplicates from previous runs
