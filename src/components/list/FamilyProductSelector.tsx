@@ -18,20 +18,18 @@ import { formatPrice } from '@/hooks/useTaxRates';
 export interface FamilyProductSelectorProps {
   selectedIds: Set<string>;
   onToggle: (product: FamilyProduct, checked: boolean) => void;
-  /** When set, hides the family ID(s) (e.g. to exclude an empty bucket). */
-  hideEmptyFamilies?: boolean;
 }
 
 /**
  * Full-width grid grouped by default-list sections (families). Each product
  * has a check toggle to include / exclude it from the current birth list / template.
- * - Discontinued / out-of-stock products are hidden by the data hook OR rendered disabled.
+ * - Discontinued / out-of-stock products are hidden by the availability filter.
  * - "on_order" products show an "En estoc, sota comanda" badge and remain selectable.
+ * - Families without assigned products or with all products out of stock display a status message.
  */
 const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
   selectedIds,
   onToggle,
-  hideEmptyFamilies = true,
 }) => {
   const { t, i18n } = useTranslation();
   const lang = i18n.language === 'es' ? 'es' : 'ca';
