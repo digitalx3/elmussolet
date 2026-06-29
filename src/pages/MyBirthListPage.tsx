@@ -157,22 +157,6 @@ const MyBirthListPage: React.FC = () => {
     },
   });
 
-  // Browse products (loaded only when browseOpen)
-  const { data: browseProducts = [], isFetching: browseLoading } = useQuery({
-    queryKey: ['birthlist-browse-products', browseCategory],
-    enabled: browseOpen,
-    queryFn: async () => {
-      let q = supabase
-        .from('products')
-        .select(`id, base_price, slug, category_id, stock_quantity, has_variants, product_translations(language, name), product_images(image_url, is_primary, sort_order), product_variants(stock_quantity, is_active)`)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(60);
-      if (browseCategory !== 'all') q = q.eq('category_id', browseCategory);
-      const { data } = await q;
-      return data || [];
-    },
-  });
 
 
 
