@@ -22,7 +22,10 @@ const CatalogPage: React.FC = () => {
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState(searchParams.get('q') ?? '');
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
-  const [selectedBrand, setSelectedBrand] = useState<string | undefined>(searchParams.get('brand') ?? undefined);
+  const [selectedBrandIds, setSelectedBrandIds] = useState<string[]>(() => {
+    const param = searchParams.get('brand');
+    return param ? [param] : [];
+  });
   const [selectedAvailability, setSelectedAvailability] = useState<string | undefined>(undefined);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, MAX_PRICE_DEFAULT]);
   const [sortBy, setSortBy] = useState<ProductFilters['sortBy']>('newest');
@@ -44,7 +47,7 @@ const CatalogPage: React.FC = () => {
 
   const filters: ProductFilters = {
     categoryId: resolvedCategoryId,
-    brandId: selectedBrand,
+    brandIds: selectedBrandIds.length > 0 ? selectedBrandIds : undefined,
     search: search || undefined,
     minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
     maxPrice: priceRange[1] < MAX_PRICE_DEFAULT ? priceRange[1] : undefined,
@@ -56,11 +59,11 @@ const CatalogPage: React.FC = () => {
 
   const { data, isLoading } = useTranslatedProducts(filters);
 
-  const hasActiveFilters = !!(selectedCategory || selectedBrand || selectedAvailability || search || priceRange[0] > 0 || priceRange[1] < MAX_PRICE_DEFAULT);
+  const hasActiveFilters = !!(selectedCategory || selectedBrandIds.length > 0 || selectedAvailability || search || priceRange[0] > 0 || priceRange[1] < MAX_PRICE_DEFAULT);
 
   const clearFilters = () => {
     setSelectedCategory(undefined);
-    setSelectedBrand(undefined);
+    setSelectedBrandIds([]);
     setSelectedAvailability(undefined);
     setPriceRange([0, MAX_PRICE_DEFAULT]);
     setSearch('');
@@ -71,8 +74,8 @@ const CatalogPage: React.FC = () => {
   };
 
   const currentBrandName = useMemo(
-    () => (selectedBrand ? brands.find(b => b.id === selectedBrand)?.name : undefined),
-    [selectedBrand, brands]
+    () => (selectedBrandIds.length === 1 ? brands.find(b => b.id === selectedBrandIds[0])?.name : undefined),
+    [selectedBrandIds, brands]
   );
 
   const currentCategoryName = useMemo(() => {
@@ -87,13 +90,13 @@ const CatalogPage: React.FC = () => {
       categories={categories}
       brands={brands}
       selectedCategory={selectedCategory || (categorySlug ? resolvedCategoryId : undefined)}
-      selectedBrand={selectedBrand}
+      selectedBrandIds={selectedBrandIds}
       selectedAvailability={selectedAvailability}
       priceRange={priceRange}
       maxPrice={MAX_PRICE_DEFAULT}
       search={search}
       onCategoryChange={(id) => { setSelectedCategory(id); setPage(1); }}
-      onBrandChange={(id) => { setSelectedBrand(id); setPage(1); }}
+      onBrandIdsChange={(ids) => { setSelectedBrandIds(ids); setPage(1); }}
       onAvailabilityChange={(val) => { setSelectedAvailability(val); setPage(1); }}
       onPriceRangeChange={(range) => { setPriceRange(range); setPage(1); }}
       onSearchChange={(val) => { setSearch(val); setPage(1); }}
