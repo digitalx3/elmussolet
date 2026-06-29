@@ -738,6 +738,11 @@ const AdminProductForm: React.FC = () => {
               {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
+          <div className="sm:col-span-2">
+            <Label>Família per a llistes de naixement</Label>
+            <FamilySelect value={form.default_section_id} onChange={(v) => updateField('default_section_id', v)} />
+            <p className="text-xs text-muted-foreground mt-1">Determina a quina família apareixerà aquest producte quan es creïn llistes de naixement.</p>
+          </div>
           <div>
             <Label>Estoc</Label>
             <Input type="number" min="0" value={form.stock_quantity}
