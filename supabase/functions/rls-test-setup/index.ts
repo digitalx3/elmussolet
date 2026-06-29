@@ -111,13 +111,19 @@ Deno.serve(async (req) => {
     if (lErr) throw lErr;
     const listId = list.id;
 
-    const { data: existingOwner, error: ownerLookupErr } = await admin
+    const { data: existingOwners, error: ownerLookupErr } = await admin
       .from("list_owners")
       .select("id")
       .eq("list_id", listId)
       .eq("user_id", ids.owner)
-      .maybeSingle();
+      .order("created_at", { ascending: true });
     assertNoError(ownerLookupErr, "list owner lookup failed");
+    const existingOwner = (existingOwners && existingOwners.length > 0) ? existingOwners[0] : null;
+    // Clean up any accidental duplicates from previous runs
+    if (existingOwners && existingOwners.length > 1) {
+      const dupIds = existingOwners.slice(1).map((o: any) => o.id);
+      await admin.from("list_owners").delete().in("id", dupIds);
+    }
 
     const ownerPayload = {
       list_id: listId,
