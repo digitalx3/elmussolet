@@ -1062,8 +1062,12 @@ const AdminProductForm: React.FC = () => {
                         }
                       }}
                     />
-                    {variantStockErrors[i] && (
+                    {variantStockErrors[i] ? (
                       <p className="text-xs text-destructive mt-1">{variantStockErrors[i]}</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        <code>-1</code> = il·limitat (només amb estat "sota comanda").
+                      </p>
                     )}
                   </div>
                   <div>
