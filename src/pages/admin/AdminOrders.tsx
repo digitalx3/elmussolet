@@ -293,7 +293,7 @@ const AdminOrders: React.FC = () => {
           order_id: orderId,
           order_number: orderSnap?.order_number ?? null,
           order_status: orderSnap?.status ?? null,
-          payment_status: orderSnap?.payment_status ?? null,
+          
           list_id: orderSnap?.list_id ?? null,
           user_id: null,
           total: orderSnap?.total ?? null,
