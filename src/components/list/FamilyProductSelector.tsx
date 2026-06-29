@@ -26,7 +26,7 @@ export interface FamilyProductSelectorProps {
  * Full-width grid grouped by default-list sections (families). Each product
  * has a check toggle to include / exclude it from the current birth list / template.
  * - Discontinued / out-of-stock products are hidden by the data hook OR rendered disabled.
- * - "on_order" products show a "Sota comanda" badge and remain selectable.
+ * - "on_order" products show an "En estoc, sota comanda" badge and remain selectable.
  */
 const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
   selectedIds,
