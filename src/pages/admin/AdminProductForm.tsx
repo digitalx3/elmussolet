@@ -293,6 +293,10 @@ const AdminProductForm: React.FC = () => {
         related_product_ids: relatedSorted,
         cross_sell_product_ids: crossSellSorted,
       });
+      setStockRaw(String(product.stock_quantity ?? 0));
+      setVariantStockRaw(
+        Object.fromEntries((product.product_variants || []).map((v, i) => [i, String(v.stock_quantity ?? 0)]))
+      );
     }
   }, [product, isNew, languages]);
 
