@@ -2113,7 +2113,13 @@ const MyBirthListPage: React.FC = () => {
 
 
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving} size="lg" className="gap-2">
+        <Button
+          onClick={handleSave}
+          disabled={saving || form.items.length === 0}
+          size="lg"
+          className="gap-2"
+          title={form.items.length === 0 ? (lang === 'es' ? 'Selecciona al menos un producto' : 'Selecciona com a mínim un producte') : undefined}
+        >
           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
           {listId ? t('common.save') : t('list.createList')}
         </Button>
