@@ -995,7 +995,10 @@ const AdminBirthListForm: React.FC = () => {
           </Card>
         )}
 
+        {/* Basic info + Owners side-by-side on wide screens */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Basic info */}
+
         <Card>
           <CardHeader><CardTitle>{t('admin.listInfo')}</CardTitle></CardHeader>
           <CardContent className="space-y-4">
