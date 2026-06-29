@@ -499,7 +499,34 @@ const AdminBirthListForm: React.FC = () => {
     setSearchResults([]);
   };
 
-  // Section management
+  /** Quick selector: toggle a product on/off and auto-create the family section. */
+  const toggleProductFromFamily = (product: any, checked: boolean) => {
+    if (!checked) {
+      setForm(prev => ({ ...prev, items: prev.items.filter(it => it.product_id !== product.id) }));
+      return;
+    }
+    if (form.items.some(i => i.product_id === product.id)) return;
+    let targetTempId: string | null = null;
+    if (product.default_section_id) {
+      targetTempId = `def-${product.default_section_id}`;
+      if (!sections.some(s => s.temp_id === targetTempId)) {
+        const def = defaultSectionsData.find(d => d.id === product.default_section_id);
+        const nameCa = def?.translations.find(tr => tr.language === 'ca')?.name || def?.slug || 'Família';
+        const nameEs = def?.translations.find(tr => tr.language === 'es')?.name || nameCa;
+        setSections(prev => [
+          ...prev,
+          { temp_id: targetTempId!, name_ca: nameCa, name_es: nameEs, sort_order: prev.length, translations: { ca: nameCa, es: nameEs } } as any,
+        ]);
+      }
+    }
+    addProduct(product, targetTempId);
+  };
+
+  const selectedProductIds = useMemo(
+    () => new Set(form.items.map(i => i.product_id)),
+    [form.items],
+  );
+
   const addSection = () => {
     const ca = window.prompt(lang === 'es' ? 'Nombre de la familia (catalán)' : 'Nom de la família (català)')?.trim();
     if (!ca) return;
