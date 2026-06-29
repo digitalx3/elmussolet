@@ -140,6 +140,12 @@ const CatalogPage: React.FC = () => {
     }
   };
 
+  const resolvedBrand = useMemo(
+    () => (brandSlug ? brands.find(b => b.slug === brandSlug) : undefined),
+    [brandSlug, brands]
+  );
+  const brandNotFound = !!brandSlug && brands.length > 0 && !resolvedBrand;
+
   const currentBrandName = useMemo(
     () => (selectedBrandIds.length === 1 ? brands.find(b => b.id === selectedBrandIds[0])?.name : undefined),
     [selectedBrandIds, brands]
@@ -151,6 +157,27 @@ const CatalogPage: React.FC = () => {
     }
     return undefined;
   }, [resolvedCategoryId, categories]);
+
+  // Per-route SEO head
+  const siteOrigin = 'https://elmussolet.com';
+  const seoTitle = resolvedBrand
+    ? `${resolvedBrand.name} — ${t('products.catalog')} | El Mussolet`
+    : currentCategoryName
+      ? `${currentCategoryName} | El Mussolet`
+      : `${t('products.catalog')} | El Mussolet`;
+  const seoDescription = resolvedBrand
+    ? (resolvedBrand.description?.trim() ||
+        t('products.brandSeoDescription', {
+          brand: resolvedBrand.name,
+          defaultValue: `Descobreix tots els productes de {{brand}} a El Mussolet.`,
+        }))
+    : t('products.catalogSeoDescription', 'Catàleg de productes per a nadons i infants a El Mussolet.');
+  const seoCanonical = resolvedBrand
+    ? `${siteOrigin}/marca/${resolvedBrand.slug}`
+    : categorySlug
+      ? `${siteOrigin}/cataleg/${categorySlug}`
+      : `${siteOrigin}/cataleg`;
+
 
   const filtersComponent = (
     <CatalogFilters
