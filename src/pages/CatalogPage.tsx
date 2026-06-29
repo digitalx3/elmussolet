@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { LayoutGrid, List, SlidersHorizontal, X } from 'lucide-react';
@@ -15,6 +15,14 @@ import { useBrands } from '@/hooks/useBrands';
 
 const MAX_PRICE_DEFAULT = 10000;
 
+const parseBrandsParam = (sp: URLSearchParams): string[] => {
+  const multi = sp.getAll('brand');
+  if (multi.length > 1) return multi;
+  const single = sp.get('brand');
+  if (!single) return [];
+  return single.includes(',') ? single.split(',').filter(Boolean) : [single];
+};
+
 const CatalogPage: React.FC = () => {
   const { t } = useTranslation();
   const { categorySlug } = useParams<{ categorySlug?: string }>();
@@ -24,11 +32,10 @@ const CatalogPage: React.FC = () => {
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState(searchParams.get('q') ?? '');
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
-  const [selectedBrandIds, setSelectedBrandIds] = useState<string[]>(() => {
-    const param = searchParams.get('brand');
-    return param ? [param] : [];
-  });
-  const [selectedAvailability, setSelectedAvailability] = useState<string | undefined>(undefined);
+  const [selectedBrandIds, setSelectedBrandIds] = useState<string[]>(() => parseBrandsParam(searchParams));
+  const [selectedAvailability, setSelectedAvailability] = useState<string | undefined>(
+    searchParams.get('availability') ?? undefined
+  );
   const [priceRange, setPriceRange] = useState<[number, number]>([0, MAX_PRICE_DEFAULT]);
   const [sortBy, setSortBy] = useState<ProductFilters['sortBy']>('newest');
   const [page, setPage] = useState(1);
@@ -63,6 +70,40 @@ const CatalogPage: React.FC = () => {
 
   const hasActiveFilters = !!(categorySlug || selectedCategory || selectedBrandIds.length > 0 || selectedAvailability || search || priceRange[0] > 0 || priceRange[1] < MAX_PRICE_DEFAULT);
 
+  // Sync URL → state when user navigates (back/forward, external links)
+  const isSyncingFromUrl = useRef(false);
+  useEffect(() => {
+    isSyncingFromUrl.current = true;
+    const urlBrands = parseBrandsParam(searchParams);
+    const urlAvailability = searchParams.get('availability') ?? undefined;
+    const urlSearch = searchParams.get('q') ?? '';
+    setSelectedBrandIds(prev =>
+      prev.length === urlBrands.length && prev.every((v, i) => v === urlBrands[i]) ? prev : urlBrands
+    );
+    setSelectedAvailability(prev => (prev === urlAvailability ? prev : urlAvailability));
+    setSearch(prev => (prev === urlSearch ? prev : urlSearch));
+    // allow next effect tick to re-enable write-back
+    queueMicrotask(() => { isSyncingFromUrl.current = false; });
+  }, [searchParams]);
+
+  // Sync state → URL whenever filters change
+  useEffect(() => {
+    if (isSyncingFromUrl.current) return;
+    const next = new URLSearchParams(searchParams);
+    // brands
+    next.delete('brand');
+    selectedBrandIds.forEach(id => next.append('brand', id));
+    // availability
+    if (selectedAvailability) next.set('availability', selectedAvailability);
+    else next.delete('availability');
+    // search
+    if (search) next.set('q', search);
+    else next.delete('q');
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+  }, [selectedBrandIds, selectedAvailability, search, searchParams, setSearchParams]);
+
   const clearFilters = () => {
     setSelectedCategory(undefined);
     setSelectedBrandIds([]);
@@ -72,7 +113,7 @@ const CatalogPage: React.FC = () => {
     setPage(1);
     if (categorySlug) {
       navigate('/catalog', { replace: true });
-    } else if (searchParams.has('brand') || searchParams.has('q')) {
+    } else {
       setSearchParams({}, { replace: true });
     }
   };
