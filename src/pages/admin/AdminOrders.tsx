@@ -140,6 +140,21 @@ const AdminOrders: React.FC = () => {
     },
   });
 
+  const { data: statusLog = [] } = useQuery({
+    queryKey: ['admin-order-status-log', selectedOrder?.id],
+    enabled: !!selectedOrder,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('order_status_log')
+        .select('id, created_at, from_status, to_status, actor_id, actor_email')
+        .eq('order_id', selectedOrder!.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+
   const { data: auditLog = [], isLoading: auditLoading } = useQuery({
     queryKey: ['admin-order-deletion-audit'],
     enabled: auditOpen,
@@ -961,11 +976,59 @@ const AdminOrders: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              <Separator />
+
+
+              <div className="py-3">
+                <p className="text-sm font-semibold mb-2">
+                  {t('admin.statusHistory', 'Historial d\'estats')}
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">({statusLog.length})</span>
+                </p>
+                {statusLog.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">
+                    {t('admin.noStatusHistory', 'Encara no hi ha canvis d\'estat registrats.')}
+                  </p>
+                ) : (
+                  <div className="rounded-md border border-border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">{t('admin.movementDate', 'Data')}</TableHead>
+                          <TableHead className="text-xs">{t('admin.statusFrom', 'De')}</TableHead>
+                          <TableHead className="text-xs">{t('admin.statusTo', 'A')}</TableHead>
+                          <TableHead className="text-xs">{t('admin.statusActor', 'Per')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {statusLog.map((sl: any) => (
+                          <TableRow key={sl.id}>
+                            <TableCell className="text-xs whitespace-nowrap">
+                              {format(new Date(sl.created_at), 'dd/MM/yy HH:mm:ss', { locale: dateFnsLocale })}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              <Badge variant="outline" className="text-[10px] font-mono">{sl.from_status ?? '—'}</Badge>
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              <Badge variant="outline" className="text-[10px] font-mono">{sl.to_status}</Badge>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {sl.actor_email || (sl.actor_id ? sl.actor_id.slice(0, 8) : t('admin.statusActorSystem', 'sistema'))}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
             </>
 
           )}
         </DialogContent>
       </Dialog>
+
+
 
       {/* Deletion Audit Dialog */}
       <Dialog open={auditOpen} onOpenChange={setAuditOpen}>
