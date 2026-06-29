@@ -24,21 +24,10 @@ import { format } from 'date-fns';
 import { ca, es } from 'date-fns/locale';
 import { printDeliveryNote } from '@/lib/printDeliveryNote';
 
-const PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'refunded'] as const;
-type PaymentStatus = typeof PAYMENT_STATUSES[number];
-
-const paymentColors: Record<PaymentStatus, string> = {
-  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  paid: 'bg-green-100 text-green-800 border-green-200',
-  failed: 'bg-red-100 text-red-800 border-red-200',
-  refunded: 'bg-gray-100 text-gray-800 border-gray-200',
-};
-
 interface OrderRow {
   id: string;
   order_number: string;
   status: string | null;
-  payment_status: string | null;
   payment_method: string | null;
   delivery_method: string | null;
   subtotal: number;
@@ -51,6 +40,14 @@ interface OrderRow {
   customer_id: string;
   customers: { id: string; full_name: string | null; email: string | null } | null;
 }
+
+// Derive payment state from the order status. Anything past "pending"
+// (and not cancelled/failed) is considered paid.
+const isOrderPaid = (status: string | null | undefined) =>
+  !!status && !['pending', 'cancelled', 'failed'].includes(status);
+const isOrderPendingPayment = (status: string | null | undefined) =>
+  !status || status === 'pending' || status === 'failed';
+
 
 interface OrderItemRow {
   id: string;
@@ -94,7 +91,7 @@ const AdminOrders: React.FC = () => {
   const [auditOpen, setAuditOpen] = useState(false);
   const [auditDetail, setAuditDetail] = useState<any | null>(null);
 
-  const isEditable = !!selectedOrder && selectedOrder.payment_status !== 'paid' && selectedOrder.payment_status !== 'refunded';
+  const isEditable = !!selectedOrder && !isOrderPaid(selectedOrder.status);
 
   const { data: orderStatuses = [] } = useOrderStatuses();
 
@@ -181,17 +178,8 @@ const AdminOrders: React.FC = () => {
     onError: (e: any) => notify.error(e.message),
   });
 
-  const updatePaymentStatusMutation = useMutation({
-    mutationFn: async ({ id, payment_status }: { id: string; payment_status: string }) => {
-      const { error } = await supabase.from('orders').update({ payment_status }).eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin-orders'] });
-      notify.success(t('admin.paymentStatusUpdated'));
-    },
-    onError: (e: any) => notify.error(e.message),
-  });
+
+
 
   const recomputeOrderTotals = async (orderId: string) => {
     const { data: items, error } = await supabase
