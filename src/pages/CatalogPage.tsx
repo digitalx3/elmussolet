@@ -25,7 +25,7 @@ const parseBrandsParam = (sp: URLSearchParams): string[] => {
 
 const CatalogPage: React.FC = () => {
   const { t } = useTranslation();
-  const { categorySlug } = useParams<{ categorySlug?: string }>();
+  const { categorySlug, brandSlug } = useParams<{ categorySlug?: string; brandSlug?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
