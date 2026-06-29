@@ -1902,6 +1902,7 @@ export type Database = {
           brand_id: string | null
           category_id: string | null
           created_at: string
+          default_section_id: string | null
           featured_order: number | null
           has_variants: boolean | null
           id: string
@@ -1927,6 +1928,7 @@ export type Database = {
           brand_id?: string | null
           category_id?: string | null
           created_at?: string
+          default_section_id?: string | null
           featured_order?: number | null
           has_variants?: boolean | null
           id?: string
@@ -1952,6 +1954,7 @@ export type Database = {
           brand_id?: string | null
           category_id?: string | null
           created_at?: string
+          default_section_id?: string | null
           featured_order?: number | null
           has_variants?: boolean | null
           id?: string
@@ -1984,6 +1987,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_default_section_id_fkey"
+            columns: ["default_section_id"]
+            isOneToOne: false
+            referencedRelation: "default_list_sections"
             referencedColumns: ["id"]
           },
           {
