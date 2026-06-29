@@ -179,8 +179,13 @@ const AdminBirthListForm: React.FC = () => {
       }));
 
       const getStock = (p: any): number => {
+        // -1 = unlimited stock (on_order).
+        if (p?.stock_quantity === -1) return Infinity;
         const vs = (p?.product_variants || []).filter((v: any) => v.is_active !== false);
-        if (vs.length > 0) return vs.reduce((s: number, v: any) => s + (v.stock_quantity || 0), 0);
+        if (vs.length > 0) {
+          if (vs.some((v: any) => v.stock_quantity === -1)) return Infinity;
+          return vs.reduce((s: number, v: any) => s + Math.max(0, v.stock_quantity || 0), 0);
+        }
         return p?.stock_quantity || 0;
       };
       const skipped: string[] = [];
@@ -322,8 +327,13 @@ const AdminBirthListForm: React.FC = () => {
   });
 
   const getEffectiveStock = (product: any): number => {
+    // -1 = unlimited (on_order).
+    if (product?.stock_quantity === -1) return Infinity;
     const variants = (product?.product_variants || []).filter((v: any) => v.is_active !== false);
-    if (variants.length > 0) return variants.reduce((s: number, v: any) => s + (v.stock_quantity || 0), 0);
+    if (variants.length > 0) {
+      if (variants.some((v: any) => v.stock_quantity === -1)) return Infinity;
+      return variants.reduce((s: number, v: any) => s + Math.max(0, v.stock_quantity || 0), 0);
+    }
     return product?.stock_quantity || 0;
   };
 

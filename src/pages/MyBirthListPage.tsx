@@ -350,9 +350,12 @@ const MyBirthListPage: React.FC = () => {
 
 
   const getEffectiveStock = (product: any): number => {
+    // -1 means unlimited stock (only meaningful with status "on_order").
+    if (product?.stock_quantity === -1) return Infinity;
     const variants = (product?.product_variants || []).filter((v: any) => v.is_active !== false);
     if (variants.length > 0) {
-      return variants.reduce((s: number, v: any) => s + (v.stock_quantity || 0), 0);
+      if (variants.some((v: any) => v.stock_quantity === -1)) return Infinity;
+      return variants.reduce((s: number, v: any) => s + Math.max(0, v.stock_quantity || 0), 0);
     }
     return product?.stock_quantity || 0;
   };
