@@ -178,6 +178,20 @@ const CatalogPage: React.FC = () => {
       ? `${siteOrigin}/cataleg/${categorySlug}`
       : `${siteOrigin}/cataleg`;
 
+  const breadcrumbJsonLd = resolvedBrand
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: t('common.backHome', 'Inici'), item: `${siteOrigin}/` },
+          { '@type': 'ListItem', position: 2, name: t('products.catalog'), item: `${siteOrigin}/cataleg` },
+          { '@type': 'ListItem', position: 3, name: resolvedBrand.name, item: `${siteOrigin}/marca/${resolvedBrand.slug}` },
+        ],
+      }
+    : null;
+
+
+
 
   const filtersComponent = (
     <CatalogFilters
