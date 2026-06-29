@@ -50,12 +50,9 @@ export function useFamilyProducts(options: UseFamilyProductsOptions = {}) {
         .eq('is_active', true)
         .not('default_section_id', 'is', null);
       if (availableOnly) {
-        // Allow: in_stock with stock>0, or on_order with stock != 0 (i.e. -1 unlimited, or >0 limited)
-        q = q
-          .in('stock_status', ['in_stock', 'on_order'])
-          .or('stock_status.eq.on_order,stock_quantity.gt.0')
-          .or('stock_quantity.neq.0,stock_status.eq.in_stock');
-        // Note: final granular filter (on_order+0 excluded) is enforced in productIsAvailable.
+        // Broad DB filter; the precise rule (on_order with stock=0 is excluded,
+        // stock=-1 is unlimited) is enforced in productIsAvailable.
+        q = q.in('stock_status', ['in_stock', 'on_order']);
       }
       const { data, error } = await q.order('sku').limit(2000);
       if (error) throw error;
