@@ -627,6 +627,15 @@ const AdminBirthListForm: React.FC = () => {
       return;
     }
 
+    if (form.items.length === 0) {
+      notify.warning(
+        lang === 'es'
+          ? 'Selecciona al menos un producto antes de guardar la lista.'
+          : 'Selecciona com a mínim un producte abans de desar la llista.'
+      );
+      return;
+    }
+
     setSaving(true);
     try {
       let listId = id;

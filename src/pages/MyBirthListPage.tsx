@@ -729,6 +729,14 @@ const MyBirthListPage: React.FC = () => {
     if (!form.first_name.trim()) { notify.error(t('list.firstNameRequired')); return; }
     if (!listId && !form.password.trim()) { notify.error(t('list.passwordRequired')); return; }
     if (form.password && form.password.length < 6) { notify.error(t('list.passwordTooShort')); return; }
+    if (form.items.length === 0) {
+      notify.warning(
+        lang === 'es'
+          ? 'Selecciona al menos un producto antes de guardar la lista.'
+          : 'Selecciona com a mínim un producte abans de desar la llista.'
+      );
+      return;
+    }
 
     setSaving(true);
     try {
