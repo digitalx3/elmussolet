@@ -66,8 +66,6 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
     return <p className="text-sm text-muted-foreground py-6 text-center">{t('common.loading')}</p>;
   }
 
-  const orphanLabel = lang === 'es' ? 'Sin familia' : 'Sense família';
-
   return (
     <div className="space-y-6">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-3 -mx-1 px-1 border-b">
@@ -102,17 +100,6 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
           />
         );
       })}
-
-      {grouped.orphans.length > 0 && (
-        <FamilyBlock
-          title={orphanLabel}
-          products={grouped.orphans}
-          lang={lang}
-          selectedIds={selectedIds}
-          onToggle={onToggle}
-          muted
-        />
-      )}
     </div>
   );
 };
