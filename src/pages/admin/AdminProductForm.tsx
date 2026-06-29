@@ -28,6 +28,25 @@ import ReplacementProductPicker from '@/components/admin/ReplacementProductPicke
 import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
 import { checkBaseSlugDuplicate, checkTranslationSlugDuplicate } from '@/lib/checkSlugDuplicate';
 import { useDuplicateSlugErrors, hasAnySlugError } from '@/hooks/useDuplicateSlugErrors';
+import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
+
+const FamilySelect: React.FC<{ value: string | null; onChange: (v: string | null) => void }> = ({ value, onChange }) => {
+  const { i18n } = useTranslation();
+  const lang = i18n.language === 'es' ? 'es' : 'ca';
+  const { data: sections = [] } = useDefaultListSections({ onlyActive: true });
+  return (
+    <select
+      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+      value={value || ''}
+      onChange={e => onChange(e.target.value || null)}
+    >
+      <option value="">— Sense família —</option>
+      {sections.map(s => (
+        <option key={s.id} value={s.id}>{pickSectionName(s, lang)}</option>
+      ))}
+    </select>
+  );
+};
 
 
 const emptyTranslation = { name: '', short_description: '', description: '', slug: '' };
