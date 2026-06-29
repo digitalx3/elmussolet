@@ -96,7 +96,7 @@
     "availability": "Disponibilidad",
     "inStock": "En stock",
     "lastUnit": "Última unidad disponible",
-    "onOrder": "Bajo pedido",
+    "onOrder": "En stock, bajo pedido",
     "outOfStock": "Agotado",
     "allProducts": "Todos los productos",
     "addToCart": "Añadir a la cesta",

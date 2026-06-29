@@ -26,7 +26,7 @@ export interface FamilyProductSelectorProps {
  * Full-width grid grouped by default-list sections (families). Each product
  * has a check toggle to include / exclude it from the current birth list / template.
  * - Discontinued / out-of-stock products are hidden by the data hook OR rendered disabled.
- * - "on_order" products show a "Sota comanda" badge and remain selectable.
+ * - "on_order" products show an "En estoc, sota comanda" badge and remain selectable.
  */
 const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
   selectedIds,
@@ -149,6 +149,7 @@ const ProductTile: React.FC<{
   selected: boolean;
   onToggle: (p: FamilyProduct, checked: boolean) => void;
 }> = ({ product: p, lang, selected, onToggle }) => {
+  const { t } = useTranslation();
   const available = productIsAvailable(p);
   const onOrder = p.stock_status === 'on_order';
   const name = pickProductName(p, lang);
@@ -202,13 +203,13 @@ const ProductTile: React.FC<{
           {onOrder && (
             <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-400 gap-1 text-[10px]">
               <Clock className="h-3 w-3" aria-hidden="true" />
-              {lang === 'es' ? 'Bajo pedido' : 'Sota comanda'}
+              {t('products.onOrder')}
             </Badge>
           )}
           {!onOrder && !available && (
             <Badge variant="destructive" className="gap-1 text-[10px]">
               <Package className="h-3 w-3" aria-hidden="true" />
-              {lang === 'es' ? 'Sin stock' : 'Sense estoc'}
+              {t('products.outOfStock')}
             </Badge>
           )}
         </div>
