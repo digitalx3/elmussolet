@@ -177,6 +177,7 @@ const CatalogPage: React.FC = () => {
     : categorySlug
       ? `${siteOrigin}/cataleg/${categorySlug}`
       : `${siteOrigin}/cataleg`;
+  const seoImage = resolvedBrand?.logoUrl || undefined;
 
   const breadcrumbJsonLd = resolvedBrand
     ? {
@@ -266,6 +267,8 @@ const CatalogPage: React.FC = () => {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={seoTitle} />
         <meta name="twitter:description" content={seoDescription} />
+        {seoImage && <meta property="og:image" content={seoImage} />}
+        {seoImage && <meta name="twitter:image" content={seoImage} />}
         {breadcrumbJsonLd && (
           <script type="application/ld+json">{JSON.stringify(breadcrumbJsonLd)}</script>
         )}
