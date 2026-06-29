@@ -202,13 +202,13 @@ const ProductTile: React.FC<{
           {onOrder && (
             <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-400 gap-1 text-[10px]">
               <Clock className="h-3 w-3" aria-hidden="true" />
-              {lang === 'es' ? 'Bajo pedido' : 'Sota comanda'}
+              {t('products.onOrder')}
             </Badge>
           )}
           {!onOrder && !available && (
             <Badge variant="destructive" className="gap-1 text-[10px]">
               <Package className="h-3 w-3" aria-hidden="true" />
-              {lang === 'es' ? 'Sin stock' : 'Sense estoc'}
+              {t('products.outOfStock')}
             </Badge>
           )}
         </div>

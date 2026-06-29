@@ -96,7 +96,7 @@
     "availability": "Disponibilitat",
     "inStock": "En estoc",
     "lastUnit": "Última unitat disponible",
-    "onOrder": "Sota comanda",
+    "onOrder": "En estoc, sota comanda",
     "outOfStock": "Exhaurit",
     "allProducts": "Tots els productes",
     "addToCart": "Afegir a la cistella",
