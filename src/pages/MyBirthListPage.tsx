@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { notify } from '@/lib/notify';
 import { formatPrice } from '@/hooks/useTaxRates';
 import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
+import FamilyProductSelector from '@/components/list/FamilyProductSelector';
 
 interface ListItem {
   id?: string;
