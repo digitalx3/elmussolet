@@ -2,7 +2,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { HelmetProvider } from "react-helmet-async";
+import { HelmetProvider, Helmet } from "react-helmet-async";
+import mussoletLogo from "@/assets/mussolet-logo-square.png.asset.json";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { ListAccessProvider } from "@/contexts/ListAccessContext";
@@ -41,6 +42,10 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <HelmetProvider>
+    <Helmet>
+      <meta property="og:image" content={`https://elmussolet.com${mussoletLogo.url}`} />
+      <meta name="twitter:image" content={`https://elmussolet.com${mussoletLogo.url}`} />
+    </Helmet>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
