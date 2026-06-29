@@ -96,7 +96,6 @@ const ProductDetailPage: React.FC = () => {
       return;
     }
     addStandardItem(payload);
-    notify.success(t('products.addToCart'));
     requestUpsell(product.id);
   };
 
