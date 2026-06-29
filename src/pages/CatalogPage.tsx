@@ -19,6 +19,7 @@ const CatalogPage: React.FC = () => {
   const { t } = useTranslation();
   const { categorySlug } = useParams<{ categorySlug?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState(searchParams.get('q') ?? '');
