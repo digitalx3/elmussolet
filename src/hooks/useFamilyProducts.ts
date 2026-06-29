@@ -50,6 +50,8 @@ export function useFamilyProducts(options: UseFamilyProductsOptions = {}) {
         .eq('is_active', true)
         .not('default_section_id', 'is', null);
       if (availableOnly) {
+        // Broad DB filter; the precise rule (on_order with stock=0 is excluded,
+        // stock=-1 is unlimited) is enforced in productIsAvailable.
         q = q.in('stock_status', ['in_stock', 'on_order']);
       }
       const { data, error } = await q.order('sku').limit(2000);
@@ -91,14 +93,23 @@ export function productIsAvailable(p: FamilyProduct): boolean {
   if (!p.is_active) return false;
   if (p.stock_status === 'discontinued' || p.stock_status === 'out_of_stock') return false;
   if (p.has_variants && p.product_variants && p.product_variants.length > 0) {
+    // Unlimited variants: any active variant with stock = -1
+    const hasUnlimited = p.product_variants.some(v => v.is_active && v.stock_quantity === -1);
+    if (hasUnlimited) return true;
     const total = p.product_variants
       .filter(v => v.is_active)
-      .reduce((s, v) => s + (v.stock_quantity || 0), 0);
-    if (p.stock_status === 'in_stock' && total <= 0) return false;
-  } else if (p.stock_status === 'in_stock' && (p.stock_quantity || 0) <= 0) {
-    return false;
+      .reduce((s, v) => s + Math.max(0, v.stock_quantity || 0), 0);
+    if (total <= 0) return false;
+    return true;
   }
-  return true; // on_order is allowed
+  // Non-variant products
+  const qty = p.stock_quantity ?? 0;
+  if (qty === -1) {
+    // Unlimited only makes sense for on_order; treat as available
+    return p.stock_status === 'on_order';
+  }
+  if (qty <= 0) return false; // includes on_order with 0 stock — cannot be ordered
+  return true;
 }
 
 export function pickProductName(p: FamilyProduct, lang: string, fallback = 'ca'): string {

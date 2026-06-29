@@ -61,14 +61,18 @@ const ProductDetailPage: React.FC = () => {
   const finalPriceWithTax = pricing.final * (1 + taxPct / 100);
 
   const isDiscontinued = product?.stockStatus === 'discontinued';
-  const variantStockTotal = (product?.variants ?? []).reduce((s, v) => s + (v.stockQuantity ?? 0), 0);
+  const isOnOrder = product?.stockStatus === 'on_order';
+  const variantStockTotal = (product?.variants ?? []).reduce((s, v) => s + Math.max(0, v.stockQuantity ?? 0), 0);
+  const hasUnlimitedVariant = (product?.variants ?? []).some(v => v.stockQuantity === -1);
   const hasUsableVariants = !!product?.hasVariants && variantGroups.length > 0;
+  const rawProductStock = product?.stockQuantity ?? 0;
+  const isUnlimitedProduct = isOnOrder && rawProductStock === -1;
   const effectiveOutOfStock = isDiscontinued || (hasUsableVariants
-    ? variantStockTotal === 0
-    : product?.stockStatus === 'out_of_stock');
+    ? (!hasUnlimitedVariant && variantStockTotal === 0)
+    : product?.stockStatus === 'out_of_stock' || (isOnOrder && rawProductStock === 0));
   const currentStock = selectedVariant
     ? selectedVariant.stockQuantity
-    : (hasUsableVariants ? variantStockTotal : (product?.stockQuantity ?? 0));
+    : (hasUsableVariants ? variantStockTotal : rawProductStock);
 
 
   const handleAddToCart = () => {
@@ -294,7 +298,15 @@ const ProductDetailPage: React.FC = () => {
                 <Minus className="h-4 w-4" />
               </button>
               <span className="px-4 text-sm font-medium min-w-[2rem] text-center">{quantity}</span>
-              <button onClick={() => setQuantity(q => q + 1)} className="p-2 hover:bg-muted transition-colors">
+              <button
+                onClick={() => setQuantity(q => {
+                  const unlimited = isUnlimitedProduct || (selectedVariant ? selectedVariant.stockQuantity === -1 : hasUnlimitedVariant);
+                  if (unlimited) return q + 1;
+                  const cap = currentStock > 0 ? currentStock : 1;
+                  return Math.min(cap, q + 1);
+                })}
+                className="p-2 hover:bg-muted transition-colors"
+              >
                 <Plus className="h-4 w-4" />
               </button>
             </div>
