@@ -86,9 +86,21 @@ const CatalogPage: React.FC = () => {
     queueMicrotask(() => { isSyncingFromUrl.current = false; });
   }, [searchParams]);
 
-  // Sync state → URL whenever filters change
+  // When visiting /marca/:brandSlug, resolve slug → brand id and set as selected
+  useEffect(() => {
+    if (!brandSlug || brands.length === 0) return;
+    const found = brands.find(b => b.slug === brandSlug);
+    if (found) {
+      setSelectedBrandIds(prev =>
+        prev.length === 1 && prev[0] === found.id ? prev : [found.id]
+      );
+    }
+  }, [brandSlug, brands]);
+
+  // Sync state → URL whenever filters change (skip when on brand slug route)
   useEffect(() => {
     if (isSyncingFromUrl.current) return;
+    if (brandSlug) return;
     const next = new URLSearchParams(searchParams);
     // brands
     next.delete('brand');
@@ -102,7 +114,7 @@ const CatalogPage: React.FC = () => {
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, [selectedBrandIds, selectedAvailability, search, searchParams, setSearchParams]);
+  }, [brandSlug, selectedBrandIds, selectedAvailability, search, searchParams, setSearchParams]);
 
   const clearFilters = () => {
     setSelectedCategory(undefined);
