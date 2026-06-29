@@ -88,14 +88,13 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
 
       {sections.map(section => {
         const list = grouped.bySection.get(section.id) || [];
-        const assigned = grouped.assignedBySection.get(section.id) || [];
-        // Always show the family so the status message is visible, even when it has no products.
+        const assignedCount = assignmentCounts?.get(section.id) ?? 0;
         return (
           <FamilyBlock
             key={section.id}
             title={pickSectionName(section, lang)}
             products={list}
-            assigned={assigned}
+            assignedCount={assignedCount}
             lang={lang}
             selectedIds={selectedIds}
             onToggle={onToggle}
