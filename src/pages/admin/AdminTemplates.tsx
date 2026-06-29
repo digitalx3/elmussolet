@@ -282,8 +282,80 @@ const TemplateItemsManager: React.FC<{ templateId: string }> = ({ templateId }) 
       .map((i: any) => ({ ...i, product: products.find((p: any) => p.id === i.product_id) }))
       .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
+  // ---- Quick selector (family grid with check toggles) ----
+  const { data: defaultSectionsData = [] } = useDefaultListSections({ onlyActive: true });
+  const selectedProductIds = useMemo(
+    () => new Set<string>(items.map((i: any) => i.product_id as string)),
+    [items],
+  );
+
+  const toggleProductFromFamily = useCallback(async (product: any, checked: boolean) => {
+    try {
+      if (!checked) {
+        const existing = items.find((i: any) => i.product_id === product.id);
+        if (existing) await removeItem.mutateAsync(existing.id);
+        return;
+      }
+      if (items.some((i: any) => i.product_id === product.id)) return;
+      // Resolve / create the target section based on the product's default family.
+      let targetSectionId: string | null = null;
+      if (product.default_section_id) {
+        const def = defaultSectionsData.find(d => d.id === product.default_section_id);
+        const wanted = def?.translations.find(tr => tr.language === 'ca')?.name
+          || def?.translations.find(tr => tr.language === 'es')?.name
+          || def?.slug || 'Família';
+        const existingSection = (sections as any[]).find(s => (s.name_ca || s.name_es || '').toLowerCase() === wanted.toLowerCase());
+        if (existingSection) {
+          targetSectionId = existingSection.id;
+        } else {
+          const newId = await createSection.mutateAsync(wanted);
+          targetSectionId = newId;
+        }
+      } else if (sections.length > 0) {
+        targetSectionId = (sections[0] as any).id;
+      } else {
+        const newId = await createSection.mutateAsync(lang === 'es' ? 'Otros' : 'Altres');
+        targetSectionId = newId;
+      }
+      if (!targetSectionId) return;
+      const sectionItemsArr = items.filter((i: any) => i.section_id === targetSectionId);
+      const maxSort = sectionItemsArr.reduce((m: number, i: any) => Math.max(m, i.sort_order || 0), 0);
+      const { error } = await supabase.from('list_template_items').insert({
+        template_id: templateId,
+        product_id: product.id,
+        section_id: targetSectionId,
+        quantity: 1,
+        sort_order: maxSort + 1,
+      });
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ['template-items', templateId] });
+      qc.invalidateQueries({ queryKey: ['template-sections', templateId] });
+    } catch (e: any) {
+      notify.error(e.message || 'Error');
+    }
+  }, [items, sections, defaultSectionsData, lang, createSection, removeItem, templateId, qc]);
+
   return (
     <div className="space-y-6">
+      {/* QUICK SELECTOR BY FAMILY */}
+      <div className="rounded-lg border bg-card p-3 sm:p-4">
+        <div className="mb-3">
+          <h3 className="font-semibold text-sm">
+            {lang === 'es' ? 'Selección rápida por familias' : 'Selecció ràpida per famílies'}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            {lang === 'es'
+              ? 'Marca los productos para incluirlos en la plantilla. Se agruparán por su familia.'
+              : 'Marca els productes per incloure\'ls a la plantilla. S\'agruparan per la seva família.'}
+          </p>
+        </div>
+        <FamilyProductSelector
+          selectedIds={selectedProductIds}
+          onToggle={toggleProductFromFamily}
+        />
+      </div>
+
+
       {/* SECTIONS MANAGER */}
       <div>
         <div className="flex items-center justify-between mb-2">
