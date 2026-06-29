@@ -1522,6 +1522,24 @@ const MyBirthListPage: React.FC = () => {
           <CardTitle className="text-base">{t('admin.listProducts')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
+          {/* Quick selector: full-width grid grouped by family with check toggles */}
+          <div className="rounded-lg border bg-card p-3 sm:p-4">
+            <div className="mb-3">
+              <h3 className="font-display text-lg font-semibold">
+                {lang === 'es' ? 'Selección rápida por familias' : 'Selecció ràpida per famílies'}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {lang === 'es'
+                  ? 'Marca los productos que quieres incluir en tu lista. Se agruparán automáticamente por familia.'
+                  : 'Marca els productes que vols incloure a la teva llista. S\'agruparan automàticament per família.'}
+              </p>
+            </div>
+            <FamilyProductSelector
+              selectedIds={selectedProductIds}
+              onToggle={toggleProductFromFamily}
+            />
+          </div>
+
           {templates.length > 0 && sections.length === 0 && form.items.length === 0 && (
             <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-3">
               <div className="flex items-center gap-2 text-sm font-semibold">
