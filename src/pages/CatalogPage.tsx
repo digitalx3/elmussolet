@@ -199,13 +199,58 @@ const CatalogPage: React.FC = () => {
     />
   );
 
+  if (brandNotFound) {
+    const notFoundTitle = t('products.brandNotFoundTitle', 'Marca no trobada');
+    const notFoundDesc = t('products.brandNotFoundDesc', {
+      slug: brandSlug,
+      defaultValue: `No hem trobat cap marca amb l'identificador "{{slug}}".`,
+    });
+    return (
+      <div className="container py-16">
+        <Helmet>
+          <title>{`${notFoundTitle} | El Mussolet`}</title>
+          <meta name="description" content={notFoundDesc} />
+          <meta name="robots" content="noindex,follow" />
+          <link rel="canonical" href={`${siteOrigin}/cataleg`} />
+          <meta property="og:title" content={notFoundTitle} />
+          <meta property="og:url" content={`${siteOrigin}/cataleg`} />
+          <meta property="og:type" content="website" />
+        </Helmet>
+        <div className="mx-auto max-w-xl text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+            <PackageX className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+          </div>
+          <h1 className="font-display text-3xl font-bold mb-2">{notFoundTitle}</h1>
+          <p className="text-muted-foreground mb-6">{notFoundDesc}</p>
+          <div className="flex justify-center gap-2">
+            <Button asChild>
+              <Link to="/cataleg">{t('products.backToCatalog', 'Tornar al catàleg')}</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/">{t('common.backHome', 'Inici')}</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container py-6">
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+        <link rel="canonical" href={seoCanonical} />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:url" content={seoCanonical} />
+        <meta property="og:type" content="website" />
+      </Helmet>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="font-display text-3xl font-bold">
-            {currentCategoryName ?? t('products.catalog')}
+            {resolvedBrand?.name ?? currentCategoryName ?? t('products.catalog')}
           </h1>
           {data && (
             <p className="text-sm text-muted-foreground mt-1">
