@@ -1492,7 +1492,11 @@ const AdminBirthListForm: React.FC = () => {
           </div>
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => navigate('/admin/llistes')}>{t('common.cancel')}</Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button
+              onClick={handleSave}
+              disabled={saving || form.items.length === 0}
+              title={form.items.length === 0 ? (lang === 'es' ? 'Selecciona al menos un producto' : 'Selecciona com a mínim un producte') : undefined}
+            >
               {saving ? t('common.loading') : t('common.save')}
             </Button>
           </div>
