@@ -18,6 +18,8 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, Pencil, Trash2, Search, Package, X, GripVertical, Check } from 'lucide-react';
 import { notify } from '@/lib/notify';
+import FamilyProductSelector from '@/components/list/FamilyProductSelector';
+import { useDefaultListSections } from '@/hooks/useDefaultListSections';
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core';
