@@ -16,16 +16,29 @@ export interface FamilyProduct {
   product_variants?: { stock_quantity: number; is_active: boolean }[];
 }
 
+export interface UseFamilyProductsOptions {
+  /**
+   * When true (default) the DB query already filters by stock_status
+   * IN ('in_stock','on_order'), is_active = true and
+   * default_section_id NOT NULL — so the client receives only the
+   * products that should be selectable.
+   */
+  availableOnly?: boolean;
+}
+
 /**
- * Fetches all active, sellable products that have been assigned to a birth-list
- * family (default_section_id). Includes products that are currently out of stock
- * or discontinued so the UI can explain why a family is empty.
+ * Fetches products assigned to a birth-list family (default_section_id).
+ * By default the filtering by family assignment and availability state
+ * (in_stock / on_order) happens at the DB level. Pass
+ * `availableOnly: false` to receive every assigned product regardless of
+ * stock status (useful for diagnostics or counters).
  */
-export function useFamilyProducts() {
+export function useFamilyProducts(options: UseFamilyProductsOptions = {}) {
+  const availableOnly = options.availableOnly ?? true;
   return useQuery({
-    queryKey: ['family-products'],
+    queryKey: ['family-products', { availableOnly }],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from('products')
         .select(`
           id, sku, slug, base_price, stock_status, stock_quantity, is_active,
@@ -35,11 +48,40 @@ export function useFamilyProducts() {
           product_variants(stock_quantity, is_active)
         `)
         .eq('is_active', true)
-        .not('default_section_id', 'is', null)
-        .order('sku')
-        .limit(2000);
+        .not('default_section_id', 'is', null);
+      if (availableOnly) {
+        q = q.in('stock_status', ['in_stock', 'on_order']);
+      }
+      const { data, error } = await q.order('sku').limit(2000);
       if (error) throw error;
       return (data ?? []) as unknown as FamilyProduct[];
+    },
+    staleTime: 60 * 1000,
+  });
+}
+
+/**
+ * Lightweight per-section assignment counts (all assigned, regardless of
+ * stock status). Used by the selector to distinguish "no products
+ * assigned to this family" from "all products are out of stock".
+ * Filtering is performed at the DB level.
+ */
+export function useFamilyAssignmentCounts() {
+  return useQuery({
+    queryKey: ['family-assignment-counts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('default_section_id')
+        .eq('is_active', true)
+        .not('default_section_id', 'is', null)
+        .limit(5000);
+      if (error) throw error;
+      const counts = new Map<string, number>();
+      for (const row of (data ?? []) as { default_section_id: string }[]) {
+        counts.set(row.default_section_id, (counts.get(row.default_section_id) ?? 0) + 1);
+      }
+      return counts;
     },
     staleTime: 60 * 1000,
   });
@@ -48,7 +90,6 @@ export function useFamilyProducts() {
 export function productIsAvailable(p: FamilyProduct): boolean {
   if (!p.is_active) return false;
   if (p.stock_status === 'discontinued' || p.stock_status === 'out_of_stock') return false;
-  // If variants exist, total variant stock matters
   if (p.has_variants && p.product_variants && p.product_variants.length > 0) {
     const total = p.product_variants
       .filter(v => v.is_active)
