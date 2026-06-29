@@ -14,6 +14,7 @@ export interface AdminProduct {
   weight_grams: number;
   category_id: string | null;
   brand_id: string | null;
+  default_section_id: string | null;
   created_at: string;
   sale_price_type: 'fixed' | 'percent' | null;
   sale_value: number | null;
@@ -89,6 +90,7 @@ export interface ProductFormData {
   weight_grams: number;
   category_id: string | null;
   brand_id: string | null;
+  default_section_id: string | null;
   tax_rate_id: string | null;
   sale_price_type: 'fixed' | 'percent' | null;
   sale_value: number | null;
@@ -132,6 +134,7 @@ export function useSaveProduct() {
         weight_grams: data.weight_grams,
         category_id: data.category_id || null,
         brand_id: data.brand_id || null,
+        default_section_id: data.default_section_id || null,
         tax_rate_id: data.tax_rate_id || null,
         sale_price_type: data.sale_price_type || null,
         sale_value: data.sale_value ?? null,

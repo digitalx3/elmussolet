@@ -28,6 +28,25 @@ import ReplacementProductPicker from '@/components/admin/ReplacementProductPicke
 import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
 import { checkBaseSlugDuplicate, checkTranslationSlugDuplicate } from '@/lib/checkSlugDuplicate';
 import { useDuplicateSlugErrors, hasAnySlugError } from '@/hooks/useDuplicateSlugErrors';
+import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
+
+const FamilySelect: React.FC<{ value: string | null; onChange: (v: string | null) => void }> = ({ value, onChange }) => {
+  const { i18n } = useTranslation();
+  const lang = i18n.language === 'es' ? 'es' : 'ca';
+  const { data: sections = [] } = useDefaultListSections({ onlyActive: true });
+  return (
+    <select
+      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+      value={value || ''}
+      onChange={e => onChange(e.target.value || null)}
+    >
+      <option value="">— Sense família —</option>
+      {sections.map(s => (
+        <option key={s.id} value={s.id}>{pickSectionName(s, lang)}</option>
+      ))}
+    </select>
+  );
+};
 
 
 const emptyTranslation = { name: '', short_description: '', description: '', slug: '' };
@@ -79,7 +98,7 @@ const AdminProductForm: React.FC = () => {
   const [form, setForm] = useState<ProductFormData>({
     slug: '', sku: '', base_price: 0, stock_quantity: 0, stock_status: 'in_stock',
     is_active: true, has_variants: false, weight_grams: 0,
-    category_id: null, brand_id: null, tax_rate_id: null,
+    category_id: null, brand_id: null, default_section_id: null, tax_rate_id: null,
     sale_price_type: null, sale_value: null, sale_starts_at: null, sale_ends_at: null,
     is_featured: false, featured_order: null,
     replacement_product_id: null,
@@ -230,6 +249,7 @@ const AdminProductForm: React.FC = () => {
         weight_grams: product.weight_grams,
         category_id: product.category_id,
         brand_id: product.brand_id,
+        default_section_id: (product as any).default_section_id ?? null,
         tax_rate_id: (product as any).tax_rate_id ?? null,
         sale_price_type: (product as any).sale_price_type ?? null,
         sale_value: (product as any).sale_value != null ? Number((product as any).sale_value) : null,
@@ -736,6 +756,11 @@ const AdminProductForm: React.FC = () => {
               <option value="">— Cap —</option>
               {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
+          </div>
+          <div className="sm:col-span-2">
+            <Label>Família per a llistes de naixement</Label>
+            <FamilySelect value={form.default_section_id} onChange={(v) => updateField('default_section_id', v)} />
+            <p className="text-xs text-muted-foreground mt-1">Determina a quina família apareixerà aquest producte quan es creïn llistes de naixement.</p>
           </div>
           <div>
             <Label>Estoc</Label>

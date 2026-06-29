@@ -22,6 +22,7 @@ import { notify } from '@/lib/notify';
 import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
 import { useLanguages } from '@/hooks/useLanguages';
 import LanguageTabs from '@/components/admin/LanguageTabs';
+import FamilyProductSelector from '@/components/list/FamilyProductSelector';
 
 interface Owner {
   id?: string;
@@ -499,7 +500,34 @@ const AdminBirthListForm: React.FC = () => {
     setSearchResults([]);
   };
 
-  // Section management
+  /** Quick selector: toggle a product on/off and auto-create the family section. */
+  const toggleProductFromFamily = (product: any, checked: boolean) => {
+    if (!checked) {
+      setForm(prev => ({ ...prev, items: prev.items.filter(it => it.product_id !== product.id) }));
+      return;
+    }
+    if (form.items.some(i => i.product_id === product.id)) return;
+    let targetTempId: string | null = null;
+    if (product.default_section_id) {
+      targetTempId = `def-${product.default_section_id}`;
+      if (!sections.some(s => s.temp_id === targetTempId)) {
+        const def = defaultSectionsData.find(d => d.id === product.default_section_id);
+        const nameCa = def?.translations.find(tr => tr.language === 'ca')?.name || def?.slug || 'Família';
+        const nameEs = def?.translations.find(tr => tr.language === 'es')?.name || nameCa;
+        setSections(prev => [
+          ...prev,
+          { temp_id: targetTempId!, name_ca: nameCa, name_es: nameEs, sort_order: prev.length, translations: { ca: nameCa, es: nameEs } } as any,
+        ]);
+      }
+    }
+    addProduct(product, targetTempId);
+  };
+
+  const selectedProductIds = useMemo(
+    () => new Set(form.items.map(i => i.product_id)),
+    [form.items],
+  );
+
   const addSection = () => {
     const ca = window.prompt(lang === 'es' ? 'Nombre de la familia (catalán)' : 'Nom de la família (català)')?.trim();
     if (!ca) return;
@@ -1098,6 +1126,24 @@ const AdminBirthListForm: React.FC = () => {
             </Button>
           </CardHeader>
           <CardContent className="space-y-5">
+            {/* Quick selector by family — same UX as customer view */}
+            <div className="rounded-lg border bg-card p-3 sm:p-4">
+              <div className="mb-3">
+                <h3 className="font-display text-lg font-semibold">
+                  {lang === 'es' ? 'Selección rápida por familias' : 'Selecció ràpida per famílies'}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {lang === 'es'
+                    ? 'Marca los productos a incluir. Se agruparán automáticamente por familia. Los productos sin stock no se pueden marcar; los "bajo pedido" sí.'
+                    : 'Marca els productes a incloure. S\'agruparan automàticament per família. Els productes sense estoc no es poden marcar; els "sota comanda" sí.'}
+                </p>
+              </div>
+              <FamilyProductSelector
+                selectedIds={selectedProductIds}
+                onToggle={toggleProductFromFamily}
+              />
+            </div>
+
             {/* Sections strip */}
             {sections.length > 0 && (
               <div className="space-y-2">
