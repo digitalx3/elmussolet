@@ -1149,8 +1149,8 @@ const AdminBirthListForm: React.FC = () => {
                 </h3>
                 <p className="text-xs text-muted-foreground">
                   {lang === 'es'
-                    ? 'Marca los productos a incluir. Se agruparán automáticamente por familia. Los productos sin stock no se pueden marcar; los "bajo pedido" sí.'
-                    : 'Marca els productes a incloure. S\'agruparan automàticament per família. Els productes sense estoc no es poden marcar; els "sota comanda" sí.'}
+                    ? `Marca los productos a incluir. Se agruparán automáticamente por familia. Los productos ${t('products.outOfStock').toLowerCase()} no se pueden marcar; los "${t('products.onOrder')}" sí.`
+                    : `Marca els productes a incloure. S'agruparan automàticament per família. Els productes ${t('products.outOfStock').toLowerCase()} no es poden marcar; els "${t('products.onOrder')}" sí.`}
                 </p>
               </div>
               <FamilyProductSelector
