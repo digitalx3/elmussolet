@@ -227,8 +227,12 @@ const CatalogPage: React.FC = () => {
           <meta name="robots" content="noindex,follow" />
           <link rel="canonical" href={`${siteOrigin}/cataleg`} />
           <meta property="og:title" content={notFoundTitle} />
+          <meta property="og:description" content={notFoundDesc} />
           <meta property="og:url" content={`${siteOrigin}/cataleg`} />
           <meta property="og:type" content="website" />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content={notFoundTitle} />
+          <meta name="twitter:description" content={notFoundDesc} />
         </Helmet>
         <div className="mx-auto max-w-xl text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
@@ -259,6 +263,9 @@ const CatalogPage: React.FC = () => {
         <meta property="og:description" content={seoDescription} />
         <meta property="og:url" content={seoCanonical} />
         <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDescription} />
         {breadcrumbJsonLd && (
           <script type="application/ld+json">{JSON.stringify(breadcrumbJsonLd)}</script>
         )}
