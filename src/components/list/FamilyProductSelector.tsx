@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
 import {
   useFamilyProducts,
+  useFamilyAssignmentCounts,
   productIsAvailable,
   pickProductName,
   primaryImage,
