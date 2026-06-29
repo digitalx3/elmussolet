@@ -230,6 +230,7 @@ const AdminProductForm: React.FC = () => {
         weight_grams: product.weight_grams,
         category_id: product.category_id,
         brand_id: product.brand_id,
+        default_section_id: (product as any).default_section_id ?? null,
         tax_rate_id: (product as any).tax_rate_id ?? null,
         sale_price_type: (product as any).sale_price_type ?? null,
         sale_value: (product as any).sale_value != null ? Number((product as any).sale_value) : null,
