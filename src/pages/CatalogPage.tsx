@@ -13,6 +13,7 @@ import ProductCard from '@/components/catalog/ProductCard';
 import { useTranslatedProducts, type ProductFilters } from '@/hooks/useTranslatedProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useBrands } from '@/hooks/useBrands';
+import { toAbsoluteUrl } from '@/lib/absoluteUrl';
 
 const MAX_PRICE_DEFAULT = 10000;
 
