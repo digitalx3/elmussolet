@@ -477,7 +477,7 @@ const AdminOrders: React.FC = () => {
               <TableHead>{t('admin.customer')}</TableHead>
               <TableHead>{t('admin.orderDate')}</TableHead>
               <TableHead>{t('admin.status')}</TableHead>
-              <TableHead>{t('admin.paymentStatus')}</TableHead>
+              
               <TableHead className="text-right">{t('admin.orderTotal')}</TableHead>
               <TableHead className="text-right">{t('admin.actions')}</TableHead>
             </TableRow>
@@ -506,23 +506,6 @@ const AdminOrders: React.FC = () => {
                     <SelectContent>
                       {orderStatuses.map(s => (
                         <SelectItem key={s.slug} value={s.slug}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={order.payment_status || 'pending'}
-                    onValueChange={payment_status => updatePaymentStatusMutation.mutate({ id: order.id, payment_status })}
-                  >
-                    <SelectTrigger className="w-[130px] h-8 text-xs">
-                      <Badge className={`text-xs border ${paymentColors[(order.payment_status || 'pending') as PaymentStatus]}`}>
-                        {getPaymentLabel(order.payment_status || 'pending')}
-                      </Badge>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PAYMENT_STATUSES.map(s => (
-                        <SelectItem key={s} value={s}>{getPaymentLabel(s)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
