@@ -123,8 +123,8 @@ const CatalogPage: React.FC = () => {
     setPriceRange([0, MAX_PRICE_DEFAULT]);
     setSearch('');
     setPage(1);
-    if (categorySlug) {
-      navigate('/catalog', { replace: true });
+    if (categorySlug || brandSlug) {
+      navigate('/cataleg', { replace: true });
     } else {
       setSearchParams({}, { replace: true });
     }
