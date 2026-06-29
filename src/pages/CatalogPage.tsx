@@ -61,7 +61,7 @@ const CatalogPage: React.FC = () => {
 
   const { data, isLoading } = useTranslatedProducts(filters);
 
-  const hasActiveFilters = !!(selectedCategory || selectedBrandIds.length > 0 || selectedAvailability || search || priceRange[0] > 0 || priceRange[1] < MAX_PRICE_DEFAULT);
+  const hasActiveFilters = !!(categorySlug || selectedCategory || selectedBrandIds.length > 0 || selectedAvailability || search || priceRange[0] > 0 || priceRange[1] < MAX_PRICE_DEFAULT);
 
   const clearFilters = () => {
     setSelectedCategory(undefined);
@@ -70,8 +70,19 @@ const CatalogPage: React.FC = () => {
     setPriceRange([0, MAX_PRICE_DEFAULT]);
     setSearch('');
     setPage(1);
-    if (searchParams.has('brand') || searchParams.has('q')) {
+    if (categorySlug) {
+      navigate('/catalog', { replace: true });
+    } else if (searchParams.has('brand') || searchParams.has('q')) {
       setSearchParams({}, { replace: true });
+    }
+  };
+
+  const handleCategoryChange = (id: string | undefined) => {
+    if (!id && categorySlug) {
+      navigate('/catalog', { replace: true });
+    } else {
+      setSelectedCategory(id);
+      setPage(1);
     }
   };
 
@@ -97,7 +108,7 @@ const CatalogPage: React.FC = () => {
       priceRange={priceRange}
       maxPrice={MAX_PRICE_DEFAULT}
       search={search}
-      onCategoryChange={(id) => { setSelectedCategory(id); setPage(1); }}
+      onCategoryChange={handleCategoryChange}
       onBrandIdsChange={(ids) => { setSelectedBrandIds(ids); setPage(1); }}
       onAvailabilityChange={(val) => { setSelectedAvailability(val); setPage(1); }}
       onPriceRangeChange={(range) => { setPriceRange(range); setPage(1); }}
