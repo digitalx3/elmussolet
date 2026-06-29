@@ -149,6 +149,7 @@ const ProductTile: React.FC<{
   selected: boolean;
   onToggle: (p: FamilyProduct, checked: boolean) => void;
 }> = ({ product: p, lang, selected, onToggle }) => {
+  const { t } = useTranslation();
   const available = productIsAvailable(p);
   const onOrder = p.stock_status === 'on_order';
   const name = pickProductName(p, lang);
