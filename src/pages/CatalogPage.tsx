@@ -263,6 +263,9 @@ const CatalogPage: React.FC = () => {
         <meta property="og:description" content={seoDescription} />
         <meta property="og:url" content={seoCanonical} />
         <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDescription} />
         {breadcrumbJsonLd && (
           <script type="application/ld+json">{JSON.stringify(breadcrumbJsonLd)}</script>
         )}
