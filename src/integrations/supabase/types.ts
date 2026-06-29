@@ -1601,6 +1601,44 @@ export type Database = {
           },
         ]
       }
+      order_status_log: {
+        Row: {
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          order_id: string
+          to_status: string
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          order_id: string
+          to_status: string
+        }
+        Update: {
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          order_id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_status_translations: {
         Row: {
           id: string
