@@ -27,21 +27,23 @@ export function useBrands() {
           .order('name', { ascending: true }),
         supabase
           .from('brand_translations')
-          .select('brand_id, language_code, name, description')
+          .select('brand_id, language_code, name, description, slug')
           .eq('language_code', lang),
       ]);
 
       if (error) throw error;
       if (trErr) throw trErr;
 
-      const trMap = new Map<string, { name: string | null; description: string | null }>();
-      (trs || []).forEach((t: any) => trMap.set(t.brand_id, { name: t.name, description: t.description }));
+      const trMap = new Map<string, { name: string | null; description: string | null; slug: string | null }>();
+      (trs || []).forEach((t: any) => trMap.set(t.brand_id, { name: t.name, description: t.description, slug: t.slug }));
 
       return (data || []).map((b: any): Brand => {
         const tr = trMap.get(b.id);
+        const name = (tr?.name && tr.name.trim()) || b.name;
         return {
           id: b.id,
-          name: (tr?.name && tr.name.trim()) || b.name,
+          name,
+          slug: (tr?.slug && tr.slug.trim()) || slugify(name),
           description: tr?.description ?? null,
           logoUrl: b.logo_url,
         };
