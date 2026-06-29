@@ -44,6 +44,10 @@ const queryClient = new QueryClient();
 const App = () => (
   <HelmetProvider>
     <Helmet>
+      <meta property="og:title" content="El Mussolet" />
+      <meta property="og:description" content="Gestió de llistes de naixement" />
+      <meta name="twitter:title" content="El Mussolet" />
+      <meta name="twitter:description" content="Gestió de llistes de naixement" />
       <meta property="og:image" content={toAbsoluteUrl(mussoletLogo.url)} />
       <meta name="twitter:image" content={toAbsoluteUrl(mussoletLogo.url)} />
     </Helmet>

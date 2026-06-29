@@ -20,6 +20,13 @@ describe("index.html social image invariants", () => {
     expect(/name=["']twitter:image["']/i.test(html)).toBe(false);
   });
 
+  it("contains no static og:title / og:description / twitter:title / twitter:description", () => {
+    expect(/property=["']og:title["']/i.test(html)).toBe(false);
+    expect(/property=["']og:description["']/i.test(html)).toBe(false);
+    expect(/name=["']twitter:title["']/i.test(html)).toBe(false);
+    expect(/name=["']twitter:description["']/i.test(html)).toBe(false);
+  });
+
   it("does not duplicate canonical / description tags", () => {
     const canonicals = html.match(/<link[^>]+rel=["']canonical["']/gi) ?? [];
     expect(canonicals.length).toBeLessThanOrEqual(1);
