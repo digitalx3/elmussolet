@@ -43,6 +43,9 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
   const grouped = useMemo(() => {
     const q = search.trim().toLowerCase();
     const filter = (p: FamilyProduct) => {
+      // Hard exclude: must have a list family AND be available (in_stock or on_order).
+      if (!p.default_section_id) return false;
+      if (!productIsAvailable(p)) return false;
       if (!q) return true;
       const n = pickProductName(p, lang).toLowerCase();
       return n.includes(q) || p.sku.toLowerCase().includes(q);
@@ -51,15 +54,12 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
 
     const bySection = new Map<string, FamilyProduct[]>();
     for (const s of sections) bySection.set(s.id, []);
-    const orphans: FamilyProduct[] = [];
     for (const p of visible) {
       if (p.default_section_id && bySection.has(p.default_section_id)) {
         bySection.get(p.default_section_id)!.push(p);
-      } else {
-        orphans.push(p);
       }
     }
-    return { bySection, orphans };
+    return { bySection };
   }, [products, sections, search, lang]);
 
   if (loadingSections || loadingProducts) {
