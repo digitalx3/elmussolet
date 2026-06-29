@@ -976,11 +976,9 @@ const AdminOrders: React.FC = () => {
                   </div>
                 )}
               </div>
-            </>
-
-              </div>
 
               <Separator />
+
 
               <div className="py-3">
                 <p className="text-sm font-semibold mb-2">
