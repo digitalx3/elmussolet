@@ -90,6 +90,7 @@ export interface ProductFormData {
   weight_grams: number;
   category_id: string | null;
   brand_id: string | null;
+  default_section_id: string | null;
   tax_rate_id: string | null;
   sale_price_type: 'fixed' | 'percent' | null;
   sale_value: number | null;
