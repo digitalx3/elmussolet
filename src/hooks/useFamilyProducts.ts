@@ -34,7 +34,8 @@ export function useFamilyProducts() {
           product_variants(stock_quantity, is_active)
         `)
         .eq('is_active', true)
-        .neq('stock_status', 'discontinued')
+        .in('stock_status', ['in_stock', 'on_order'])
+        .not('default_section_id', 'is', null)
         .order('sku')
         .limit(2000);
       if (error) throw error;
