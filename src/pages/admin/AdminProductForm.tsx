@@ -387,14 +387,15 @@ const AdminProductForm: React.FC = () => {
 
   // Variants
   const addVariant = () => {
-    setForm(prev => ({
-      ...prev,
-      variants: [...prev.variants, {
+    setForm(prev => {
+      const next = [...prev.variants, {
         value: '', price_override: null, price_modifier: 0, stock_quantity: 0,
         sku_suffix: '', is_active: true,
         variant_type_id: variantTypes[0]?.id || '',
-      }],
-    }));
+      }];
+      setVariantStockRaw(r => ({ ...r, [next.length - 1]: '0' }));
+      return { ...prev, variants: next };
+    });
   };
 
 
@@ -407,6 +408,13 @@ const AdminProductForm: React.FC = () => {
 
   const removeVariant = (index: number) => {
     setForm(prev => ({ ...prev, variants: prev.variants.filter((_, i) => i !== index) }));
+    setVariantStockRaw(prev => {
+      const next: Record<number, string> = {};
+      Object.keys(prev).map(Number).filter(k => k !== index).forEach((k, newIdx) => {
+        next[newIdx] = prev[k];
+      });
+      return next;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
