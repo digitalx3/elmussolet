@@ -420,6 +420,12 @@ const AdminProductForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (hasStockErrors) {
+      notify.error("L'estoc no és vàlid. Ha de ser un enter ≥ -1 (-1 = il·limitat).");
+      return;
+    }
+
+
     // Validate each enabled language
     const newErrors: TranslationErrors = {};
     let firstInvalidLang: string | null = null;
