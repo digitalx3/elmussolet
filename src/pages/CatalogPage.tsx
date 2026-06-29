@@ -177,7 +177,7 @@ const CatalogPage: React.FC = () => {
     : categorySlug
       ? `${siteOrigin}/cataleg/${categorySlug}`
       : `${siteOrigin}/cataleg`;
-  const seoImage = resolvedBrand?.logoUrl || undefined;
+  const seoImage = toAbsoluteUrl(resolvedBrand?.logoUrl, siteOrigin) || undefined;
 
   const breadcrumbJsonLd = resolvedBrand
     ? {
