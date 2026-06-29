@@ -17,8 +17,9 @@ export interface FamilyProduct {
 }
 
 /**
- * Fetches all active, sellable products that can appear in birth-list family pickers.
- * Excludes discontinued. Out-of-stock are returned so UI can show & disable them.
+ * Fetches all active, sellable products that have been assigned to a birth-list
+ * family (default_section_id). Includes products that are currently out of stock
+ * or discontinued so the UI can explain why a family is empty.
  */
 export function useFamilyProducts() {
   return useQuery({
@@ -34,7 +35,6 @@ export function useFamilyProducts() {
           product_variants(stock_quantity, is_active)
         `)
         .eq('is_active', true)
-        .in('stock_status', ['in_stock', 'on_order'])
         .not('default_section_id', 'is', null)
         .order('sku')
         .limit(2000);

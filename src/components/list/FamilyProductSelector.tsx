@@ -18,20 +18,18 @@ import { formatPrice } from '@/hooks/useTaxRates';
 export interface FamilyProductSelectorProps {
   selectedIds: Set<string>;
   onToggle: (product: FamilyProduct, checked: boolean) => void;
-  /** When set, hides the family ID(s) (e.g. to exclude an empty bucket). */
-  hideEmptyFamilies?: boolean;
 }
 
 /**
  * Full-width grid grouped by default-list sections (families). Each product
  * has a check toggle to include / exclude it from the current birth list / template.
- * - Discontinued / out-of-stock products are hidden by the data hook OR rendered disabled.
+ * - Discontinued / out-of-stock products are hidden by the availability filter.
  * - "on_order" products show an "En estoc, sota comanda" badge and remain selectable.
+ * - Families without assigned products or with all products out of stock display a status message.
  */
 const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
   selectedIds,
   onToggle,
-  hideEmptyFamilies = true,
 }) => {
   const { t, i18n } = useTranslation();
   const lang = i18n.language === 'es' ? 'es' : 'ca';
@@ -42,24 +40,32 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
 
   const grouped = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const filter = (p: FamilyProduct) => {
-      // Hard exclude: must have a list family AND be available (in_stock or on_order).
-      if (!p.default_section_id) return false;
-      if (!productIsAvailable(p)) return false;
+    const matchesSearch = (p: FamilyProduct) => {
       if (!q) return true;
       const n = pickProductName(p, lang).toLowerCase();
       return n.includes(q) || p.sku.toLowerCase().includes(q);
     };
-    const visible = products.filter(filter);
+
+    const assigned = products.filter(p => !!p.default_section_id);
+    const visible = assigned.filter(p => productIsAvailable(p) && matchesSearch(p));
 
     const bySection = new Map<string, FamilyProduct[]>();
-    for (const s of sections) bySection.set(s.id, []);
+    const assignedBySection = new Map<string, FamilyProduct[]>();
+    for (const s of sections) {
+      bySection.set(s.id, []);
+      assignedBySection.set(s.id, []);
+    }
+    for (const p of assigned) {
+      if (p.default_section_id && assignedBySection.has(p.default_section_id)) {
+        assignedBySection.get(p.default_section_id)!.push(p);
+      }
+    }
     for (const p of visible) {
       if (p.default_section_id && bySection.has(p.default_section_id)) {
         bySection.get(p.default_section_id)!.push(p);
       }
     }
-    return { bySection };
+    return { bySection, assignedBySection, searchActive: q.length > 0 };
   }, [products, sections, search, lang]);
 
   if (loadingSections || loadingProducts) {
@@ -88,15 +94,18 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
 
       {sections.map(section => {
         const list = grouped.bySection.get(section.id) || [];
-        if (hideEmptyFamilies && list.length === 0) return null;
+        const assigned = grouped.assignedBySection.get(section.id) || [];
+        // Always show the family so the status message is visible, even when it has no products.
         return (
           <FamilyBlock
             key={section.id}
             title={pickSectionName(section, lang)}
             products={list}
+            assigned={assigned}
             lang={lang}
             selectedIds={selectedIds}
             onToggle={onToggle}
+            searchActive={grouped.searchActive}
           />
         );
       })}
@@ -107,28 +116,40 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
 const FamilyBlock: React.FC<{
   title: string;
   products: FamilyProduct[];
+  assigned: FamilyProduct[];
   lang: string;
   selectedIds: Set<string>;
   onToggle: (p: FamilyProduct, checked: boolean) => void;
   muted?: boolean;
-}> = ({ title, products, lang, selectedIds, onToggle, muted }) => (
-  <section aria-label={title}>
-    <header className="flex items-center gap-2 mb-3">
-      <h3 className={cn('font-display text-lg font-semibold', muted && 'text-muted-foreground')}>{title}</h3>
-      <Badge variant="secondary">{products.length}</Badge>
-    </header>
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-      {products.map(p => (
-        <ProductTile key={p.id} product={p} lang={lang} selected={selectedIds.has(p.id)} onToggle={onToggle} />
-      ))}
-      {products.length === 0 && (
-        <p className="col-span-full text-sm text-muted-foreground py-4 text-center bg-muted/30 rounded">
-          {lang === 'es' ? 'Sin productos en esta familia' : 'Sense productes en aquesta família'}
-        </p>
-      )}
-    </div>
-  </section>
-);
+  searchActive?: boolean;
+}> = ({ title, products, assigned, lang, selectedIds, onToggle, muted, searchActive }) => {
+  const { t } = useTranslation();
+  const hasAssigned = assigned.length > 0;
+  const hasVisible = products.length > 0;
+
+  return (
+    <section aria-label={title}>
+      <header className="flex items-center gap-2 mb-3">
+        <h3 className={cn('font-display text-lg font-semibold', muted && 'text-muted-foreground')}>{title}</h3>
+        <Badge variant="secondary">{products.length}</Badge>
+      </header>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        {products.map(p => (
+          <ProductTile key={p.id} product={p} lang={lang} selected={selectedIds.has(p.id)} onToggle={onToggle} />
+        ))}
+        {!hasVisible && (
+          <p className="col-span-full text-sm text-muted-foreground py-4 text-center bg-muted/30 rounded">
+            {searchActive
+              ? t('list.familyNoSearchResults')
+              : hasAssigned
+                ? t('list.familyAllOutOfStock')
+                : t('list.familyNoProducts')}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+};
 
 const ProductTile: React.FC<{
   product: FamilyProduct;
