@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { Plus, Pencil, Trash2, Search, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, Archive, ArchiveRestore } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminProducts, useDeleteProduct } from '@/hooks/useAdminProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { notify } from '@/lib/notify';
+
 
 const AdminProductList: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -20,6 +24,20 @@ const AdminProductList: React.FC = () => {
   const { data: categories = [] } = useCategories();
   const { data: sections = [] } = useDefaultListSections({ onlyActive: false });
   const deleteProduct = useDeleteProduct();
+  const qc = useQueryClient();
+  const toggleActive = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase.from('products').update({ is_active }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['admin-products'] });
+      qc.invalidateQueries({ queryKey: ['products'] });
+      notify.success(vars.is_active ? 'Producte restaurat' : 'Producte arxivat');
+    },
+    onError: (e: any) => notify.error(e?.message || 'Error'),
+  });
+
 
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all'); // catalog family
@@ -254,6 +272,19 @@ const AdminProductList: React.FC = () => {
                         <Link to={`/admin/productes/${p.id}`}>
                           <Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button>
                         </Link>
+                        <Button
+
+                          variant="ghost"
+                          size="icon"
+                          title={p.is_active ? 'Arxivar (desactivar)' : 'Restaurar (activar)'}
+                          onClick={() => toggleActive.mutate({ id: p.id, is_active: !p.is_active })}
+                          disabled={toggleActive.isPending}
+                        >
+                          {p.is_active
+                            ? <Archive className="h-4 w-4 text-amber-600" />
+                            : <ArchiveRestore className="h-4 w-4 text-emerald-600" />}
+                        </Button>
+
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
