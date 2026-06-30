@@ -282,29 +282,67 @@ const AdminProductList: React.FC = () => {
                         <Link to={`/admin/productes/${p.id}`}>
                           <Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button>
                         </Link>
-                        <Button
-
-                          variant="ghost"
-                          size="icon"
-                          title={p.is_active ? 'Arxivar (desactivar)' : 'Restaurar (activar)'}
-                          onClick={() => toggleActive.mutate({ id: p.id, is_active: !p.is_active })}
-                          disabled={toggleActive.isPending}
-                        >
-                          {p.is_active
-                            ? <Archive className="h-4 w-4 text-amber-600" />
-                            : <ArchiveRestore className="h-4 w-4 text-emerald-600" />}
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title={p.is_active ? 'Arxivar (desactivar)' : 'Restaurar (activar)'}
+                              disabled={toggleActive.isPending}
+                            >
+                              {p.is_active
+                                ? <Archive className="h-4 w-4 text-amber-600" />
+                                : <ArchiveRestore className="h-4 w-4 text-emerald-600" />}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                {p.is_active
+                                  ? `Arxivar "${getName(p)}"?`
+                                  : `Restaurar "${getName(p)}"?`}
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {p.is_active
+                                  ? 'El producte deixarà d\'aparèixer al catàleg públic i a les llistes de naixement, però es conservarà al panell d\'administració i a l\'historial de comandes. Podràs restaurar-lo en qualsevol moment.'
+                                  : 'El producte tornarà a ser visible al catàleg públic i podrà afegir-se a noves llistes i comandes.'}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => toggleActive.mutate({ id: p.id, is_active: !p.is_active })}
+                                className={p.is_active
+                                  ? 'bg-amber-600 text-white hover:bg-amber-600/90'
+                                  : 'bg-emerald-600 text-white hover:bg-emerald-600/90'}
+                              >
+                                {p.is_active ? 'Arxivar' : 'Restaurar'}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
 
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                              title="Eliminar definitivament"
+                              disabled={deleteProduct.isPending}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>{t('common.delete')} "{getName(p)}"?</AlertDialogTitle>
-                              <AlertDialogDescription>Aquesta acció no es pot desfer.</AlertDialogDescription>
+                              <AlertDialogTitle>Eliminar definitivament "{getName(p)}"?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Aquesta acció no es pot desfer. El producte s\'eliminarà del catàleg i de les llistes actives.
+                                L\'historial de comandes es manté intacte (nom, SKU i preu queden desats com a snapshot).
+                                <br /><br />
+                                Si el producte té vendes, et recomanem fer servir <strong>Arxivar</strong> en lloc d\'eliminar.
+                              </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
@@ -312,7 +350,7 @@ const AdminProductList: React.FC = () => {
                                 onClick={() => deleteProduct.mutate(p.id)}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
-                                {t('common.delete')}
+                                Eliminar definitivament
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
