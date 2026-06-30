@@ -24,6 +24,20 @@ const AdminProductList: React.FC = () => {
   const { data: categories = [] } = useCategories();
   const { data: sections = [] } = useDefaultListSections({ onlyActive: false });
   const deleteProduct = useDeleteProduct();
+  const qc = useQueryClient();
+  const toggleActive = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase.from('products').update({ is_active }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['admin-products'] });
+      qc.invalidateQueries({ queryKey: ['products'] });
+      notify.success(vars.is_active ? 'Producte restaurat' : 'Producte arxivat');
+    },
+    onError: (e: any) => notify.error(e?.message || 'Error'),
+  });
+
 
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all'); // catalog family
