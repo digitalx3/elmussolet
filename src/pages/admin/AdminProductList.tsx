@@ -271,7 +271,18 @@ const AdminProductList: React.FC = () => {
                       <div className="flex gap-1">
                         <Link to={`/admin/productes/${p.id}`}>
                           <Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button>
-                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title={p.is_active ? 'Arxivar (desactivar)' : 'Restaurar (activar)'}
+                          onClick={() => toggleActive.mutate({ id: p.id, is_active: !p.is_active })}
+                          disabled={toggleActive.isPending}
+                        >
+                          {p.is_active
+                            ? <Archive className="h-4 w-4 text-amber-600" />
+                            : <ArchiveRestore className="h-4 w-4 text-emerald-600" />}
+                        </Button>
+
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
