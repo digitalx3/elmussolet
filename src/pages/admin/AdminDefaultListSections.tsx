@@ -47,6 +47,7 @@ const AdminDefaultListSections: React.FC = () => {
   const lang = i18n.language || 'ca';
 
   const [open, setOpen] = useState(false);
+  const [subsOpen, setSubsOpen] = useState<DefaultListSection | null>(null);
   const [form, setForm] = useState<FormState>(empty([]));
   const [saving, setSaving] = useState(false);
   const [slugTouched, setSlugTouched] = useState(false);
