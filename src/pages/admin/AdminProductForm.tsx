@@ -809,17 +809,18 @@ const AdminProductForm: React.FC = () => {
                   <Label>Preu amb IVA (€) *</Label>
                   <Input
                     type="number" step="0.01" min="0"
-                    value={pvp}
+                    value={pvp.toFixed(2)}
                     onChange={e => {
-                      const gross = parseFloat(e.target.value) || 0;
+                      const gross = Math.round((parseFloat(e.target.value) || 0) * 100) / 100;
                       const net = taxPct > 0 ? gross / (1 + taxPct / 100) : gross;
-                      updateField('base_price', Math.round(net * 10000) / 10000);
+                      // Always store net rounded to 2 decimals
+                      updateField('base_price', Math.round(net * 100) / 100);
                     }}
                   />
                 </div>
                 <div className="sm:col-span-2 p-3 rounded-lg bg-muted/50 text-sm">
                   <span className="text-muted-foreground">Preus sincronitzats — </span>
-                  <span className="font-semibold">{form.base_price.toFixed(4)} €</span>
+                  <span className="font-semibold">{form.base_price.toFixed(2)} €</span>
                   <span className="text-muted-foreground"> sense IVA · </span>
                   <span className="font-semibold">{pvp.toFixed(2)} €</span>
                   <span className="text-muted-foreground"> amb IVA</span>
