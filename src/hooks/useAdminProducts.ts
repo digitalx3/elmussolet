@@ -34,6 +34,12 @@ export interface AdminProduct {
     variant_types: { slug: string } | null;
   }[];
   product_relations?: { related_product_id: string; position: number; relation_type: string }[];
+  product_default_sections?: { position: number; section_id: string; subsection_id: string | null }[];
+}
+
+export interface ProductFamilyAssignment {
+  section_id: string;
+  subsection_id: string | null;
 }
 
 export function useAdminProducts() {
