@@ -338,10 +338,10 @@ const AdminProductList: React.FC = () => {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Eliminar definitivament "{getName(p)}"?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Aquesta acció no es pot desfer. El producte s\'eliminarà del catàleg i de les llistes actives.
-                                L\'historial de comandes es manté intacte (nom, SKU i preu queden desats com a snapshot).
+                                Aquesta acció no es pot desfer. El producte s'eliminarà del catàleg i de les llistes actives.
+                                L'historial de comandes es manté intacte (nom, SKU i preu queden desats com a snapshot).
                                 <br /><br />
-                                Si el producte té vendes, et recomanem fer servir <strong>Arxivar</strong> en lloc d\'eliminar.
+                                Si el producte té vendes, et recomanem fer servir <strong>Arxivar</strong> en lloc d'eliminar.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
