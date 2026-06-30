@@ -278,6 +278,15 @@ const AdminDefaultListSections: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {subsOpen && (
+        <SubsectionsDialog
+          sectionId={subsOpen.id}
+          sectionName={pickSectionName(subsOpen, lang)}
+          open={!!subsOpen}
+          onClose={() => setSubsOpen(null)}
+        />
+      )}
     </div>
   );
 };
