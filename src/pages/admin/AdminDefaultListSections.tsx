@@ -216,6 +216,9 @@ const AdminDefaultListSections: React.FC = () => {
                   <Switch checked={s.is_active} onCheckedChange={(v) => toggleActive(s, v)} />
                 </TableCell>
                 <TableCell className="text-right">
+                  <Button size="sm" variant="ghost" onClick={() => setSubsOpen(s)} title="Subfamílies">
+                    <Layers className="h-4 w-4" />
+                  </Button>
                   <Button size="sm" variant="ghost" onClick={() => openEdit(s)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
