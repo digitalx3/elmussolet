@@ -99,7 +99,17 @@ function mapProduct(p: any, translation: any, lang: string = 'ca'): TranslatedPr
     isFeatured: !!p.is_featured,
     featuredOrder: p.featured_order ?? null,
     stockQuantity: p.stock_quantity ?? 0,
-    stockStatus: p.stock_status ?? 'in_stock',
+    // Normalise stock status: -1 means unlimited (only valid for on_order);
+    // any positive value keeps the configured status; 0 forces out_of_stock
+    // unless the product is discontinued.
+    stockStatus: (() => {
+      const rawStatus = p.stock_status ?? 'in_stock';
+      const qty = p.stock_quantity ?? 0;
+      if (rawStatus === 'discontinued') return 'discontinued';
+      if (qty === -1) return 'on_order';
+      if (qty <= 0) return 'out_of_stock';
+      return rawStatus;
+    })(),
     isActive: p.is_active,
     hasVariants: p.has_variants ?? false,
     weightGrams: p.weight_grams ?? 0,
