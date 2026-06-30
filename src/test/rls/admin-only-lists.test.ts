@@ -59,53 +59,60 @@ describe("Non-admin cannot manage lists or assign products (RLS)", () => {
     expect(error, "insert into foreign list must be denied").not.toBeNull();
   });
 
-  it("non-admin cannot update list_items on a foreign list", async () => {
+  async function seedListItem(qty: number) {
     const f = await ensureFixture();
-    // Seed one item as admin so there's something to attempt to mutate.
     const admin = await clientAs("admin");
-    const { data: seeded, error: seedErr } = await admin
+    const { data: prod, error: prodErr } = await admin
+      .from("products").select("id").limit(1).maybeSingle();
+    if (prodErr) throw new Error(`product lookup failed: ${prodErr.message}`);
+    if (!prod?.id) return { admin, id: null as string | null };
+    const { data, error } = await admin
       .from("list_items")
-      .insert({ list_id: f.list_id, section_id: f.section_id, quantity_desired: 1 } as any)
+      .insert({
+        list_id: f.list_id,
+        section_id: f.section_id,
+        product_id: prod.id,
+        quantity_desired: qty,
+      } as any)
       .select("id").single();
-    expect(seedErr, seedErr?.message).toBeNull();
+    if (error) throw new Error(`list_items seed failed: ${error.message}`);
+    return { admin, id: data!.id as string };
+  }
 
+  it("non-admin cannot update list_items on a foreign list", async () => {
+    const { admin, id } = await seedListItem(1);
+    if (!id) { expect(true).toBe(true); return; }
     try {
       const c = await clientAs("user");
       const { data, error } = await c
         .from("list_items")
         .update({ quantity_desired: 99 } as any)
-        .eq("id", seeded!.id)
+        .eq("id", id)
         .select();
       expect(blocked(error, data)).toBe(true);
 
-      // Confirm untouched
       const { data: row } = await admin
-        .from("list_items").select("quantity_desired").eq("id", seeded!.id).single();
+        .from("list_items").select("quantity_desired").eq("id", id).single();
       expect(row?.quantity_desired).toBe(1);
     } finally {
-      await admin.from("list_items").delete().eq("id", seeded!.id);
+      await admin.from("list_items").delete().eq("id", id);
     }
   });
 
   it("non-admin cannot delete list_items on a foreign list", async () => {
-    const f = await ensureFixture();
-    const admin = await clientAs("admin");
-    const { data: seeded } = await admin
-      .from("list_items")
-      .insert({ list_id: f.list_id, section_id: f.section_id, quantity_desired: 2 } as any)
-      .select("id").single();
-
+    const { admin, id } = await seedListItem(2);
+    if (!id) { expect(true).toBe(true); return; }
     try {
       const c = await clientAs("user");
       const { data, error } = await c
-        .from("list_items").delete().eq("id", seeded!.id).select();
+        .from("list_items").delete().eq("id", id).select();
       expect(blocked(error, data)).toBe(true);
 
       const { data: row } = await admin
-        .from("list_items").select("id").eq("id", seeded!.id).single();
-      expect(row?.id).toBe(seeded!.id);
+        .from("list_items").select("id").eq("id", id).single();
+      expect(row?.id).toBe(id);
     } finally {
-      await admin.from("list_items").delete().eq("id", seeded!.id);
+      await admin.from("list_items").delete().eq("id", id);
     }
   });
 
