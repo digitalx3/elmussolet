@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, ChevronUp, ChevronDown, Pencil } from 'lucide-react';
+import { Plus, Trash2, ChevronUp, ChevronDown, Pencil, Layers } from 'lucide-react';
+import SubsectionsDialog from '@/components/admin/SubsectionsDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguages } from '@/hooks/useLanguages';
 import { useDefaultListSections, pickSectionName, DefaultListSection } from '@/hooks/useDefaultListSections';
