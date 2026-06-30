@@ -4,13 +4,25 @@ import { ensureFixture, clientAs } from "./helpers";
 // Creates a throwaway order owned by the admin's customer and exercises the
 // validate_order_status_transition trigger together with the orders RLS
 // policies (admin can update; regular user cannot read/update another's order).
+// Seed with the super_admin session so that is_admin() (which checks both
+// user_roles and profiles.role) is guaranteed to be true and the orders RLS
+// WITH CHECK passes regardless of profiles.role state for the test admin.
 async function createOrder(status: string = "pending") {
-  const admin = await clientAs("admin");
+  const seeder = await clientAs("super");
+  // Confirm the seeding session satisfies is_admin() — fail fast with a clear
+  // message if the fixture isn't provisioned correctly.
+  const { data: who } = await seeder.auth.getUser();
+  const { data: isAdmin, error: roleErr } = await seeder.rpc("is_admin", {
+    _user_id: who.user?.id,
+  } as any);
+  if (roleErr) throw new Error(`is_admin check failed: ${roleErr.message}`);
+  if (!isAdmin) throw new Error("seed session does not satisfy is_admin(); check rls-test-setup");
+
   // Find any existing customer to attach the order to – not under test.
-  const { data: cust } = await admin.from("customers").select("id").limit(1).maybeSingle();
+  const { data: cust } = await seeder.from("customers").select("id").limit(1).maybeSingle();
   const customerId = cust?.id ?? null;
   const orderNumber = `RLS-TX-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-  const { data, error } = await admin
+  const { data, error } = await seeder
     .from("orders")
     .insert({
       order_number: orderNumber,
@@ -28,10 +40,10 @@ async function createOrder(status: string = "pending") {
 }
 
 async function cleanup(orderId: string) {
-  const admin = await clientAs("admin");
+  const seeder = await clientAs("super");
   // Force to cancelled first so triggers don't object on hard delete.
-  await admin.from("orders").update({ status: "cancelled" } as any).eq("id", orderId);
-  await admin.from("orders").delete().eq("id", orderId);
+  await seeder.from("orders").update({ status: "cancelled" } as any).eq("id", orderId);
+  await seeder.from("orders").delete().eq("id", orderId);
 }
 
 describe("Order status transitions + RLS", () => {
