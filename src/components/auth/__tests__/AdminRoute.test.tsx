@@ -96,4 +96,45 @@ describe('AdminRoute (403 for non-admins)', () => {
 
     expect(screen.getByText('Login page')).toBeInTheDocument();
   });
+
+  it.each([
+    '/admin/productes',
+    '/admin/comandes',
+    '/admin/usuaris',
+    '/admin/configuracio/smtp',
+    '/admin/marketing-seo',
+  ])('shows 403 for non-admin on nested route %s', async (path) => {
+    mockAuth.mockReturnValue({
+      user: { id: 'user-x' },
+      isAdmin: false,
+      isLoading: false,
+    });
+    mockRpc.mockResolvedValue({ data: false, error: null });
+
+    render(
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="/login" element={<div>Login page</div>} />
+          <Route
+            path="/admin/*"
+            element={
+              <AdminRoute>
+                <Routes>
+                  <Route path="productes" element={<div>Productes admin</div>} />
+                  <Route path="comandes" element={<div>Comandes admin</div>} />
+                  <Route path="usuaris" element={<div>Usuaris admin</div>} />
+                  <Route path="configuracio/smtp" element={<div>SMTP admin</div>} />
+                  <Route path="marketing-seo" element={<div>Marketing admin</div>} />
+                </Routes>
+              </AdminRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('403')).toBeInTheDocument();
+    expect(screen.getByText('Accés denegat')).toBeInTheDocument();
+    expect(screen.queryByText(/admin$/i)).not.toBeInTheDocument();
+  });
 });
