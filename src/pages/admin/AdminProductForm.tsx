@@ -152,6 +152,7 @@ const AdminProductForm: React.FC = () => {
     variants: [],
     related_product_ids: [],
     cross_sell_product_ids: [],
+    family_assignments: [],
   });
 
   const [translationErrors, setTranslationErrors] = useState<TranslationErrors>({});
