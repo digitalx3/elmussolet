@@ -29,22 +29,67 @@ import { SlugInput, validateSlugValue } from '@/components/admin/SlugInput';
 import { checkBaseSlugDuplicate, checkTranslationSlugDuplicate } from '@/lib/checkSlugDuplicate';
 import { useDuplicateSlugErrors, hasAnySlugError } from '@/hooks/useDuplicateSlugErrors';
 import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
+import { useDefaultListSubsections, pickSubsectionName } from '@/hooks/useDefaultListSubsections';
+import type { ProductFamilyAssignment } from '@/hooks/useAdminProducts';
 
-const FamilySelect: React.FC<{ value: string | null; onChange: (v: string | null) => void }> = ({ value, onChange }) => {
+const FamilyAssignmentsEditor: React.FC<{
+  value: ProductFamilyAssignment[];
+  onChange: (v: ProductFamilyAssignment[]) => void;
+}> = ({ value, onChange }) => {
   const { i18n } = useTranslation();
   const lang = i18n.language === 'es' ? 'es' : 'ca';
   const { data: sections = [] } = useDefaultListSections({ onlyActive: true });
+  const { data: subsections = [] } = useDefaultListSubsections({ onlyActive: true });
+
+  const rows = value.length > 0 ? value : [{ section_id: '', subsection_id: null }];
+
+  const update = (i: number, patch: Partial<ProductFamilyAssignment>) => {
+    const next = rows.map((r, idx) => idx === i ? { ...r, ...patch } : r);
+    onChange(next.filter(r => r.section_id));
+  };
+  const removeRow = (i: number) => {
+    onChange(rows.filter((_, idx) => idx !== i).filter(r => r.section_id));
+  };
+  const addRow = () => {
+    if (rows.length >= 3) return;
+    onChange([...rows.filter(r => r.section_id), { section_id: '', subsection_id: null }].slice(0, 3));
+  };
+
   return (
-    <select
-      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-      value={value || ''}
-      onChange={e => onChange(e.target.value || null)}
-    >
-      <option value="">— Sense família —</option>
-      {sections.map(s => (
-        <option key={s.id} value={s.id}>{pickSectionName(s, lang)}</option>
-      ))}
-    </select>
+    <div className="space-y-2">
+      {rows.map((row, i) => {
+        const subs = subsections.filter(s => s.section_id === row.section_id);
+        return (
+          <div key={i} className="flex gap-2 items-start">
+            <select
+              className="flex h-10 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={row.section_id}
+              onChange={e => update(i, { section_id: e.target.value, subsection_id: null })}
+            >
+              <option value="">— Família —</option>
+              {sections.map(s => <option key={s.id} value={s.id}>{pickSectionName(s, lang)}</option>)}
+            </select>
+            <select
+              className="flex h-10 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={row.subsection_id || ''}
+              onChange={e => update(i, { subsection_id: e.target.value || null })}
+              disabled={!row.section_id || subs.length === 0}
+            >
+              <option value="">— Subfamília (opcional) —</option>
+              {subs.map(s => <option key={s.id} value={s.id}>{pickSubsectionName(s, lang)}</option>)}
+            </select>
+            <Button type="button" variant="ghost" size="icon" onClick={() => removeRow(i)} aria-label="Eliminar">
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        );
+      })}
+      {rows.length < 3 && (
+        <Button type="button" variant="outline" size="sm" onClick={addRow}>
+          <Plus className="h-4 w-4 mr-1" /> Afegir família
+        </Button>
+      )}
+    </div>
   );
 };
 
@@ -107,6 +152,7 @@ const AdminProductForm: React.FC = () => {
     variants: [],
     related_product_ids: [],
     cross_sell_product_ids: [],
+    family_assignments: [],
   });
 
   const [translationErrors, setTranslationErrors] = useState<TranslationErrors>({});
@@ -292,6 +338,10 @@ const AdminProductForm: React.FC = () => {
         })),
         related_product_ids: relatedSorted,
         cross_sell_product_ids: crossSellSorted,
+        family_assignments: (((product as any).product_default_sections || []) as { position: number; section_id: string; subsection_id: string | null }[])
+          .slice()
+          .sort((a, b) => a.position - b.position)
+          .map(r => ({ section_id: r.section_id, subsection_id: r.subsection_id })),
       });
       setStockRaw(String(product.stock_quantity ?? 0));
       setVariantStockRaw(
@@ -798,9 +848,14 @@ const AdminProductForm: React.FC = () => {
             </select>
           </div>
           <div className="sm:col-span-2">
-            <Label>Família per a llistes de naixement</Label>
-            <FamilySelect value={form.default_section_id} onChange={(v) => updateField('default_section_id', v)} />
-            <p className="text-xs text-muted-foreground mt-1">Determina a quina família apareixerà aquest producte quan es creïn llistes de naixement.</p>
+            <Label>Famílies a la Llista de Naixement</Label>
+            <FamilyAssignmentsEditor
+              value={form.family_assignments}
+              onChange={(v) => updateField('family_assignments', v)}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Pots assignar fins a 3 parelles família + subfamília. La primera s'utilitzarà com a família principal del producte.
+            </p>
           </div>
           <div>
             <Label htmlFor="stock-input">Estoc</Label>

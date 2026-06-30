@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { Check, Search, Clock, Package } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { useDefaultListSections, pickSectionName } from '@/hooks/useDefaultListSections';
+import { useDefaultListSubsections, pickSubsectionName } from '@/hooks/useDefaultListSubsections';
 import {
   useFamilyProducts,
   useFamilyAssignmentCounts,
@@ -21,13 +21,12 @@ export interface FamilyProductSelectorProps {
   onToggle: (product: FamilyProduct, checked: boolean) => void;
 }
 
-/**
- * Full-width grid grouped by default-list sections (families). Each product
- * has a check toggle to include / exclude it from the current birth list / template.
- * - Discontinued / out-of-stock products are hidden by the availability filter.
- * - "on_order" products show an "En estoc, sota comanda" badge and remain selectable.
- * - Families without assigned products or with all products out of stock display a status message.
- */
+interface SubsectionGroup {
+  subsection_id: string | null;
+  name: string;
+  products: FamilyProduct[];
+}
+
 const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
   selectedIds,
   onToggle,
@@ -37,9 +36,8 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
   const [search, setSearch] = useState('');
 
   const { data: sections = [], isLoading: loadingSections } = useDefaultListSections({ onlyActive: true });
-  // DB-filtered: only active products assigned to a family with stock_status in ('in_stock','on_order').
+  const { data: subsections = [], isLoading: loadingSubs } = useDefaultListSubsections({ onlyActive: true });
   const { data: products = [], isLoading: loadingProducts } = useFamilyProducts();
-  // DB-aggregated: total assignments per section (any stock status) — drives the empty-state messaging.
   const { data: assignmentCounts } = useFamilyAssignmentCounts();
 
   const grouped = useMemo(() => {
@@ -52,22 +50,27 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
 
     const visible = products.filter(p => productIsAvailable(p) && matchesSearch(p));
 
-    const bySection = new Map<string, FamilyProduct[]>();
-    for (const s of sections) bySection.set(s.id, []);
+    // section_id -> subsection_id (or "_general") -> products
+    const map = new Map<string, Map<string, FamilyProduct[]>>();
+    for (const s of sections) map.set(s.id, new Map());
     for (const p of visible) {
-      if (p.default_section_id && bySection.has(p.default_section_id)) {
-        bySection.get(p.default_section_id)!.push(p);
+      for (const a of p.assignments) {
+        const bySection = map.get(a.section_id);
+        if (!bySection) continue;
+        const key = a.subsection_id || '_general';
+        if (!bySection.has(key)) bySection.set(key, []);
+        bySection.get(key)!.push(p);
       }
     }
-    return { bySection, searchActive: q.length > 0 };
+    return { map, searchActive: q.length > 0 };
   }, [products, sections, search, lang]);
 
-  if (loadingSections || loadingProducts) {
+  if (loadingSections || loadingSubs || loadingProducts) {
     return <p className="text-sm text-muted-foreground py-6 text-center">{t('common.loading')}</p>;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-3 -mx-1 px-1 border-b">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="relative w-full sm:w-96 max-w-full">
@@ -87,60 +90,72 @@ const FamilyProductSelector: React.FC<FamilyProductSelectorProps> = ({
       </div>
 
       {sections.map(section => {
-        const list = grouped.bySection.get(section.id) || [];
+        const sectionMap = grouped.map.get(section.id) || new Map();
+        const sectionSubs = subsections.filter(s => s.section_id === section.id);
         const assignedCount = assignmentCounts?.get(section.id) ?? 0;
+
+        // Build ordered groups: General first if any, then subsections in sort_order.
+        const groups: SubsectionGroup[] = [];
+        const general = sectionMap.get('_general');
+        if (general && general.length > 0) {
+          groups.push({
+            subsection_id: null,
+            name: lang === 'es' ? 'General' : 'General',
+            products: general,
+          });
+        }
+        for (const sub of sectionSubs) {
+          const list = sectionMap.get(sub.id);
+          if (list && list.length > 0) {
+            groups.push({
+              subsection_id: sub.id,
+              name: pickSubsectionName(sub, lang),
+              products: list,
+            });
+          }
+        }
+
+        const totalVisible = groups.reduce((s, g) => s + g.products.length, 0);
+
         return (
-          <FamilyBlock
-            key={section.id}
-            title={pickSectionName(section, lang)}
-            products={list}
-            assignedCount={assignedCount}
-            lang={lang}
-            selectedIds={selectedIds}
-            onToggle={onToggle}
-            searchActive={grouped.searchActive}
-          />
+          <section key={section.id} aria-label={pickSectionName(section, lang)} className="space-y-4">
+            <header className="flex items-center gap-2 border-b pb-2">
+              <h3 className="font-display text-xl font-semibold">{pickSectionName(section, lang)}</h3>
+              <Badge variant="secondary">{totalVisible}</Badge>
+            </header>
+
+            {groups.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center bg-muted/30 rounded">
+                {grouped.searchActive
+                  ? t('list.familyNoSearchResults')
+                  : assignedCount > 0
+                    ? t('list.familyAllOutOfStock')
+                    : t('list.familyNoProducts')}
+              </p>
+            ) : (
+              groups.map(g => (
+                <div key={g.subsection_id ?? '_general'} className="space-y-2">
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    {g.name} <span className="text-xs font-normal">({g.products.length})</span>
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                    {g.products.map(p => (
+                      <ProductTile
+                        key={`${g.subsection_id ?? 'gen'}-${p.id}`}
+                        product={p}
+                        lang={lang}
+                        selected={selectedIds.has(p.id)}
+                        onToggle={onToggle}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </section>
         );
       })}
     </div>
-  );
-};
-
-const FamilyBlock: React.FC<{
-  title: string;
-  products: FamilyProduct[];
-  assignedCount: number;
-  lang: string;
-  selectedIds: Set<string>;
-  onToggle: (p: FamilyProduct, checked: boolean) => void;
-  muted?: boolean;
-  searchActive?: boolean;
-}> = ({ title, products, assignedCount, lang, selectedIds, onToggle, muted, searchActive }) => {
-  const { t } = useTranslation();
-  const hasAssigned = assignedCount > 0;
-  const hasVisible = products.length > 0;
-
-  return (
-    <section aria-label={title}>
-      <header className="flex items-center gap-2 mb-3">
-        <h3 className={cn('font-display text-lg font-semibold', muted && 'text-muted-foreground')}>{title}</h3>
-        <Badge variant="secondary">{products.length}</Badge>
-      </header>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-        {products.map(p => (
-          <ProductTile key={p.id} product={p} lang={lang} selected={selectedIds.has(p.id)} onToggle={onToggle} />
-        ))}
-        {!hasVisible && (
-          <p className="col-span-full text-sm text-muted-foreground py-4 text-center bg-muted/30 rounded">
-            {searchActive
-              ? t('list.familyNoSearchResults')
-              : hasAssigned
-                ? t('list.familyAllOutOfStock')
-                : t('list.familyNoProducts')}
-          </p>
-        )}
-      </div>
-    </section>
   );
 };
 
@@ -218,6 +233,5 @@ const ProductTile: React.FC<{
     </div>
   );
 };
-
 
 export default FamilyProductSelector;

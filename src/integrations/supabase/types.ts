@@ -878,6 +878,79 @@ export type Database = {
         }
         Relationships: []
       }
+      default_list_subsection_translations: {
+        Row: {
+          created_at: string
+          id: string
+          language: string
+          name: string
+          subsection_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language: string
+          name: string
+          subsection_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string
+          name?: string
+          subsection_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "default_list_subsection_translations_subsection_id_fkey"
+            columns: ["subsection_id"]
+            isOneToOne: false
+            referencedRelation: "default_list_subsections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      default_list_subsections: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          section_id: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          section_id: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          section_id?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "default_list_subsections_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "default_list_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hero_slide_translations: {
         Row: {
           badge_text: string | null
@@ -1760,6 +1833,52 @@ export type Database = {
             columns: ["list_id"]
             isOneToOne: false
             referencedRelation: "birth_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_default_sections: {
+        Row: {
+          created_at: string
+          position: number
+          product_id: string
+          section_id: string
+          subsection_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          position: number
+          product_id: string
+          section_id: string
+          subsection_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          position?: number
+          product_id?: string
+          section_id?: string
+          subsection_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_default_sections_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_default_sections_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "default_list_sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_default_sections_subsection_id_fkey"
+            columns: ["subsection_id"]
+            isOneToOne: false
+            referencedRelation: "default_list_subsections"
             referencedColumns: ["id"]
           },
         ]

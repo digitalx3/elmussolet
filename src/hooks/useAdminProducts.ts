@@ -34,6 +34,12 @@ export interface AdminProduct {
     variant_types: { slug: string } | null;
   }[];
   product_relations?: { related_product_id: string; position: number; relation_type: string }[];
+  product_default_sections?: { position: number; section_id: string; subsection_id: string | null }[];
+}
+
+export interface ProductFamilyAssignment {
+  section_id: string;
+  subsection_id: string | null;
 }
 
 export function useAdminProducts() {
@@ -69,7 +75,8 @@ export function useAdminProduct(id: string | undefined) {
           product_translations(id, language, name, short_description, description, slug),
           product_images(id, image_url, alt_text, is_primary, sort_order),
           product_variants(id, value, price_override, price_modifier, stock_quantity, sku_suffix, is_active, variant_type_id, variant_types(id, slug)),
-          product_relations!product_relations_product_id_fkey(related_product_id, position, relation_type)
+          product_relations!product_relations_product_id_fkey(related_product_id, position, relation_type),
+          product_default_sections(position, section_id, subsection_id)
         `)
         .eq('id', id!)
         .single();
@@ -108,6 +115,7 @@ export interface ProductFormData {
   }[];
   related_product_ids: string[]; // ordered upsell
   cross_sell_product_ids: string[]; // ordered cross-sell
+  family_assignments: ProductFamilyAssignment[]; // up to 3
 }
 
 export function useSaveProduct() {
@@ -237,6 +245,22 @@ export function useSaveProduct() {
         }));
       if (relPayload.length > 0) {
         const { error } = await supabase.from('product_relations').insert(relPayload);
+        if (error) throw error;
+      }
+
+      // Family/subfamily assignments — replace fully (max 3)
+      await supabase.from('product_default_sections').delete().eq('product_id', productId!);
+      const cleanAssigns = (data.family_assignments || [])
+        .filter(a => a.section_id)
+        .slice(0, 3)
+        .map((a, i) => ({
+          product_id: productId!,
+          position: i,
+          section_id: a.section_id,
+          subsection_id: a.subsection_id || null,
+        }));
+      if (cleanAssigns.length > 0) {
+        const { error } = await supabase.from('product_default_sections').insert(cleanAssigns);
         if (error) throw error;
       }
 

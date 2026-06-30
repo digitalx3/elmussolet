@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, ChevronUp, ChevronDown, Pencil } from 'lucide-react';
+import { Plus, Trash2, ChevronUp, ChevronDown, Pencil, Layers } from 'lucide-react';
+import SubsectionsDialog from '@/components/admin/SubsectionsDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguages } from '@/hooks/useLanguages';
 import { useDefaultListSections, pickSectionName, DefaultListSection } from '@/hooks/useDefaultListSections';
@@ -46,6 +47,7 @@ const AdminDefaultListSections: React.FC = () => {
   const lang = i18n.language || 'ca';
 
   const [open, setOpen] = useState(false);
+  const [subsOpen, setSubsOpen] = useState<DefaultListSection | null>(null);
   const [form, setForm] = useState<FormState>(empty([]));
   const [saving, setSaving] = useState(false);
   const [slugTouched, setSlugTouched] = useState(false);
@@ -214,6 +216,9 @@ const AdminDefaultListSections: React.FC = () => {
                   <Switch checked={s.is_active} onCheckedChange={(v) => toggleActive(s, v)} />
                 </TableCell>
                 <TableCell className="text-right">
+                  <Button size="sm" variant="ghost" onClick={() => setSubsOpen(s)} title="Subfamílies">
+                    <Layers className="h-4 w-4" />
+                  </Button>
                   <Button size="sm" variant="ghost" onClick={() => openEdit(s)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -273,6 +278,15 @@ const AdminDefaultListSections: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {subsOpen && (
+        <SubsectionsDialog
+          sectionId={subsOpen.id}
+          sectionName={pickSectionName(subsOpen, lang)}
+          open={!!subsOpen}
+          onClose={() => setSubsOpen(null)}
+        />
+      )}
     </div>
   );
 };
