@@ -301,7 +301,15 @@ export function useDeleteProduct() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-products'] });
-      notify.success('Producte eliminat');
+      qc.invalidateQueries({ queryKey: ['products'] });
+      notify.success('Producte eliminat definitivament', {
+        description: 'L\'historial de comandes es conserva amb les dades del producte.',
+      });
+    },
+    onError: (e: any) => {
+      notify.error('No s\'ha pogut eliminar el producte', {
+        description: e?.message || 'Torna-ho a provar més tard.',
+      });
     },
   });
 }
