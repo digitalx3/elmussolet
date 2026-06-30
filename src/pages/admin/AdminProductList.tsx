@@ -33,9 +33,19 @@ const AdminProductList: React.FC = () => {
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ['admin-products'] });
       qc.invalidateQueries({ queryKey: ['products'] });
-      notify.success(vars.is_active ? 'Producte restaurat' : 'Producte arxivat');
+      notify.success(
+        vars.is_active ? 'Producte restaurat' : 'Producte arxivat',
+        {
+          description: vars.is_active
+            ? 'Torna a estar visible al catàleg públic.'
+            : 'Ja no apareix al catàleg, però es manté a l\'historial.',
+        },
+      );
     },
-    onError: (e: any) => notify.error(e?.message || 'Error'),
+    onError: (e: any) =>
+      notify.error('No s\'ha pogut actualitzar l\'estat', {
+        description: e?.message || 'Torna-ho a provar més tard.',
+      }),
   });
 
 
