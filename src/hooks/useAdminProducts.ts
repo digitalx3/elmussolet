@@ -75,7 +75,8 @@ export function useAdminProduct(id: string | undefined) {
           product_translations(id, language, name, short_description, description, slug),
           product_images(id, image_url, alt_text, is_primary, sort_order),
           product_variants(id, value, price_override, price_modifier, stock_quantity, sku_suffix, is_active, variant_type_id, variant_types(id, slug)),
-          product_relations!product_relations_product_id_fkey(related_product_id, position, relation_type)
+          product_relations!product_relations_product_id_fkey(related_product_id, position, relation_type),
+          product_default_sections(position, section_id, subsection_id)
         `)
         .eq('id', id!)
         .single();
