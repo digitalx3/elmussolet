@@ -271,7 +271,9 @@ const AdminProductList: React.FC = () => {
                       <div className="flex gap-1">
                         <Link to={`/admin/productes/${p.id}`}>
                           <Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button>
+                        </Link>
                         <Button
+
                           variant="ghost"
                           size="icon"
                           title={p.is_active ? 'Arxivar (desactivar)' : 'Restaurar (activar)'}
