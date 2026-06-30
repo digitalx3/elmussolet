@@ -115,6 +115,7 @@ export interface ProductFormData {
   }[];
   related_product_ids: string[]; // ordered upsell
   cross_sell_product_ids: string[]; // ordered cross-sell
+  family_assignments: ProductFamilyAssignment[]; // up to 3
 }
 
 export function useSaveProduct() {
