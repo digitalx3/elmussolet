@@ -338,6 +338,10 @@ const AdminProductForm: React.FC = () => {
         })),
         related_product_ids: relatedSorted,
         cross_sell_product_ids: crossSellSorted,
+        family_assignments: (((product as any).product_default_sections || []) as { position: number; section_id: string; subsection_id: string | null }[])
+          .slice()
+          .sort((a, b) => a.position - b.position)
+          .map(r => ({ section_id: r.section_id, subsection_id: r.subsection_id })),
       });
       setStockRaw(String(product.stock_quantity ?? 0));
       setVariantStockRaw(
