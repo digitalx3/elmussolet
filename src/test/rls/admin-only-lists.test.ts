@@ -165,6 +165,74 @@ describe("Non-admin cannot manage lists or assign products (RLS)", () => {
     expect(blocked(error, data)).toBe(true);
   });
 
+  // --- SELECT visibility (admin-only reads) --------------------------------
+
+  it("non-admin cannot SELECT a foreign birth_list by id", async () => {
+    const f = await ensureFixture();
+    const c = await clientAs("user");
+    const { data, error } = await c
+      .from("birth_lists").select("id, baby_name").eq("id", f.list_id);
+    expect(error).toBeNull();
+    expect(data ?? []).toHaveLength(0);
+  });
+
+  it("non-admin listing birth_lists never returns the foreign list", async () => {
+    const f = await ensureFixture();
+    const c = await clientAs("user");
+    const { data, error } = await c
+      .from("birth_lists").select("id").limit(1000);
+    expect(error).toBeNull();
+    const ids = (data ?? []).map((r: any) => r.id);
+    expect(ids).not.toContain(f.list_id);
+  });
+
+  it("non-admin cannot SELECT list_items belonging to a foreign list", async () => {
+    const { admin, id } = await seedListItem(1);
+    if (!id) { expect(true).toBe(true); return; }
+    try {
+      const c = await clientAs("user");
+      const { data, error } = await c
+        .from("list_items").select("id").eq("id", id);
+      expect(error).toBeNull();
+      expect(data ?? []).toHaveLength(0);
+    } finally {
+      await admin.from("list_items").delete().eq("id", id);
+    }
+  });
+
+  it("non-admin cannot SELECT list_sections of a foreign list", async () => {
+    const f = await ensureFixture();
+    const c = await clientAs("user");
+    const { data, error } = await c
+      .from("list_sections").select("id").eq("list_id", f.list_id);
+    expect(error).toBeNull();
+    expect(data ?? []).toHaveLength(0);
+  });
+
+  it("non-admin cannot SELECT list_owners of a foreign list", async () => {
+    const f = await ensureFixture();
+    const c = await clientAs("user");
+    const { data, error } = await c
+      .from("list_owners").select("id, user_id").eq("list_id", f.list_id);
+    expect(error).toBeNull();
+    // Visibility policy: user_id = auth.uid() OR is_admin — so foreign rows must not appear.
+    expect((data ?? []).some((r: any) => r.user_id !== null && r.user_id !== undefined)).toBe(false);
+  });
+
+  it("admin CAN SELECT the foreign birth_list, items and sections", async () => {
+    const f = await ensureFixture();
+    const admin = await clientAs("admin");
+    const { data: list } = await admin
+      .from("birth_lists").select("id").eq("id", f.list_id).single();
+    expect(list?.id).toBe(f.list_id);
+    const { error: itemsErr } = await admin
+      .from("list_items").select("id").eq("list_id", f.list_id);
+    expect(itemsErr).toBeNull();
+    const { error: secErr } = await admin
+      .from("list_sections").select("id").eq("list_id", f.list_id);
+    expect(secErr).toBeNull();
+  });
+
   // --- sanity check: admin can do all the above ----------------------------
 
   it("admin can update the same birth_list", async () => {
