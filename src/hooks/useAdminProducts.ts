@@ -248,6 +248,22 @@ export function useSaveProduct() {
         if (error) throw error;
       }
 
+      // Family/subfamily assignments — replace fully (max 3)
+      await supabase.from('product_default_sections').delete().eq('product_id', productId!);
+      const cleanAssigns = (data.family_assignments || [])
+        .filter(a => a.section_id)
+        .slice(0, 3)
+        .map((a, i) => ({
+          product_id: productId!,
+          position: i,
+          section_id: a.section_id,
+          subsection_id: a.subsection_id || null,
+        }));
+      if (cleanAssigns.length > 0) {
+        const { error } = await supabase.from('product_default_sections').insert(cleanAssigns);
+        if (error) throw error;
+      }
+
       return productId;
     },
     onSuccess: (productId) => {
