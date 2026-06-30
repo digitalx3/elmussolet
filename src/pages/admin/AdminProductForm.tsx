@@ -848,9 +848,14 @@ const AdminProductForm: React.FC = () => {
             </select>
           </div>
           <div className="sm:col-span-2">
-            <Label>Família per a llistes de naixement</Label>
-            <FamilySelect value={form.default_section_id} onChange={(v) => updateField('default_section_id', v)} />
-            <p className="text-xs text-muted-foreground mt-1">Determina a quina família apareixerà aquest producte quan es creïn llistes de naixement.</p>
+            <Label>Famílies a la Llista de Naixement</Label>
+            <FamilyAssignmentsEditor
+              value={form.family_assignments}
+              onChange={(v) => updateField('family_assignments', v)}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Pots assignar fins a 3 parelles família + subfamília. La primera s'utilitzarà com a família principal del producte.
+            </p>
           </div>
           <div>
             <Label htmlFor="stock-input">Estoc</Label>
