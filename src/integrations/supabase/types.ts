@@ -2431,7 +2431,7 @@ export type Database = {
           list_item_id: string | null
           order_id: string | null
           order_item_id: string | null
-          product_id: string
+          product_id: string | null
           reason: string
           variant_id: string | null
         }
@@ -2443,7 +2443,7 @@ export type Database = {
           list_item_id?: string | null
           order_id?: string | null
           order_item_id?: string | null
-          product_id: string
+          product_id?: string | null
           reason: string
           variant_id?: string | null
         }
@@ -2455,11 +2455,26 @@ export type Database = {
           list_item_id?: string | null
           order_id?: string | null
           order_item_id?: string | null
-          product_id?: string
+          product_id?: string | null
           reason?: string
           variant_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tax_rates: {
         Row: {
