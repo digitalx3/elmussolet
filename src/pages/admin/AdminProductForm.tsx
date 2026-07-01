@@ -353,8 +353,17 @@ const AdminProductForm: React.FC = () => {
       setVariantStockRaw(
         Object.fromEntries((product.product_variants || []).map((v, i) => [i, String(v.stock_quantity ?? 0)]))
       );
+      // Init price/weight raw display strings from persisted values.
+      const bp = Number(product.base_price) || 0;
+      setNetRaw(bp > 0 ? String(bp) : '');
+      const pTax = taxRates.find(tr => tr.id === (product as any).tax_rate_id);
+      const pTaxPct = pTax?.percentage ?? 0;
+      setGrossRaw(bp > 0 ? (Math.round(bp * (1 + pTaxPct / 100) * 100) / 100).toFixed(2) : '');
+      const wg = Number(product.weight_grams) || 0;
+      setWeightRaw(wg > 0 ? String(wg) : '');
     }
-  }, [product, isNew, languages]);
+  }, [product, isNew, languages, taxRates]);
+
 
   const updateField = <K extends keyof ProductFormData>(key: K, value: ProductFormData[K]) =>
     setForm(prev => ({ ...prev, [key]: value }));
