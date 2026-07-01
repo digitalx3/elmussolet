@@ -163,6 +163,12 @@ const AdminProductForm: React.FC = () => {
   // Stock input raw state (allows temporary "-" while typing; validated visually).
   const [stockRaw, setStockRaw] = useState<string>('0');
   const [variantStockRaw, setVariantStockRaw] = useState<Record<number, string>>({});
+  // Price/weight raw strings so the input owns its display and doesn't reformat
+  // (adding decimals or snapping to 0) while the user is still typing.
+  const [netRaw, setNetRaw] = useState<string>('');
+  const [grossRaw, setGrossRaw] = useState<string>('');
+  const [weightRaw, setWeightRaw] = useState<string>('');
+
 
   const isValidStockValue = (raw: string): boolean => {
     if (raw === '' || raw === '-') return false;
