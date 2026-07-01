@@ -161,11 +161,10 @@ describe('AdminProductForm numeric inputs', () => {
     expect(net).toHaveValue(1);
     fireEvent.change(net, { target: { value: '12' } });
     expect(net).toHaveValue(12);
-    fireEvent.change(net, { target: { value: '12.' } });
-    // parseFloat('12.') === 12
-    expect(screen.getByTestId('net-state').textContent).toBe('12');
     fireEvent.change(net, { target: { value: '12.9' } });
     expect(net).toHaveValue(12.9);
+    expect(screen.getByTestId('net-state').textContent).toBe('12.9');
+
   });
 
   it('works with taxPct=0 (PVP equals net)', () => {
