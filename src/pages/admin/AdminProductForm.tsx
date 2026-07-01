@@ -837,8 +837,12 @@ const AdminProductForm: React.FC = () => {
           })()}
           <div>
             <Label>Pes (grams)</Label>
-            <Input type="number" min="0" value={form.weight_grams}
-              onChange={e => updateField('weight_grams', parseInt(e.target.value) || 0)} />
+            <Input type="number" min="0" value={form.weight_grams === 0 ? '' : form.weight_grams}
+              onChange={e => {
+                const v = e.target.value;
+                updateField('weight_grams', v === '' ? 0 : parseInt(v) || 0);
+              }} />
+
           </div>
           <div>
             <Label>Categoria</Label>
