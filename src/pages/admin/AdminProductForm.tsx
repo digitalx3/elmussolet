@@ -163,6 +163,12 @@ const AdminProductForm: React.FC = () => {
   // Stock input raw state (allows temporary "-" while typing; validated visually).
   const [stockRaw, setStockRaw] = useState<string>('0');
   const [variantStockRaw, setVariantStockRaw] = useState<Record<number, string>>({});
+  // Price/weight raw strings so the input owns its display and doesn't reformat
+  // (adding decimals or snapping to 0) while the user is still typing.
+  const [netRaw, setNetRaw] = useState<string>('');
+  const [grossRaw, setGrossRaw] = useState<string>('');
+  const [weightRaw, setWeightRaw] = useState<string>('');
+
 
   const isValidStockValue = (raw: string): boolean => {
     if (raw === '' || raw === '-') return false;
@@ -347,8 +353,17 @@ const AdminProductForm: React.FC = () => {
       setVariantStockRaw(
         Object.fromEntries((product.product_variants || []).map((v, i) => [i, String(v.stock_quantity ?? 0)]))
       );
+      // Init price/weight raw display strings from persisted values.
+      const bp = Number(product.base_price) || 0;
+      setNetRaw(bp > 0 ? String(bp) : '');
+      const pTax = taxRates.find(tr => tr.id === (product as any).tax_rate_id);
+      const pTaxPct = pTax?.percentage ?? 0;
+      setGrossRaw(bp > 0 ? (Math.round(bp * (1 + pTaxPct / 100) * 100) / 100).toFixed(2) : '');
+      const wg = Number(product.weight_grams) || 0;
+      setWeightRaw(wg > 0 ? String(wg) : '');
     }
-  }, [product, isNew, languages]);
+  }, [product, isNew, languages, taxRates]);
+
 
   const updateField = <K extends keyof ProductFormData>(key: K, value: ProductFormData[K]) =>
     setForm(prev => ({ ...prev, [key]: value }));
@@ -789,16 +804,36 @@ const AdminProductForm: React.FC = () => {
           </div>
           <div>
             <Label>Preu sense IVA (€) *</Label>
-            <Input type="number" step="0.01" min="0" value={form.base_price === 0 ? '' : form.base_price}
+            <Input
+              type="number" step="0.01" min="0"
+              value={netRaw}
               onChange={e => {
                 const v = e.target.value;
-                updateField('base_price', v === '' ? 0 : parseFloat(v) || 0);
-              }} />
-
+                setNetRaw(v);
+                const n = v === '' ? 0 : (parseFloat(v) || 0);
+                updateField('base_price', n);
+                const selectedTax = taxRates.find(tr => tr.id === form.tax_rate_id);
+                const taxPct = selectedTax?.percentage ?? 0;
+                setGrossRaw(n === 0 ? '' : (Math.round(n * (1 + taxPct / 100) * 100) / 100).toFixed(2));
+              }}
+              onBlur={() => {
+                // Normalise: if empty leave empty; otherwise reflect rounded net.
+                if (netRaw === '') return;
+                const n = parseFloat(netRaw) || 0;
+                setNetRaw(n === 0 ? '' : String(Math.round(n * 100) / 100));
+              }}
+            />
           </div>
           <div>
             <Label>Tipus impositiu</Label>
-            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.tax_rate_id || ''} onChange={e => updateField('tax_rate_id', e.target.value || null)}>
+            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.tax_rate_id || ''} onChange={e => {
+              const newId = e.target.value || null;
+              updateField('tax_rate_id', newId);
+              const newTax = taxRates.find(tr => tr.id === newId);
+              const newPct = newTax?.percentage ?? 0;
+              const n = form.base_price || 0;
+              setGrossRaw(n === 0 ? '' : (Math.round(n * (1 + newPct / 100) * 100) / 100).toFixed(2));
+            }}>
               <option value="">— Cap —</option>
               {taxRates.map(tr => <option key={tr.id} value={tr.id}>{tr.name} ({tr.percentage}%)</option>)}
             </select>
@@ -813,16 +848,27 @@ const AdminProductForm: React.FC = () => {
                   <Label>Preu amb IVA (€) *</Label>
                   <Input
                     type="number" step="0.01" min="0"
-                    value={form.base_price === 0 ? '' : pvp.toFixed(2)}
+                    value={grossRaw}
                     onChange={e => {
                       const v = e.target.value;
-                      if (v === '') { updateField('base_price', 0); return; }
-                      const gross = Math.round((parseFloat(v) || 0) * 100) / 100;
-                      const net = taxPct > 0 ? gross / (1 + taxPct / 100) : gross;
-                      updateField('base_price', Math.round(net * 100) / 100);
+                      setGrossRaw(v);
+                      if (v === '') {
+                        updateField('base_price', 0);
+                        setNetRaw('');
+                        return;
+                      }
+                      const g = parseFloat(v) || 0;
+                      const net = taxPct > 0 ? g / (1 + taxPct / 100) : g;
+                      const netRounded = Math.round(net * 100) / 100;
+                      updateField('base_price', netRounded);
+                      setNetRaw(netRounded === 0 ? '' : String(netRounded));
+                    }}
+                    onBlur={() => {
+                      if (grossRaw === '') return;
+                      const g = parseFloat(grossRaw) || 0;
+                      setGrossRaw(g === 0 ? '' : (Math.round(g * 100) / 100).toFixed(2));
                     }}
                   />
-
                 </div>
                 <div className="sm:col-span-2 p-3 rounded-lg bg-muted/50 text-sm">
                   <span className="text-muted-foreground">Preus sincronitzats — </span>
@@ -837,11 +883,16 @@ const AdminProductForm: React.FC = () => {
           })()}
           <div>
             <Label>Pes (grams)</Label>
-            <Input type="number" min="0" value={form.weight_grams === 0 ? '' : form.weight_grams}
+            <Input
+              type="number" min="0"
+              value={weightRaw}
               onChange={e => {
                 const v = e.target.value;
-                updateField('weight_grams', v === '' ? 0 : parseInt(v) || 0);
-              }} />
+                setWeightRaw(v);
+                updateField('weight_grams', v === '' ? 0 : (parseInt(v, 10) || 0));
+              }}
+            />
+
 
           </div>
           <div>
