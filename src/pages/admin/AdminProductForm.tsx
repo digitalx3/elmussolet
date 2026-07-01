@@ -789,8 +789,12 @@ const AdminProductForm: React.FC = () => {
           </div>
           <div>
             <Label>Preu sense IVA (€) *</Label>
-            <Input type="number" step="0.01" min="0" value={form.base_price}
-              onChange={e => updateField('base_price', parseFloat(e.target.value) || 0)} />
+            <Input type="number" step="0.01" min="0" value={form.base_price === 0 ? '' : form.base_price}
+              onChange={e => {
+                const v = e.target.value;
+                updateField('base_price', v === '' ? 0 : parseFloat(v) || 0);
+              }} />
+
           </div>
           <div>
             <Label>Tipus impositiu</Label>
@@ -809,14 +813,16 @@ const AdminProductForm: React.FC = () => {
                   <Label>Preu amb IVA (€) *</Label>
                   <Input
                     type="number" step="0.01" min="0"
-                    value={pvp.toFixed(2)}
+                    value={form.base_price === 0 ? '' : pvp.toFixed(2)}
                     onChange={e => {
-                      const gross = Math.round((parseFloat(e.target.value) || 0) * 100) / 100;
+                      const v = e.target.value;
+                      if (v === '') { updateField('base_price', 0); return; }
+                      const gross = Math.round((parseFloat(v) || 0) * 100) / 100;
                       const net = taxPct > 0 ? gross / (1 + taxPct / 100) : gross;
-                      // Always store net rounded to 2 decimals
                       updateField('base_price', Math.round(net * 100) / 100);
                     }}
                   />
+
                 </div>
                 <div className="sm:col-span-2 p-3 rounded-lg bg-muted/50 text-sm">
                   <span className="text-muted-foreground">Preus sincronitzats — </span>
@@ -831,8 +837,12 @@ const AdminProductForm: React.FC = () => {
           })()}
           <div>
             <Label>Pes (grams)</Label>
-            <Input type="number" min="0" value={form.weight_grams}
-              onChange={e => updateField('weight_grams', parseInt(e.target.value) || 0)} />
+            <Input type="number" min="0" value={form.weight_grams === 0 ? '' : form.weight_grams}
+              onChange={e => {
+                const v = e.target.value;
+                updateField('weight_grams', v === '' ? 0 : parseInt(v) || 0);
+              }} />
+
           </div>
           <div>
             <Label>Categoria</Label>
