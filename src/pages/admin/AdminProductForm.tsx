@@ -789,8 +789,12 @@ const AdminProductForm: React.FC = () => {
           </div>
           <div>
             <Label>Preu sense IVA (€) *</Label>
-            <Input type="number" step="0.01" min="0" value={form.base_price}
-              onChange={e => updateField('base_price', parseFloat(e.target.value) || 0)} />
+            <Input type="number" step="0.01" min="0" value={form.base_price === 0 ? '' : form.base_price}
+              onChange={e => {
+                const v = e.target.value;
+                updateField('base_price', v === '' ? 0 : parseFloat(v) || 0);
+              }} />
+
           </div>
           <div>
             <Label>Tipus impositiu</Label>
